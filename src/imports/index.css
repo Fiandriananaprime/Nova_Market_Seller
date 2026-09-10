@@ -1,0 +1,110 @@
+@import url('https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=Inter:wght@300;400;500;600;700&display=swap');
+@import 'tailwindcss';
+html {
+  scroll-behavior: smooth;
+}
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-border: var(--border);
+  --color-ring: var(--ring);
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: var(--radius);
+  --radius-lg: calc(var(--radius) + 4px);
+  --radius-xl: calc(var(--radius) + 8px);
+}
+
+:root {
+  --background: #F5EFFF;
+  --foreground: #16262E;
+  --card: #ffffff;
+  --card-foreground: #16262E;
+  --primary: #0077B6;
+  --primary-foreground: #ffffff;
+  --secondary: #EBE8F0;
+  --secondary-foreground: #16262E;
+  --muted: #EBE8F0;
+  --muted-foreground: #5d6d75;
+  --accent: #5ABCB9;
+  --accent-foreground: #ffffff;
+  --border: #D0CCD0;
+  --ring: #0077B6;
+  --radius: 10px;
+
+  --navy: #16262E;
+  --turquoise: #5ABCB9;
+  --blue: #0077B6;
+  --lavender: #F5EFFF;
+  --gray: #D0CCD0;
+}
+
+.dark {
+  --background: #0f1e25;
+  --foreground: #16262E;
+  --card: #16262E;
+  --card-foreground: #16262E;
+  --primary: #0077B6;
+  --primary-foreground: #ffffff;
+  --secondary: #1e3540;
+  --secondary-foreground: #ffffff;
+  --muted: #1e3540;
+  --muted-foreground: #8da8b5;
+  --accent: #5ABCB9;
+  --accent-foreground: #16262E;
+  --border: #2a4555;
+  --ring: #5ABCB9;
+}
+
+html, body, #root {
+  height: 100%;
+}
+
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--border) transparent;
+}
+
+*::-webkit-scrollbar {
+  width: 5px;
+  height: 5px;
+}
+
+*::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+*::-webkit-scrollbar-thumb {
+  background: var(--border);
+  border-radius: 3px;
+}
+
+body {
+  font-family: 'Inter', system-ui, sans-serif;
+  background-color: var(--background);
+  color: var(--foreground);
+  -webkit-font-smoothing: antialiased;
+}
+
+h1, h2, h3, h4, h5, h6 {
+  font-family: 'Manrope', system-ui, sans-serif;
+}
+
+.font-display {
+  font-family: 'Manrope', system-ui, sans-serif;
+}
+
+@keyframes shimmer {
+  100% {
+    transform: translateX(100%);
+  }
+}
