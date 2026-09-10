@@ -4,7 +4,7 @@ import {
   XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend
 } from "recharts";
 import { TrendingUp, ShoppingBag, Eye, Percent } from "lucide-react";
-import { revenueSeries, topProducts, categoryBreakdown, metrics, formatMGA } from "../data/mock";
+import { revenueSeries, topProducts, categoryBreakdown, metrics, formatMGA } from "../hook/mock";
 import { PageHeader, KpiCard, Card, CardHeader, CardTitle, CardBody } from "../components/ui";
 
 const PERIOD_OPTIONS = [

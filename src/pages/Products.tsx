@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Search, Plus, Edit2, Trash2, Eye, EyeOff, Star, Package } from "lucide-react";
-import { products, formatMGA, type Product, type ProductStatus } from "../data/mock";
+import { products, formatMGA, type Product, type ProductStatus } from "../hook/mock";
 import {
   PageHeader, Button, ProductStatusBadge, EmptyState, Pagination,
   ConfirmModal, Toast, Card, Stars, Badge

@@ -4,6 +4,7 @@ import App from './App'
 import './index.css'
 import { I18nProvider } from "./context/LangContext"
 import "./i18n"
+import { StoreProvider } from './context/storeContext'
 async function enableMocking() {
   if (import.meta.env.DEV) {
     const { worker } = await import("./mock/browser");
@@ -17,9 +18,11 @@ async function enableMocking() {
 enableMocking().then(() => {
   ReactDOM.createRoot(document.getElementById("root")!).render(
     <React.StrictMode>
-      <I18nProvider>
-        <App />
-      </I18nProvider>
+      <StoreProvider>
+        <I18nProvider>
+          <App />
+        </I18nProvider>
+      </StoreProvider>
     </React.StrictMode>,
   );
 });

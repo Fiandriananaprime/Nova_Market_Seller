@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Search, Filter, ChevronDown, Eye, MoreHorizontal, Truck, CheckCircle2, X } from "lucide-react";
-import { orders, formatMGA, formatFullMGA, type Order, type OrderStatus } from "../data/mock";
+import { orders, formatMGA, formatFullMGA, type Order, type OrderStatus } from "../hook/mock";
 import {
   PageHeader, Button, Input, Select, OrderStatusBadge, PaymentBadge,
   EmptyState, Pagination, ConfirmModal, Toast, Card

@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Store as StoreIcon, Globe, Phone, Mail, MapPin, Clock, CheckCircle2, Edit2, Camera, Link } from "lucide-react";
-import { storeInfo } from "../data/mock";
+import { storeInfo } from "../hook/mock";
 import { PageHeader, Button, Badge, Toast, Card, CardHeader, CardTitle, CardBody } from "../components/ui";
 
 const DAYS = ["Lundi", "Mardi", "Mercredi", "Jeudi", "Vendredi", "Samedi", "Dimanche"];

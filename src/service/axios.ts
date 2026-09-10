@@ -8,6 +8,12 @@ export const api = axios.create({
     'Content-Type': 'application/json',
   },
 })
+export const baseApi = axios.create({
+  baseURL,
+  headers: {
+    'Content-Type': 'application/json',
+  },
+})
 
 api.interceptors.request.use(
   (config) => {

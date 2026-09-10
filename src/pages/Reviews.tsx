@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Star, MessageSquare, Filter } from "lucide-react";
-import { reviews, type Review } from "../data/mock";
+import { reviews, type Review } from "../hook/mock";
 import { PageHeader, Stars, Badge, EmptyState, Card, Toast } from "../components/ui";
 
 const RATING_DIST = [

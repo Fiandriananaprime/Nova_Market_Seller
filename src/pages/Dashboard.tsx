@@ -1,49 +1,19 @@
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { useNavigate } from "react-router"
-import {
-  AreaChart,
-  Area,
-  XAxis,
-  YAxis,
-  CartesianGrid,
-  Tooltip,
-  ResponsiveContainer,
-  BarChart,
-  Bar,
-} from "recharts"
-import {
-  TrendingUp,
-  ShoppingBag,
-  Package,
-  Users,
-  Plus,
-  ArrowRight,
-  AlertTriangle,
-  Clock,
-  Star,
-} from "lucide-react"
-import {
-  metrics,
-  orders,
-  products,
-  revenueSeries,
-  topProducts,
-  reviews,
-  formatMGA,
-} from "../data/mock"
-import {
-  KpiCard,
-  Badge,
-  OrderStatusBadge,
-  Stars,
-  Card,
-  CardHeader,
-  CardTitle,
-  CardBody,
-  Button,
-} from "../components/ui"
+import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar } from "recharts"
+import { TrendingUp, ShoppingBag, Package, Users, Plus, ArrowRight, AlertTriangle, Clock, Star } from "lucide-react"
 
-const periodOptions = ["7 jours", "30 jours", "3 mois", "12 mois"]
+import { KpiCard, Badge, OrderStatusBadge, Stars, Card, CardHeader, CardTitle, CardBody, Button } from "../components/ui"
+import { formatMGA } from "@/hook/format"
+import { useTranslation } from "react-i18next"
+import { SellerDashboard } from "@/type/dashboard"
+import { getDashboardData } from "@/service/dashboard"
+import { getAllOrders } from "@/service/order"
+import { Order } from "@/type/order"
+import { getAllProducts, getAllProductsResponse } from "@/service/product"
+import { getStoreReviews } from "@/service/review";
+import { Review } from "@/type/review"
+import { useStore } from "@/context/storeContext"
 
 function CustomTooltip({ active, payload, label }: any) {
   if (!active || !payload?.length) return null
@@ -65,19 +35,62 @@ function CustomTooltip({ active, payload, label }: any) {
 
 export default function Dashboard() {
   const navigate = useNavigate()
-  const [period, setPeriod] = useState("12 mois")
+  const { t } = useTranslation()
+  const [data, setData] = useState<SellerDashboard>();
+  const [loading, setLoading] = useState(true);
+  const [pendingOrders, setPendingOrders] = useState<Order[]>([]);
+  const [ productsData, setProductsData] = useState<getAllProductsResponse>();
+  const [reviews, setReviews] = useState<Review[]>([]);
+  const { selectedStore } = useStore();
+  const currentStoreId = selectedStore.id;
+  useEffect(() => {
+  const fetchData = async () => {
+    try {
+      setLoading(true);
 
-  const pendingOrders = orders.filter(
-    (o) => o.status === "pending" || o.status === "confirmed",
-  )
+      const [result, orders, allProducts, storeReviews] = await Promise.all([
+        getDashboardData(),
+        getAllOrders({
+          page: 1,
+          limit: 5,
+          status: "pending",
+        }),
+        getAllProducts(1,10),
+        getStoreReviews(currentStoreId, 1, 3)
+      ]);
 
-  const lowStockProducts = products.filter(
-    (p) => p.stock > 0 && p.stock <= 10,
-  )
+      setData(result);
+      setPendingOrders(orders.data);
+      setProductsData(allProducts);
+      setReviews(storeReviews.data);
+    } catch (error) {
+      console.error(error);
+    } finally {
+      setLoading(false);
+    }
+  };
 
-  const outOfStock = products.filter(
-    (p) => p.stock === 0 && p.status === "active",
-  )
+  fetchData();
+}, []);
+
+
+  if (loading) {
+    return <div>Loading...</div>;
+  }
+  if(!data || !pendingOrders) {
+    return (
+    <div>
+      <p>Enable to fetch</p>
+    </div>
+    )
+  }
+
+  const { metrics, revenueSeries, recentOrders, topProducts } = data;
+
+
+  const lowStockProducts = productsData?.lowStock || [];
+
+  const outOfStock = productsData?.outOfStock || [];
 
   return (
     <div className="p-6 space-y-6 animate-fade-in">
@@ -85,104 +98,57 @@ export default function Dashboard() {
       <div className="flex items-start justify-between gap-4">
         <div>
           <h1 className="font-display font-700 text-xl text-foreground">
-            Tableau de bord
+            {t("Dashboard")}
           </h1>
           <p className="text-sm text-muted-foreground mt-0.5">
-            Bonjour, Madagascar Nature Boutique
+            {t("Welcome back")}
           </p>
         </div>
 
         <Button variant="primary" onClick={() => navigate("/products")}>
           <Plus size={14} />
-          Nouveau produit
+          {t("New Product")}
         </Button>
       </div>
 
       {/* KPI cards */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         <KpiCard
-          label="Revenus (mois)"
+          label={t("Revenus (mois)")}
           value={formatMGA(metrics.revenue)}
-          change={metrics.revenueChange}
+          change={metrics.revenueChangePct}
           icon={<TrendingUp size={16} />}
           accent
         />
 
         <KpiCard
-          label="Commandes"
+          label={t("Commandes")}
           value={metrics.orders.toString()}
-          change={metrics.ordersChange}
+          change={metrics.ordersChangePct}
           icon={<ShoppingBag size={16} />}
         />
 
         <KpiCard
-          label="Produits actifs"
+          label={t("Produits actifs")}
           value={metrics.products.toString()}
-          change={metrics.productsChange}
+          change={metrics.productsChangePct}
           icon={<Package size={16} />}
         />
 
-        <KpiCard
-          label="Clients"
-          value={metrics.customers.toString()}
-          change={metrics.customersChange}
-          icon={<Users size={16} />}
+         <KpiCard
+          label={t("Customer")}
+          value={metrics.customer.toString()}
+          change={metrics.customerChangePct}
+          icon={<ShoppingBag size={16} />}
         />
       </div>
-
-      {/* Secondary metrics */}
-      <div className="grid grid-cols-3 gap-3">
-        {[
-          {
-            label: "Panier moyen",
-            value: formatMGA(metrics.avgOrderValue),
-            sub: "par commande",
-          },
-          {
-            label: "Taux de conversion",
-            value: `${metrics.conversionRate}%`,
-            sub: "visiteurs → achat",
-          },
-          {
-            label: "Vues boutique",
-            value: metrics.storeViews.toLocaleString(),
-            sub: "ce mois",
-          },
-        ].map((m) => (
-          <div
-            key={m.label}
-            className="bg-card rounded-xl border border-border px-4 py-3"
-          >
-            <p className="text-xs text-muted-foreground">{m.label}</p>
-            <p className="font-display font-700 text-lg text-foreground mt-1">
-              {m.value}
-            </p>
-            <p className="text-[10px] text-muted-foreground">{m.sub}</p>
-          </div>
-        ))}
-      </div>
+      
 
       {/* Charts */}
       <div className="grid lg:grid-cols-3 gap-4">
         <Card className="lg:col-span-2">
           <CardHeader>
-            <CardTitle>Évolution des revenus</CardTitle>
-
-            <div className="flex gap-1">
-              {periodOptions.map((p) => (
-                <button
-                  key={p}
-                  onClick={() => setPeriod(p)}
-                  className={`px-2.5 py-1 rounded text-xs font-medium transition-colors cursor-pointer ${
-                    p === period
-                      ? "bg-primary text-white"
-                      : "text-muted-foreground hover:bg-muted"
-                  }`}
-                >
-                  {p}
-                </button>
-              ))}
-            </div>
+            <CardTitle>{t("Revenue Growth")}</CardTitle>
           </CardHeader>
 
           <CardBody className="pb-2">
@@ -238,7 +204,7 @@ export default function Dashboard() {
 
         <Card>
           <CardHeader>
-            <CardTitle>Commandes / mois</CardTitle>
+            <CardTitle>{t("Orders / Month")}</CardTitle>
           </CardHeader>
 
           <CardBody className="pb-2">
@@ -286,7 +252,7 @@ export default function Dashboard() {
         {/* Pending orders */}
         <Card>
           <CardHeader>
-            <CardTitle>Commandes en attente</CardTitle>
+            <CardTitle>{t("Pending Order")}</CardTitle>
             <Badge variant="warning">{pendingOrders.length}</Badge>
           </CardHeader>
 
@@ -456,7 +422,7 @@ export default function Dashboard() {
               </thead>
 
               <tbody className="divide-y divide-border">
-                {orders.slice(0, 6).map((o) => (
+                {recentOrders.map((o) => (
                   <tr key={o.id} className="hover:bg-muted/30 transition-colors">
                     <td className="px-5 py-3 font-600 text-foreground">
                       {o.id}
@@ -489,12 +455,12 @@ export default function Dashboard() {
           </CardHeader>
 
           <div className="divide-y divide-border">
-            {reviews.slice(0, 4).map((r) => (
+            {reviews.map((r) => (
               <div key={r.id} className="px-5 py-3">
                 <div className="flex items-start justify-between gap-2 mb-1">
                   <div className="flex items-center gap-2">
                     <div className="w-6 h-6 rounded-full bg-primary/10 flex items-center justify-center text-primary text-[10px] font-700">
-                      {r.customerInitials}
+                      {r.customerName.charAt(0).toUpperCase()}
                     </div>
                     <span className="text-xs font-medium text-foreground">
                       {r.customerName}

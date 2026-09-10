@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Search, Users, TrendingUp, ShoppingBag } from "lucide-react";
-import { customers, formatMGA, type Customer } from "../data/mock";
+import { customers, formatMGA, type Customer } from "../hook/mock";
 import { PageHeader, Badge, EmptyState, Pagination, Card } from "../components/ui";
 
 function CustomerDetail({ customer, onClose }: { customer: Customer; onClose: () => void }) {

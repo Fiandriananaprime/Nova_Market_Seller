@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Search, AlertTriangle, Package, Edit2, RefreshCw } from "lucide-react";
-import { inventoryItems, formatFullMGA, type InventoryItem } from "../data/mock";
+import { inventoryItems, formatFullMGA, type InventoryItem } from "../hook/mock";
 import { PageHeader, InventoryBadge, EmptyState, Card, Toast, Badge } from "../components/ui";
 
 function AdjustModal({ item, onSave, onClose }: {
