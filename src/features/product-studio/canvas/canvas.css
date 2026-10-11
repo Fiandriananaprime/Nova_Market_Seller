@@ -1,0 +1,34 @@
+@import "tw-animate-css";
+
+.nova-market-studio__canvas [data-vaul-drawer-wrapper],
+.nova-market-studio__canvas [data-vaul-drawer-wrapper] > div[class*="h-dvh"] {
+  height: 100%;
+  min-height: 0;
+}
+
+.no-scrollbar {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+
+.canvas-checkerboard {
+  background-image:
+    linear-gradient(45deg, #e0e0e0 25%, transparent 25%),
+    linear-gradient(-45deg, #e0e0e0 25%, transparent 25%),
+    linear-gradient(45deg, transparent 75%, #e0e0e0 75%),
+    linear-gradient(-45deg, transparent 75%, #e0e0e0 75%);
+  background-size: 16px 16px;
+  background-position: 0 0, 0 8px, 8px -8px, -8px 0;
+}
+
+@media (max-width: 767px) {
+  .mobile-inspector select,
+  .mobile-inspector input,
+  .mobile-inspector textarea {
+    min-height: 44px;
+  }
+}

@@ -10,7 +10,7 @@ import type { Store } from "@/type/store"
 
 interface StoreContextType {
   stores: Store[]
-  selectedStore: Store
+  selectedStore: Store | null
   loading: boolean
   selectStore: (storeId: string) => void
 }
@@ -19,7 +19,7 @@ const StoreContext = createContext<StoreContextType | undefined>(undefined)
 
 export function StoreProvider({ children }: { children: ReactNode }) {
   const [stores, setStores] = useState<Store[]>([])
-  const [selectedStore, setSelectedStore] = useState<Store>({} as Store)
+  const [selectedStore, setSelectedStore] = useState<Store | null>(null)
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {

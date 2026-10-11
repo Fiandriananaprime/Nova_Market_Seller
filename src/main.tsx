@@ -2,9 +2,9 @@ import React from 'react'
 import ReactDOM from 'react-dom/client'
 import App from './App'
 import './index.css'
-import { I18nProvider } from "./context/LangContext"
+import { I18nProvider } from "@/context/LangContext"
 import "./i18n"
-import { StoreProvider } from './context/storeContext'
+import { StoreProvider } from "@/context/storeContext"
 async function enableMocking() {
   if (import.meta.env.DEV) {
     const { worker } = await import("./mock/browser");

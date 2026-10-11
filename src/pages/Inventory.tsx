@@ -1,209 +1,424 @@
-import { useState } from "react";
-import { Search, AlertTriangle, Package, Edit2, RefreshCw } from "lucide-react";
-import { inventoryItems, formatFullMGA, type InventoryItem } from "../hook/mock";
-import { PageHeader, InventoryBadge, EmptyState, Card, Toast, Badge } from "../components/ui";
-
-function AdjustModal({ item, onSave, onClose }: {
-  item: InventoryItem;
-  onSave: (id: string, stock: number, threshold: number) => void;
-  onClose: () => void;
-}) {
-  const [stock, setStock] = useState(item.stock.toString());
-  const [threshold, setThreshold] = useState(item.threshold.toString());
-
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-      <div className="absolute inset-0 bg-foreground/40" onClick={onClose} />
-      <div className="relative bg-card rounded-xl border border-border w-full max-w-sm shadow-2xl animate-fade-in p-6">
-        <h3 className="font-display font-700 text-base text-foreground mb-1">Ajuster le stock</h3>
-        <p className="text-xs text-muted-foreground mb-5">{item.name}</p>
-
-        <div className="space-y-4">
-          <div>
-            <label className="text-xs font-medium text-foreground mb-1.5 block">Quantité en stock</label>
-            <input
-              type="number"
-              min="0"
-              value={stock}
-              onChange={(e) => setStock(e.target.value)}
-              className="w-full px-3 py-2 text-sm rounded-md border border-border bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-ring/30"
-            />
-          </div>
-          <div>
-            <label className="text-xs font-medium text-foreground mb-1.5 block">Seuil d'alerte stock bas</label>
-            <input
-              type="number"
-              min="0"
-              value={threshold}
-              onChange={(e) => setThreshold(e.target.value)}
-              className="w-full px-3 py-2 text-sm rounded-md border border-border bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-ring/30"
-            />
-            <p className="text-[10px] text-muted-foreground mt-1">Vous recevrez une alerte quand le stock passe sous ce seuil</p>
-          </div>
-        </div>
-
-        <div className="flex gap-2 mt-6">
-          <button onClick={onClose} className="flex-1 px-4 py-2 text-sm font-medium rounded-md border border-border text-foreground hover:bg-muted transition-colors cursor-pointer">
-            Annuler
-          </button>
-          <button
-            onClick={() => { onSave(item.productId, Number(stock), Number(threshold)); onClose(); }}
-            className="flex-1 px-4 py-2 text-sm font-medium rounded-md bg-primary text-white hover:bg-primary/90 transition-colors cursor-pointer"
-          >
-            Enregistrer
-          </button>
-        </div>
-      </div>
-    </div>
-  );
-}
+import { useState } from "react"
+import { useTranslation } from "react-i18next"
+import {
+  Search,
+  AlertTriangle,
+  Package,
+  Edit2,
+  RefreshCw,
+  Plus,
+  Minus,
+  CheckCircle2,
+  AlertCircle,
+  SlidersHorizontal,
+  ArrowUpDown,
+  TrendingDown,
+  Warehouse,
+} from "lucide-react"
+import { inventoryItems, formatFullMGA, type InventoryItem } from "@/hook/mock"
+import {
+  PageHeader,
+  Button,
+  SearchInput,
+  InventoryBadge,
+  EmptyState,
+  Card,
+  Toast,
+  Badge,
+} from "@/components/ui"
 
 export default function Inventory() {
-  const [search, setSearch] = useState("");
-  const [filter, setFilter] = useState("all");
-  const [items, setItems] = useState(inventoryItems);
-  const [adjustTarget, setAdjustTarget] = useState<InventoryItem | null>(null);
-  const [toast, setToast] = useState<string | null>(null);
+  const { t } = useTranslation()
+  const [search, setSearch] = useState("")
+  const [statusFilter, setStatusFilter] = useState<string>("all")
+  const [items, setItems] = useState<InventoryItem[]>(inventoryItems)
+  const [toast, setToast] = useState<string | null>(null)
+  const [editingItemId, setEditingItemId] = useState<string | null>(null)
+  const [editValues, setEditValues] = useState<{ stock: number; threshold: number }>({
+    stock: 0,
+    threshold: 10,
+  })
 
-  const outOfStock = items.filter((i) => i.status === "out_of_stock").length;
-  const lowStock = items.filter((i) => i.status === "low_stock").length;
+  const showNotification = (msg: string) => {
+    setToast(msg)
+    setTimeout(() => setToast(null), 3000)
+  }
 
+  // Stock telemetry calculations
+  const totalStockUnits = items.reduce((sum, i) => sum + i.stock, 0)
+  const outOfStockItems = items.filter((i) => i.status === "out_of_stock")
+  const lowStockItems = items.filter((i) => i.status === "low_stock")
+  const normalStockItems = items.filter((i) => i.status === "in_stock")
+
+  // Filter
   const filtered = items.filter((i) => {
-    const matchSearch = i.name.toLowerCase().includes(search.toLowerCase()) || i.sku.toLowerCase().includes(search.toLowerCase());
-    const matchFilter = filter === "all" || i.status === filter;
-    return matchSearch && matchFilter;
-  });
+    const matchSearch =
+      i.name.toLowerCase().includes(search.toLowerCase()) ||
+      i.sku.toLowerCase().includes(search.toLowerCase())
+    const matchStatus =
+      statusFilter === "all" ||
+      i.status === statusFilter ||
+      (statusFilter === "critical" && (i.status === "low_stock" || i.status === "out_of_stock"))
+    return matchSearch && matchStatus
+  })
 
-  function handleAdjust(id: string, stock: number, threshold: number) {
-    setItems((prev) => prev.map((i) => {
-      if (i.productId !== id) return i;
-      const available = Math.max(0, stock - i.reserved);
-      const status = stock === 0 ? "out_of_stock" : stock <= threshold ? "low_stock" : "in_stock";
-      return { ...i, stock, threshold, available, status };
-    }));
-    setToast("Stock mis à jour");
-    setTimeout(() => setToast(null), 3000);
+  // Quick Inline Stepper Adjustment
+  function handleQuickStep(productId: string, delta: number) {
+    setItems((prev) =>
+      prev.map((item) => {
+        if (item.productId !== productId) return item
+        const newStock = Math.max(0, item.stock + delta)
+        const available = Math.max(0, newStock - item.reserved)
+        const status =
+          newStock === 0
+            ? "out_of_stock"
+            : newStock <= item.threshold
+            ? "low_stock"
+            : "in_stock"
+        return { ...item, stock: newStock, available, status }
+      })
+    )
+    showNotification("Quantité ajustée")
+  }
+
+  // Save detailed adjustment
+  function handleSaveAdjustment(productId: string) {
+    setItems((prev) =>
+      prev.map((item) => {
+        if (item.productId !== productId) return item
+        const newStock = Math.max(0, editValues.stock)
+        const newThreshold = Math.max(1, editValues.threshold)
+        const available = Math.max(0, newStock - item.reserved)
+        const status =
+          newStock === 0
+            ? "out_of_stock"
+            : newStock <= newThreshold
+            ? "low_stock"
+            : "in_stock"
+        return {
+          ...item,
+          stock: newStock,
+          threshold: newThreshold,
+          available,
+          status,
+        }
+      })
+    )
+    setEditingItemId(null)
+    showNotification("Paramètres de stock enregistrés")
   }
 
   return (
-    <div className="p-6 space-y-5 animate-fade-in">
+    <div className="p-6 md:p-8 space-y-6 animate-fade-in max-w-7xl mx-auto">
+      {/* Page Header */}
       <PageHeader
-        title="Inventaire"
-        subtitle="Gérez vos niveaux de stock et alertes"
+        title={t("inventory.title")}
+        subtitle={t("inventory.subtitle")}
+        badge={
+          <Badge variant="primary" dot>
+            {items.length} {t("inventory.totalSku").toLowerCase()}
+          </Badge>
+        }
       />
 
-      {/* Alert cards */}
-      <div className="grid grid-cols-3 gap-3">
-        <div className="bg-card rounded-xl border border-border p-4">
-          <p className="text-xs text-muted-foreground mb-1">Total produits</p>
-          <p className="font-display font-700 text-2xl text-foreground">{items.length}</p>
-        </div>
-        <div className={`rounded-xl border p-4 ${outOfStock > 0 ? "bg-[var(--destructive)]/5 border-[var(--destructive)]/20" : "bg-card border-border"}`}>
-          <div className="flex items-center gap-2 mb-1">
-            <AlertTriangle size={12} className={outOfStock > 0 ? "text-[var(--destructive)]" : "text-muted-foreground"} />
-            <p className="text-xs text-muted-foreground">Épuisés</p>
+      {/* Stock Health Radar Overview */}
+      <div data-tour="inventory-radar" className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        {/* Total SKUs */}
+        <div className="bg-card rounded-2xl border border-border/80 p-5 shadow-xs flex items-center justify-between">
+          <div>
+            <p className="text-xs text-muted-foreground font-medium">Total Unités</p>
+            <p className="font-display font-extrabold text-2xl text-foreground mt-1 tabular-nums">
+              {totalStockUnits.toLocaleString()}
+            </p>
+            <p className="text-[11px] text-muted-foreground mt-0.5">Sur {items.length} références</p>
           </div>
-          <p className={`font-display font-700 text-2xl ${outOfStock > 0 ? "text-[var(--destructive)]" : "text-foreground"}`}>{outOfStock}</p>
-        </div>
-        <div className={`rounded-xl border p-4 ${lowStock > 0 ? "bg-[var(--warning)]/5 border-[var(--warning)]/20" : "bg-card border-border"}`}>
-          <div className="flex items-center gap-2 mb-1">
-            <AlertTriangle size={12} className={lowStock > 0 ? "text-[var(--warning)]" : "text-muted-foreground"} />
-            <p className="text-xs text-muted-foreground">Stock bas</p>
+          <div className="w-10 h-10 rounded-xl bg-primary/10 text-primary flex items-center justify-center">
+            <Warehouse size={18} />
           </div>
-          <p className={`font-display font-700 text-2xl ${lowStock > 0 ? "text-[var(--warning)]" : "text-foreground"}`}>{lowStock}</p>
+        </div>
+
+        {/* Normal Stock */}
+        <div className="bg-card rounded-2xl border border-border/80 p-5 shadow-xs flex items-center justify-between">
+          <div>
+            <p className="text-xs text-muted-foreground font-medium">Stock Sain</p>
+            <p className="font-display font-extrabold text-2xl text-emerald-600 dark:text-emerald-400 mt-1 tabular-nums">
+              {normalStockItems.length}
+            </p>
+            <p className="text-[11px] text-emerald-600 dark:text-emerald-400 mt-0.5 font-medium">
+              {Math.round((normalStockItems.length / items.length) * 100)}% du catalogue
+            </p>
+          </div>
+          <div className="w-10 h-10 rounded-xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 flex items-center justify-center">
+            <CheckCircle2 size={18} />
+          </div>
+        </div>
+
+        {/* Low Stock Alert */}
+        <div className="bg-card rounded-2xl border border-border/80 p-5 shadow-xs flex items-center justify-between">
+          <div>
+            <p className="text-xs text-muted-foreground font-medium">Stock Faible</p>
+            <p className="font-display font-extrabold text-2xl text-amber-600 dark:text-amber-400 mt-1 tabular-nums">
+              {lowStockItems.length}
+            </p>
+            <p className="text-[11px] text-amber-600 dark:text-amber-400 mt-0.5 font-medium">
+              Sous le seuil d'alerte
+            </p>
+          </div>
+          <div className="w-10 h-10 rounded-xl bg-amber-500/10 text-amber-600 dark:text-amber-400 flex items-center justify-center">
+            <AlertTriangle size={18} />
+          </div>
+        </div>
+
+        {/* Out of Stock */}
+        <div className="bg-card rounded-2xl border border-border/80 p-5 shadow-xs flex items-center justify-between">
+          <div>
+            <p className="text-xs text-muted-foreground font-medium">Ruptures</p>
+            <p className="font-display font-extrabold text-2xl text-rose-600 dark:text-rose-400 mt-1 tabular-nums">
+              {outOfStockItems.length}
+            </p>
+            <p className="text-[11px] text-rose-600 dark:text-rose-400 mt-0.5 font-medium">
+              Ventes bloquées
+            </p>
+          </div>
+          <div className="w-10 h-10 rounded-xl bg-rose-500/10 text-rose-600 dark:text-rose-400 flex items-center justify-center">
+            <TrendingDown size={18} />
+          </div>
         </div>
       </div>
 
-      {/* Filters */}
-      <div className="flex gap-2 flex-wrap">
-        <div className="relative flex-1 min-w-48 max-w-xs">
-          <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
-          <input
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            placeholder="Nom, SKU..."
-            className="w-full pl-9 pr-3 py-2 text-sm rounded-md border border-border bg-card text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring/30"
-          />
-        </div>
-        <div className="flex gap-1">
-          {[
-            { label: "Tous", value: "all" },
-            { label: "En stock", value: "in_stock" },
-            { label: "Stock bas", value: "low_stock" },
-            { label: "Épuisés", value: "out_of_stock" },
-          ].map((f) => (
-            <button
-              key={f.value}
-              onClick={() => setFilter(f.value)}
-              className={`px-3 py-2 text-xs font-medium rounded-md border transition-colors cursor-pointer ${filter === f.value ? "bg-primary border-primary text-white" : "border-border bg-card text-muted-foreground hover:text-foreground"}`}
-            >
-              {f.label}
-            </button>
-          ))}
+      {/* Filter and Search Bar */}
+      <div data-tour="inventory-filters" className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-card p-3 rounded-2xl border border-border/80 shadow-xs">
+        <SearchInput
+          value={search}
+          onChange={(v) => setSearch(v)}
+          placeholder="Rechercher par nom de produit, SKU..."
+          className="max-w-md w-full"
+        />
+
+        <div className="flex items-center gap-1.5 overflow-x-auto pb-1 sm:pb-0">
+          <button
+            onClick={() => setStatusFilter("all")}
+            className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition-all cursor-pointer whitespace-nowrap ${
+              statusFilter === "all"
+                ? "bg-primary text-white shadow-xs"
+                : "text-muted-foreground hover:bg-muted hover:text-foreground"
+            }`}
+          >
+            Tous ({items.length})
+          </button>
+
+          <button
+            onClick={() => setStatusFilter("critical")}
+            className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition-all cursor-pointer whitespace-nowrap ${
+              statusFilter === "critical"
+                ? "bg-amber-500 text-white shadow-xs"
+                : "text-amber-600 hover:bg-amber-500/10"
+            }`}
+          >
+            Alertes Prioritaires ({lowStockItems.length + outOfStockItems.length})
+          </button>
+
+          <button
+            onClick={() => setStatusFilter("low_stock")}
+            className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition-all cursor-pointer whitespace-nowrap ${
+              statusFilter === "low_stock"
+                ? "bg-primary text-white shadow-xs"
+                : "text-muted-foreground hover:bg-muted hover:text-foreground"
+            }`}
+          >
+            Stock Faible ({lowStockItems.length})
+          </button>
+
+          <button
+            onClick={() => setStatusFilter("out_of_stock")}
+            className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition-all cursor-pointer whitespace-nowrap ${
+              statusFilter === "out_of_stock"
+                ? "bg-primary text-white shadow-xs"
+                : "text-muted-foreground hover:bg-muted hover:text-foreground"
+            }`}
+          >
+            En Rupture ({outOfStockItems.length})
+          </button>
         </div>
       </div>
 
-      {/* Table */}
-      <Card>
+      {/* Inventory Interactive Health Cards */}
+      <div data-tour="inventory-items-grid" className="space-y-4">
         {filtered.length === 0 ? (
-          <EmptyState icon={<Package size={20} />} title="Aucun produit trouvé" description="Modifiez vos filtres." />
+          <Card>
+            <EmptyState
+              icon={<Package size={22} />}
+              title="Aucune référence correspondante"
+              description="Modifiez vos filtres ou effectuez une autre recherche."
+            />
+          </Card>
         ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full text-xs">
-              <thead>
-                <tr className="border-b border-border bg-muted/30">
-                  <th className="text-left px-5 py-3 text-muted-foreground font-medium">Produit</th>
-                  <th className="text-left px-3 py-3 text-muted-foreground font-medium hidden md:table-cell">Catégorie</th>
-                  <th className="text-right px-3 py-3 text-muted-foreground font-medium">Total</th>
-                  <th className="text-right px-3 py-3 text-muted-foreground font-medium hidden sm:table-cell">Réservé</th>
-                  <th className="text-right px-3 py-3 text-muted-foreground font-medium">Disponible</th>
-                  <th className="text-right px-3 py-3 text-muted-foreground font-medium hidden lg:table-cell">Seuil</th>
-                  <th className="text-left px-3 py-3 text-muted-foreground font-medium">Statut</th>
-                  <th className="px-3 py-3" />
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-border">
-                {filtered.map((item) => (
-                  <tr key={item.productId} className="hover:bg-muted/30 transition-colors">
-                    <td className="px-5 py-3.5">
-                      <p className="font-600 text-foreground">{item.name}</p>
-                      <p className="text-muted-foreground">{item.sku}</p>
-                    </td>
-                    <td className="px-3 py-3.5 text-muted-foreground hidden md:table-cell">{item.category}</td>
-                    <td className="px-3 py-3.5 text-right">
-                      <span className="font-700 text-foreground">{item.stock}</span>
-                    </td>
-                    <td className="px-3 py-3.5 text-right text-muted-foreground hidden sm:table-cell">{item.reserved}</td>
-                    <td className="px-3 py-3.5 text-right">
-                      <span className={`font-700 ${item.available === 0 ? "text-[var(--destructive)]" : item.available <= item.threshold ? "text-[var(--warning)]" : "text-foreground"}`}>
-                        {item.available}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {filtered.map((item, index) => {
+              const isEditing = editingItemId === item.productId
+              const stockRatio = Math.min(100, Math.round((item.stock / Math.max(item.threshold * 2, 20)) * 100))
+
+              return (
+                <div
+                  key={item.productId}
+                  className={`bg-card rounded-2xl border transition-all p-5 shadow-xs space-y-4 ${
+                    item.status === "out_of_stock"
+                      ? "border-rose-500/40 bg-gradient-to-br from-card to-rose-500/5"
+                      : item.status === "low_stock"
+                      ? "border-amber-500/40 bg-gradient-to-br from-card to-amber-500/5"
+                      : "border-border/80 hover:border-border"
+                  }`}
+                >
+                  {/* Item Header */}
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="min-w-0">
+                      <div className="flex items-center gap-2">
+                        <span className="text-xs font-bold text-muted-foreground">
+                          {item.sku}
+                        </span>
+                        <span className="text-[11px] px-2 py-0.5 rounded-md bg-muted text-muted-foreground font-semibold">
+                          {item.category}
+                        </span>
+                      </div>
+                      <h3 className="font-display font-bold text-sm text-foreground mt-1 truncate">
+                        {item.name}
+                      </h3>
+                    </div>
+
+                    <InventoryBadge status={item.status} />
+                  </div>
+
+                  {/* Stock Level Visual Bar */}
+                  <div className="space-y-1.5">
+                    <div className="flex items-center justify-between text-xs">
+                      <span className="text-muted-foreground font-medium">Jauge de disponibilité :</span>
+                      <span className="font-bold text-foreground tabular-nums">
+                        {item.available} disponibles / {item.stock} au total
                       </span>
-                    </td>
-                    <td className="px-3 py-3.5 text-right text-muted-foreground hidden lg:table-cell">{item.threshold}</td>
-                    <td className="px-3 py-3.5"><InventoryBadge status={item.status} /></td>
-                    <td className="px-3 py-3.5">
-                      <button
-                        title="Ajuster le stock"
-                        onClick={() => setAdjustTarget(item)}
-                        className="p-1.5 rounded-md hover:bg-muted text-muted-foreground hover:text-foreground transition-colors cursor-pointer flex items-center gap-1"
+                    </div>
+
+                    <div className="h-2 w-full rounded-full bg-muted overflow-hidden">
+                      <div
+                        className={`h-full rounded-full transition-all duration-300 ${
+                          item.status === "out_of_stock"
+                            ? "w-0"
+                            : item.status === "low_stock"
+                            ? "bg-amber-500"
+                            : "bg-emerald-500"
+                        }`}
+                        style={{ width: `${item.status === "out_of_stock" ? 0 : Math.max(10, stockRatio)}%` }}
+                      />
+                    </div>
+                  </div>
+
+                  {/* Inline Stepper / Detailed Edit Box */}
+                  {isEditing ? (
+                    <div className="p-3.5 rounded-xl bg-muted/60 border border-border/80 space-y-3 animate-fade-in">
+                      <div className="grid grid-cols-2 gap-3 text-xs">
+                        <div>
+                          <label className="font-semibold text-foreground mb-1 block">
+                            Quantité en stock
+                          </label>
+                          <input
+                            type="number"
+                            min="0"
+                            value={editValues.stock}
+                            onChange={(e) =>
+                              setEditValues({ ...editValues, stock: Number(e.target.value) })
+                            }
+                            className="w-full px-2.5 py-1.5 rounded-lg border border-border bg-card text-foreground"
+                          />
+                        </div>
+
+                        <div>
+                          <label className="font-semibold text-foreground mb-1 block">
+                            Seuil d'alerte bas
+                          </label>
+                          <input
+                            type="number"
+                            min="1"
+                            value={editValues.threshold}
+                            onChange={(e) =>
+                              setEditValues({
+                                ...editValues,
+                                threshold: Number(e.target.value),
+                              })
+                            }
+                            className="w-full px-2.5 py-1.5 rounded-lg border border-border bg-card text-foreground"
+                          />
+                        </div>
+                      </div>
+
+                      <div className="flex items-center justify-end gap-2 pt-1">
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          onClick={() => setEditingItemId(null)}
+                        >
+                          Annuler
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="primary"
+                          onClick={() => handleSaveAdjustment(item.productId)}
+                        >
+                          Valider
+                        </Button>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="flex items-center justify-between pt-2 border-t border-border/60">
+                      {/* Inline quick stepper */}
+                      <div
+                        data-tour={index === 0 ? "inventory-steppers" : undefined}
+                        className="flex items-center gap-1.5"
                       >
-                        <RefreshCw size={13} />
-                        <span className="hidden sm:inline text-xs">Ajuster</span>
-                      </button>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+                        <span className="text-xs text-muted-foreground mr-1">Ajuster:</span>
+                        <button
+                          title="Retirer 1 unité"
+                          disabled={item.stock === 0}
+                          onClick={() => handleQuickStep(item.productId, -1)}
+                          className="w-7 h-7 rounded-lg border border-border bg-card hover:bg-muted text-muted-foreground hover:text-foreground flex items-center justify-center transition-colors cursor-pointer disabled:opacity-40"
+                        >
+                          <Minus size={13} />
+                        </button>
+                        <span className="w-8 text-center text-xs font-bold text-foreground tabular-nums">
+                          {item.stock}
+                        </span>
+                        <button
+                          title="Ajouter 1 unité"
+                          onClick={() => handleQuickStep(item.productId, 1)}
+                          className="w-7 h-7 rounded-lg border border-border bg-card hover:bg-muted text-muted-foreground hover:text-foreground flex items-center justify-center transition-colors cursor-pointer"
+                        >
+                          <Plus size={13} />
+                        </button>
+                      </div>
+
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => {
+                          setEditingItemId(item.productId)
+                          setEditValues({
+                            stock: item.stock,
+                            threshold: item.threshold,
+                          })
+                        }}
+                      >
+                        <SlidersHorizontal size={13} />
+                        Configurer le seuil
+                      </Button>
+                    </div>
+                  )}
+                </div>
+              )
+            })}
           </div>
         )}
-      </Card>
+      </div>
 
-      {adjustTarget && (
-        <AdjustModal item={adjustTarget} onSave={handleAdjust} onClose={() => setAdjustTarget(null)} />
-      )}
-
-      {toast && <Toast message={toast} type="success" onDismiss={() => setToast(null)} />}
+      {/* Toast alert */}
+      {toast && <Toast message={toast} onDismiss={() => setToast(null)} />}
     </div>
-  );
+  )
 }

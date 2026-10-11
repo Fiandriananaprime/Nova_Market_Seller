@@ -9,9 +9,10 @@ export default defineConfig({
     tailwindcss(),
   ],
 
+  root: path.resolve(import.meta.dirname),
   resolve: {
     alias: {
-      '@': path.resolve(import.meta.dirname, './src'),
+      '@': path.resolve(import.meta.dirname, 'src'),
     },
   },
 

@@ -1,1 +1,497 @@
-{}
+{
+  "brand": "Nova Market",
+  "sellerPortal": "Portail Vendeur",
+  "loginDescription": "Connectez-vous pour gérer vos boutiques, vos commandes et votre catalogue.",
+  "email": "Adresse email",
+  "emailPlaceholder": "vendeur@novamarket.mg",
+  "password": "Mot de passe",
+  "passwordPlaceholder": "••••••••••••",
+  "rememberMe": "Se souvenir de moi",
+  "login": "Se connecter",
+  "loggingIn": "Connexion en cours...",
+  "invalidCredentials": "Email ou mot de passe incorrect",
+  "logout": "Déconnexion",
+  "nav": {
+    "dashboard": "Tableau de bord",
+    "orders": "Commandes",
+    "deliveries": "Livraisons",
+    "products": "Produits",
+    "inventory": "Inventaire",
+    "customers": "Clients",
+    "reviews": "Avis & Évaluations",
+    "store": "Ma Boutique",
+    "analytics": "Analytiques",
+    "aiAutomation": "IA & Automatisations",
+    "settings": "Paramètres",
+    "subscription": "Plans & Abonnement"
+
+  },
+  "dashboard": {
+    "welcome": "Bonjour,",
+    "subtitle": "Voici l'état opérationnel de votre boutique aujourd'hui.",
+    "revenue": "Chiffre d'affaires",
+    "orders": "Commandes",
+    "products": "Produits actifs",
+    "customers": "Clients uniques",
+    "pendingOrdersAlert": "commandes en attente de traitement",
+    "lowStockAlert": "articles en alerte stock bas",
+    "unrepliedReviews": "avis clients en attente de réponse",
+    "urgentActions": "Actions prioritaires",
+    "revenueEvolution": "Évolution des ventes et commandes",
+    "recentOrders": "Commandes récentes",
+    "topProducts": "Meilleures ventes",
+    "quickActions": "Actions rapides",
+    "newProduct": "Nouveau produit",
+    "viewOrders": "Voir les commandes",
+    "manageStock": "Gérer les stocks"
+  },
+  "orders": {
+    "title": "Gestion des Commandes",
+    "subtitle": "Suivez et traitez vos flux de commandes en temps réel",
+    "all": "Toutes",
+    "pending": "En attente",
+    "confirmed": "Confirmée",
+    "processing": "En traitement",
+    "preparing": "En préparation",
+    "shipped": "Expédiée",
+    "delivered": "Livrée",
+    "cancelled": "Annulée",
+    "viewPipeline": "Vue Pipeline",
+    "viewList": "Vue Liste",
+    "searchPlaceholder": "Rechercher par N° commande, nom client...",
+    "customer": "Client",
+    "total": "Total",
+    "status": "Statut",
+    "payment": "Paiement",
+    "date": "Date",
+    "actions": "Actions",
+    "orderDetails": "Détails de la commande",
+    "orderItems": "Articles commandés",
+    "deliveryInfo": "Informations de livraison",
+    "advanceStatus": "Passer à l'étape suivante",
+    "markCancelled": "Annuler la commande",
+    "noOrdersFound": "Aucune commande trouvée"
+  },
+  "products": {
+    "title": "Catalogue Produits",
+    "subtitle": "Gérez vos références, prix et fiches produits",
+    "newProduct": "Nouveau produit",
+    "allCategories": "Toutes les catégories",
+    "active": "Actif",
+    "draft": "Brouillon",
+    "inactive": "Inactif",
+    "viewGrid": "Grille visuelle",
+    "viewTable": "Tableau détaillé",
+    "searchPlaceholder": "Rechercher par nom, SKU...",
+    "stock": "Stock",
+    "price": "Prix unitaire",
+    "sales": "Ventes",
+    "rating": "Note",
+    "edit": "Modifier",
+    "delete": "Supprimer",
+    "noProductsFound": "Aucun produit trouvé"
+  },
+  "inventory": {
+    "title": "Contrôle des Stocks",
+    "subtitle": "Surveillez vos niveaux d'approvisionnement et prévenez les ruptures",
+    "totalSku": "Total Références",
+    "inStock": "En stock normal",
+    "lowStock": "Stock faible",
+    "outOfStock": "Rupture de stock",
+    "quickAdjust": "Ajustement rapide",
+    "threshold": "Seuil d'alerte",
+    "reserved": "Réservé",
+    "available": "Disponible",
+    "saveStock": "Mettre à jour"
+  },
+  "customers": {
+    "title": "Portefeuille Clients",
+    "subtitle": "Fidélisation, historique d'achat et profils clients",
+    "totalCustomers": "Clients enregistrés",
+    "averageBasket": "Panier moyen",
+    "repeatRate": "Taux de réachat",
+    "spent": "Total dépensé",
+    "ordersCount": "Commandes passées",
+    "lastOrder": "Dernière commande"
+  },
+  "reviews": {
+    "title": "Avis Clients",
+    "subtitle": "Réputation et retours d'expérience sur votre boutique",
+    "satisfaction": "Satisfaction globale",
+    "recommendation": "Taux de recommandation",
+    "reply": "Répondre",
+    "replyPlaceholder": "Rédigez votre réponse bienveillante...",
+    "sendReply": "Publier la réponse",
+    "replied": "Répondu",
+    "unreplied": "Non répondu"
+  },
+  "store": {
+    "title": "Paramètres Boutique",
+    "subtitle": "Personnalisez votre vitrine publique et vos coordonnées",
+    "storefront": "Vitrine",
+    "operatingHours": "Horaires d'ouverture",
+    "vacationMode": "Mode vacances",
+    "saveChanges": "Enregistrer les modifications"
+  },
+  "common": {
+    "loading": "Chargement...",
+    "search": "Rechercher...",
+    "cancel": "Annuler",
+    "confirm": "Confirmer",
+    "save": "Enregistrer",
+    "back": "Retour",
+    "filter": "Filtrer",
+    "export": "Exporter",
+    "store": "Boutique",
+    "notifications": "Notifications",
+    "markAllRead": "Tout marquer comme lu",
+    "open": "Ouverte",
+    "closed": "Fermée"
+  },
+  "tutorials": {
+    "buttons": {
+      "next": "Suivant",
+      "prev": "Précédent",
+      "finish": "Terminer le guide",
+      "skip": "Passer le guide",
+      "progressText": "{{current}} sur {{total}}"
+    },
+    "badges": {
+      "welcome": "Bienvenue",
+      "metrics": "Indicateurs",
+      "urgent": "Prioritaire",
+      "analytics": "Analyses",
+      "nav": "Navigation",
+      "orders": "Commandes",
+      "catalog": "Catalogue",
+      "stock": "Inventaire",
+      "store": "Boutique",
+      "feature": "Fonctionnalité",
+      "search": "Recherche",
+      "pipeline": "Pipeline",
+      "action": "Action",
+      "filters": "Filtres",
+      "radar": "Radar",
+      "alerts": "Alertes",
+      "adjust": "Ajustement",
+      "period": "Période",
+      "status": "Statut",
+      "bulk": "Masse",
+      "export": "Export",
+      "map": "Carte",
+      "list": "Liste",
+      "gps": "GPS",
+      "segments": "Segments",
+      "score": "Score",
+      "reply": "Réponse",
+      "config": "Config",
+      "edit": "Édition",
+      "profile": "Profil",
+      "finance": "Finance"
+    },
+    "tours": {
+      "onboarding": {
+        "title": "Visite guidée d'accueil",
+        "description": "Découvrez les fonctionnalités maîtresses pour piloter vos ventes avec succès."
+      },
+      "orders": {
+        "title": "Gestion des commandes & Pipeline",
+        "description": "Maîtrisez le pipeline Kanban et le traitement des commandes."
+      },
+      "products": {
+        "title": "Catalogue & Fiches produits",
+        "description": "Ajoutez, modifiez et organisez vos références marchandes."
+      },
+      "inventory": {
+        "title": "Contrôle des stocks & Alertes",
+        "description": "Ajustez vos quantités en direct et gérez vos seuils de réapprovisionnement."
+      },
+      "analytics": {
+        "title": "Analyses & Indicateurs de croissance",
+        "description": "Suivez vos volumes, conversion et parts de marché."
+      },
+      "deliveries": {
+        "title": "Suivi GPS & Logistique de Livraison",
+        "description": "Visualisez et pilotez vos livraisons en temps réel sur la cartographie d'Antananarivo."
+      },
+      "customers": {
+        "title": "CRM & Segmentation Clients",
+        "description": "Analysez votre portefeuille acheteurs et identifiez vos clients VIP, réguliers et nouveaux."
+      },
+      "reviews": {
+        "title": "Réputation & Gestion des Avis",
+        "description": "Surveillez votre note globale, filtrez les avis et répondez professionnellement aux évaluations."
+      },
+      "store": {
+        "title": "Configuration de la Boutique",
+        "description": "Personnalisez l'identité visuelle, les horaires et le mode vacances de votre vitrine en ligne."
+      },
+      "settings": {
+        "title": "Paramètres & Centre de Configuration",
+        "description": "Maîtrisez les 29 paramètres métiers : compte, paiements, équipe, intégrations et conformité."
+      }
+    },
+    "steps": {
+      "overview": {
+        "title": "Bienvenue sur votre console Nova Market",
+        "desc": "Votre tour de contrôle centrale pour suivre vos performances quotidiennes et l'activité de vos boutiques."
+      },
+      "kpis": {
+        "title": "Indicateurs Clés de Performance",
+        "desc": "Consultez en un coup d'œil votre chiffre d'affaires, volume de commandes et clients uniques avec variations en temps réel."
+      },
+      "triage": {
+        "title": "Actions Prioritaires du Jour",
+        "desc": "Accédez directement aux commandes à expédier en urgence et aux alertes d'inventaire critique."
+      },
+      "chart": {
+        "title": "Trajectoire des Ventes",
+        "desc": "Visualisez la dynamique de vos revenus et commandes selon différentes périodes temporelles."
+      },
+      "navigation": {
+        "title": "Menu Principal",
+        "desc": "Basculez facilement entre vos commandes, votre catalogue, votre stock et vos analyses marchandes."
+      },
+      "orders": {
+        "title": "Traitement des Commandes",
+        "desc": "Suivez le cycle de vie de chaque commande depuis la validation jusqu'à la livraison finale."
+      },
+      "products": {
+        "title": "Catalogue Produits",
+        "desc": "Gérez vos références, images, prix et disponibilités en quelques clics."
+      },
+      "inventory": {
+        "title": "Gestion des Stocks",
+        "desc": "Surveillez vos seuils d'alerte et effectuez des ajustements rapides pour éviter toute rupture."
+      },
+      "store": {
+        "title": "Sélecteur Multi-Boutiques",
+        "desc": "Basculez d'une boutique à l'autre et visualisez instantanément son statut d'ouverture en ligne."
+      },
+      "ordersView": {
+        "title": "Bascule Pipeline Kanban & Liste",
+        "desc": "Choisissez entre la vue pipeline pour faire avancer vos commandes par étape, ou la vue liste pour le tri rapide."
+      },
+      "ordersFilter": {
+        "title": "Recherche et Filtres de Statut",
+        "desc": "Retrouvez instantanément une commande par son numéro, nom client ou statut d'acheminement."
+      },
+      "ordersContent": {
+        "title": "Flux Opérationnel",
+        "desc": "Faites avancer une commande en un clic ou cliquez dessus pour ouvrir son dossier complet."
+      },
+      "productsAdd": {
+        "title": "Création de Référence",
+        "desc": "Ajoutez une nouvelle référence avec photo, SKU, catégorie, tarif et stock initial."
+      },
+      "productsToggle": {
+        "title": "Mode Grille Visuelle & Tableau",
+        "desc": "Alternez entre l'affichage en cartes visuelles et le tableau matriciel dense."
+      },
+      "productsCategories": {
+        "title": "Filtrage par Catégorie",
+        "desc": "Isolez vos produits par famille pour une gestion ciblée de votre offre."
+      },
+      "inventoryRadar": {
+        "title": "Radar de Santé des Stocks",
+        "desc": "Identifiez immédiatement le ratio entre stocks sains, niveaux bas et ruptures bloquantes."
+      },
+      "inventoryFilters": {
+        "title": "Filtres d'Urgence",
+        "desc": "Affichez en priorité les références nécessitant un réapprovisionnement immédiat."
+      },
+      "inventorySteppers": {
+        "title": "Ajustement Direct en Ligne",
+        "desc": "Modifiez vos quantités avec les boutons +/- sans ouvrir de formulaire complexe."
+      },
+      "analyticsPeriod": {
+        "title": "Sélecteur de Période",
+        "desc": "Analysez vos tendances sur 7 jours, 30 jours ou les 12 derniers mois."
+      },
+      "analyticsKpis": {
+        "title": "Indicateurs Commerciaux",
+        "desc": "Suivez votre panier moyen, vos visites et votre taux de conversion acheteur."
+      },
+      "analyticsCharts": {
+        "title": "Répartition des Ventes",
+        "desc": "Comprenez la contribution de chaque catégorie à votre chiffre d'affaires global."
+      },
+      "ordersStatusTabs": {
+        "title": "Onglets de Statut de Commande",
+        "desc": "Filtrez par statut (En attente, En préparation, Expédié, Livré, Annulé) pour un traitement ciblé et rapide de votre file de travail."
+      },
+      "productsSearch": {
+        "title": "Recherche & Filtrage du Catalogue",
+        "desc": "Retrouvez instantanément n'importe quelle référence par son nom, SKU ou catégorie. Combinez recherche et filtres de catégorie pour cibler précisément."
+      },
+      "inventoryBulk": {
+        "title": "Actions en Masse sur le Stock",
+        "desc": "Sélectionnez plusieurs références simultanément pour ajuster les quantités, exporter ou appliquer un réapprovisionnement groupé — idéal après une livraison fournisseur."
+      },
+      "analyticsExport": {
+        "title": "Export & Rapports Financiers",
+        "desc": "Téléchargez vos données de ventes en CSV ou PDF pour vos déclarations fiscales (NIF/STAT Madagascar) ou vos réunions de performance mensuelle."
+      },
+      "deliveriesKpis": {
+        "title": "Tableau de Bord Logistique en Temps Réel",
+        "desc": "Quatre indicateurs synthétisent l'état de votre réseau : coursiers en transit, colis en attente d'expédition, livraisons du jour et retards signalés."
+      },
+      "deliveriesFilters": {
+        "title": "Filtres de Statut & Contrôle GPS",
+        "desc": "Filtrez la carte par statut de livraison et activez le bouton 'Simuler mouvement' pour observer la mise à jour en direct des positions GPS des coursiers partenaires."
+      },
+      "deliveriesMap": {
+        "title": "Cartographie Interactive — Grand Antananarivo",
+        "desc": "Chaque marqueur représente un coursier sur la carte d'Antananarivo (Analakely, Ankorondrano, Ivato, Tanjombato). Cliquez sur un marqueur pour voir le détail de la commande et l'itinéraire prévu."
+      },
+      "deliveriesList": {
+        "title": "Liste Synchronisée des Livraisons",
+        "desc": "La liste à droite est synchronisée avec la carte : cliquer sur une livraison centre automatiquement la carte sur le coursier. Utilisez 'Centrer' pour recentrer l'affichage si vous avez bougé la carte."
+      },
+      "deliveriesSimulate": {
+        "title": "Simulation de Mouvement GPS",
+        "desc": "Ce mode de démonstration met à jour les positions des coursiers toutes les 3 secondes pour simuler un suivi GPS réel. En production, ce bouton sera remplacé par un flux de données GPS en temps réel depuis votre API backend."
+      },
+      "customersKpis": {
+        "title": "Indicateurs CRM Clés",
+        "desc": "Trois métriques résument la santé de votre base clients : taille du portefeuille, panier moyen par commande et valeur vie totale (LTV) cumulée en Ariary."
+      },
+      "customersSegments": {
+        "title": "Segmentation Automatique des Clients",
+        "desc": "Nova Market classe automatiquement vos acheteurs en 4 segments : Tous, VIP (dépenses > 1 000 000 Ar), Réguliers (5+ commandes) et Nouveaux. Utilisez ces filtres pour cibler vos actions commerciales."
+      },
+      "customersSearch": {
+        "title": "Recherche Client par Nom ou Email",
+        "desc": "Localisez immédiatement un acheteur pour consulter son historique de commandes, ses coordonnées WhatsApp et son niveau de fidélité."
+      },
+      "customersList": {
+        "title": "Fiches Clients & Détail du Profil",
+        "desc": "Cliquez sur n'importe quelle fiche pour ouvrir le panneau détaillé : historique complet des commandes, panier moyen personnel, villes de livraison et actions de contact direct (WhatsApp, email)."
+      },
+      "reviewsScore": {
+        "title": "Score de Satisfaction Globale",
+        "desc": "Votre note moyenne sur 5 et le taux de satisfaction positifs sont visibles ici. Ce score influence directement votre classement dans les recherches Nova Market et la confiance des acheteurs."
+      },
+      "reviewsFilters": {
+        "title": "Filtres Prioritaires des Avis",
+        "desc": "Affichez uniquement les avis 'À répondre' pour vous concentrer sur les clients en attente d'une réponse. Répondre sous 24 heures améliore votre indice de réactivité vendeur."
+      },
+      "reviewsList": {
+        "title": "Flux des Avis Vérifiés",
+        "desc": "Chaque avis affiche le nom du client, le produit commandé, la note détaillée et le statut de réponse. Les avis sans réponse sont signalés par un badge orange 'En attente'."
+      },
+      "reviewsReply": {
+        "title": "Répondre Professionnellement aux Avis",
+        "desc": "Cliquez sur 'Répondre' pour ouvrir l'éditeur de réponse. Utilisez les modèles de réponses rapides (Remerciement, Satisfaction, Support) pour gagner du temps. Votre réponse est publiée publiquement sur la fiche produit."
+      },
+      "storeHero": {
+        "title": "Identité Visuelle de la Boutique",
+        "desc": "La bannière de couverture et le logo sont les premiers éléments vus par les acheteurs. Cliquez sur les boutons appareil photo pour mettre à jour vos visuels. Un profil complet avec photo augmente le taux de conversion de 40%."
+      },
+      "storeVacation": {
+        "title": "Mode Vacances & Statut d'Ouverture",
+        "desc": "Activez le Mode Vacances si vous ne pouvez pas expédier temporairement. Les clients verront un message d'indisponibilité et ne pourront plus commander jusqu'à la réactivation. Cela protège votre note de délai d'expédition."
+      },
+      "storeTabs": {
+        "title": "Sections de Configuration Boutique",
+        "desc": "Trois onglets structurent la gestion : Informations Générales (nom, description, contact), Horaires d'Ouverture (planning hebdomadaire), et Politiques & Livraison (règles de retour, zones de livraison)."
+      },
+      "storeProfileForm": {
+        "title": "Formulaire de Profil & Liens Sociaux",
+        "desc": "Renseignez le nom de votre enseigne, une description engageante et vos coordonnées. Ajoutez vos liens Facebook, Instagram et site web pour renforcer votre crédibilité auprès des acheteurs malgaches."
+      },
+      "settingsQuickHub": {
+        "title": "Accès Rapide aux Pages Dédiées",
+        "desc": "Ce hub regroupe les 8 sections qui disposent d'une page complète indépendante. Cliquez sur une icône pour naviguer directement vers Boutique, Produits, Inventaire, Commandes, Livraisons, Clients, Avis ou Analytiques."
+      },
+      "settingsSidebar": {
+        "title": "Navigation par Catégorie de Paramètres",
+        "desc": "La barre latérale classe les 29 paramètres métiers en 4 groupes : Général & Identité, Commerce & Finance, Opérations & Système, et Ressources & Légal. Chaque groupe regroupe les réglages qui fonctionnent ensemble."
+      },
+      "settingsAccount": {
+        "title": "Profil & Préférences Personnelles",
+        "desc": "Mettez à jour vos informations de compte (nom, email, téléphone, avatar), choisissez votre thème (Clair/Sombre), changez la langue du portail et configurez les options d'accessibilité."
+      },
+      "settingsPayments": {
+        "title": "Comptes de Versement & Abonnement",
+        "desc": "Gérez vos comptes Mobile Money (Telma MVola, Orange Money, Airtel Money) et bancaires (BNI Madagascar) pour recevoir vos reversements hebdomadaires. Consultez votre abonnement Nova Pro et vos factures de commission."
+      }
+    },
+    "settings": {
+      "title": "Tutoriels & Visites Guidées",
+      "subtitle": "Revoyez les guides interactifs pour maîtriser chaque recoin de votre console vendeur",
+      "mainTour": {
+        "title": "Visite Complète d'Accueil",
+        "desc": "Le parcours guidé essentiel présentant le tableau de bord et les sections maîtresses."
+      },
+      "ordersTour": {
+        "title": "Guide Gestion des Commandes",
+        "desc": "Apprenez à utiliser le pipeline Kanban et à traiter les expéditions."
+      },
+      "productsTour": {
+        "title": "Guide Catalogue Produits",
+        "desc": "Découvrez comment enrichir et organiser vos références commerciales."
+      },
+      "inventoryTour": {
+        "title": "Guide Contrôle des Stocks",
+        "desc": "Optimisez vos niveaux de réserve et configurez vos seuils d'alerte."
+      },
+      "analyticsTour": {
+        "title": "Guide Analyses & Performance",
+        "desc": "Explorez les graphiques de ventes et les parts de marché par catégorie."
+      },
+      "launchMainTour": "Démarrer la visite",
+      "replay": "Revoir",
+      "sectionTours": "Tutoriels par Section Métier",
+      "deliveriesTour": {
+        "title": "Guide Suivi des Livraisons GPS",
+        "desc": "Apprenez à utiliser la carte interactive, les filtres de statut et la simulation de mouvement GPS pour piloter vos coursiers."
+      },
+      "customersTour": {
+        "title": "Guide CRM & Fidélisation Clients",
+        "desc": "Maîtrisez la segmentation VIP/Régulier/Nouveau et apprenez à consulter les profils acheteurs et leurs historiques de commandes."
+      },
+      "reviewsTour": {
+        "title": "Guide Gestion de la Réputation",
+        "desc": "Apprenez à répondre aux avis, utiliser les modèles de réponses rapides et améliorer votre score de satisfaction vendeur."
+      },
+      "storeTour": {
+        "title": "Guide Configuration de la Boutique",
+        "desc": "Configurez votre identité visuelle, horaires d'ouverture, mode vacances et politiques de retour pour votre vitrine Nova Market."
+      },
+      "settingsTour": {
+        "title": "Guide Centre de Paramètres Complet",
+        "desc": "Naviguez dans les 29 paramètres métiers organisés en 4 groupes : compte, finances, opérations et ressources légales."
+      }
+    }
+  },
+  "aiAutomation": {
+    "title":"Assistant IA & Automatisations","subtitle":"Un espace pour comprendre votre activité et préparer des opérations automatisées.","tabsLabel":"Espace IA et automatisation","tab":{"assistant":"Assistant IA","automations":"Automatisations"},"plan":{"free":"Free","pro":"Pro","max":"Max"},"history":"Conversations","newConversation":"Nouvelle conversation","searchHistory":"Rechercher une conversation","recent":"Récent","emptyHistory":"Vos conversations apparaîtront ici lorsqu’un service IA sera connecté.","quota":"Quota IA","quotaType":{"basic":"Quota de base","increased":"Quota augmenté","five-times-free":"Jusqu’à 5× le quota Free"},"quotaUnavailable":"Utilisation et renouvellement indisponibles sans données du serveur.","upgrade":"Voir les plans","assistant":"Assistant vendeur","assistantCaption":"Aide contextuelle pour votre boutique","welcome":"Bonjour, comment puis-je vous aider ?","welcomeDescription":"Posez vos questions sur les ventes, les produits, les stocks ou les commandes. Les réponses nécessitent une connexion au service IA vendeur.","backendUnavailable":"Service IA indisponible : aucune réponse ne sera simulée tant que le backend ne sera pas connecté.","composerPlaceholder":"Posez une question sur votre boutique…","composerHint":"Entrée pour envoyer · Maj + Entrée pour une nouvelle ligne","send":"Envoyer","prompt":{"sales":"Comment évoluent mes ventes cette semaine ?","stock":"Quels produits ont bientôt besoin d’être réapprovisionnés ?","description":"Aidez-moi à améliorer une description produit.","promote":"Quels produits devrais-je promouvoir ?","bestSellers":"Analysez mes meilleures ventes.","cancelled":"Comment réduire les commandes annulées ?","promotion":"Aidez-moi à préparer une promotion.","summary":"Résumez les performances de ma boutique."},"stat":{"total":"Automatisations","active":"Actives","paused":"En pause","failed":"Échecs"},"automationIntro":"Automatisez les tâches répétitives de votre boutique","proIntro":"Pro permet de configurer des règles simples lorsque le service d’automatisation sera disponible.","freeIntro":"Parcourez les modèles. Le plan Pro débloque les règles simples; Max ajoute les capacités avancées prises en charge.","create":"Créer une automatisation","unlock":"Découvrir Pro","templatesTitle":"Modèles de workflows","templatesSubtitle":"Exemples de déclencheurs et d’actions. Ils ne sont pas encore exécutables.","searchTemplates":"Rechercher un modèle","filterLabel":"Filtrer par plan","filterAll":"Tous les plans","templateOnly":"Exemple","trigger":"Déclencheur","action":"Action","configure":"Configurer","unlockTemplate":"Voir les plans","executionHistory":"Historique des exécutions","noExecutions":"Aucune exécution","historyBackendRequired":"L’historique apparaîtra lorsque le moteur de workflows sera connecté.","builderTitle":"Créer une automatisation","builderUnavailable":"Le backend ne permet pas encore d’enregistrer, tester ou activer des workflows. Les modifications de ce formulaire ne sont pas sauvegardées.","workflowName":"Nom","workflowNamePlaceholder":"Ex. Alerte de stock bas","workflowDescription":"Description","triggerSelect":"Choisir un déclencheur","cancel":"Annuler","saveDraft":"Enregistrer le brouillon","activate":"Activer","template":{"lowStock":"Alerte de stock bas","lowStockDetail":"Prévenez l’équipe quand une référence passe sous son seuil.","newOrder":"Notification de nouvelle commande","newOrderDetail":"Alertez le vendeur à réception d’une commande.","unprocessed":"Rappel de commande à traiter","unprocessedDetail":"Relancez une commande restée en attente au-delà d’un délai.","outOfStock":"Alerte de rupture","outOfStockDetail":"Signalez les produits indisponibles et suggérez un réapprovisionnement.","report":"Rapport de performance","reportDetail":"Préparez un rapport récurrent si le service de rapports est disponible.","delivery":"Retard de livraison","deliveryDetail":"Alertez le vendeur quand une expédition dépasse le délai prévu.","optimize":"Optimisation produit assistée par IA","optimizeDetail":"Suggérez des améliorations de description à la demande.","sales":"Seuil de ventes atteint","salesDetail":"Prévenez le vendeur lorsqu’un objectif de ventes est atteint.","promotion":"Planification de promotion","promotionDetail":"Préparez une activation planifiée si les promotions sont compatibles.","restockSuggestion":"Suggestion de réapprovisionnement","restockDetail":"Proposez une commande selon le stock et le rythme de vente."},"trigger":{"lowStock":"Stock sous le seuil","newOrder":"Nouvelle commande","unprocessed":"Commande non traitée","outOfStock":"Produit indisponible","schedule":"Échéance planifiée","deliveryDelay":"Délai de livraison dépassé","manual":"Demande manuelle","salesThreshold":"Seuil de ventes atteint","stockSales":"Stock et ventes"},"action":{"notify":"Notifier le vendeur","restock":"Suggérer un réapprovisionnement","reportAction":"Préparer un rapport","suggest":"Créer une suggestion à valider","promotionAction":"Préparer une promotion"}
+  },
+  "deliveries": {
+    "title": "Suivi des Livraisons",
+    "subtitle": "Visualisez et suivez en temps réel la progression de vos commandes sur la carte d'Antananarivo",
+    "simulatedData": "Données simulées",
+    "telemetryActive": "Télémétrie active",
+    "refresh": "Actualiser",
+    "bannerTitle": "Mode Démonstration Logistique",
+    "bannerDesc": "Ce tableau de bord cartographique simule le suivi GPS des coursiers partenaires sur l'agglomération d'Antananarivo (Analakely, Ankorondrano, Ivato, Tanjombato). Activez le bouton « Simuler GPS » pour observer les mises à jour de position en direct.",
+    "kpiInTransit": "En cours de livraison",
+    "kpiInTransitSub": "Coursiers en route",
+    "kpiAwaiting": "En attente d'expédition",
+    "kpiAwaitingSub": "Colis préparés",
+    "kpiDelivered": "Livrées aujourd'hui",
+    "kpiDeliveredSub": "Remises aux clients",
+    "kpiDelayed": "Livraisons retardées",
+    "kpiDelayedSub": "Trafic ou reprogrammé",
+    "mapTitle": "Cartographie en Direct - Grand Antananarivo",
+    "markersCount": "points affichés",
+    "status": {
+      "all": "Toutes",
+      "in_transit": "En transit",
+      "awaiting_dispatch": "En attente",
+      "delayed": "Retardé",
+      "delivered": "Livré"
+    }
+  }
+}

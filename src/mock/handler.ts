@@ -1,7 +1,7 @@
 import { http, HttpResponse } from "msw";
 import { authResponse, entities } from "./entities";
 
-const API_URL = "http://localhost:4000/v2";
+const API_URL = "*/v2";
 
 export const handlers = [
   http.get(`${API_URL}/seller/dashboard`, () => {
@@ -10,7 +10,7 @@ export const handlers = [
 ];
 
 export const authHandlers = [
-  http.post(`${API_URL}/auth/login`, async ({ request }) => {
+  http.post("*/auth/login", async ({ request }) => {
     const body = (await request.json()) as {
       email: string
       password: string
@@ -85,7 +85,26 @@ export const orderHandlers = [
   }),
 ]
 
+const productOverrides = new Map<string, (typeof entities.products)[number]>()
+
 export const productHandlers = [
+  http.get(`${API_URL}/seller/products/:id`, ({ params }) => {
+    const product = productOverrides.get(String(params.id)) ?? entities.products.find((item) => item.id === String(params.id))
+    if (!product) return HttpResponse.json({ message: "Product not found" }, { status: 404 })
+    return HttpResponse.json(product)
+  }),
+  http.put(`${API_URL}/seller/products/:id`, async ({ params, request }) => {
+    const id = String(params.id)
+    const current = productOverrides.get(id) ?? entities.products.find((item) => item.id === id)
+    if (!current) return HttpResponse.json({ message: "Product not found" }, { status: 404 })
+    const input = await request.json() as { status?: "active" | "inactive" }
+    if (current.moderationStatus !== "approved" || !input.status) {
+      return HttpResponse.json({ message: "Product status cannot be changed" }, { status: 403 })
+    }
+    const updated = { ...current, status: input.status, updatedAt: new Date().toISOString() }
+    productOverrides.set(id, updated)
+    return HttpResponse.json(updated)
+  }),
   http.get(`${API_URL}/seller/products`, ({ request }) => {
     const url = new URL(request.url)
 
@@ -111,7 +130,7 @@ export const productHandlers = [
           product.brand,
           product.description,
           product.categoryName,
-          ...product.tags,
+          ...(product.tags ?? []),
         ]
           .filter(Boolean)
           .some((value) =>

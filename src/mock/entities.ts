@@ -73,7 +73,7 @@ const canonicalOrders: Order[] = orderSeed.map((order, orderIndex) => {
       return {
         ...item,
         productName: product?.name ?? item.productName,
-        image: product?.image ?? item.image,
+        image: product?.images?.find((image) => image.isDefault)?.url ?? product?.images?.[0]?.url ?? item.image,
         sellerId: seller.id,
         sellerName: seller.name ?? "",
       }

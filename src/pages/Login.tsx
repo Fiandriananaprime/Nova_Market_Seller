@@ -1,8 +1,21 @@
-
 import { FormEvent, useState } from "react"
 import { useLocation, useNavigate } from "react-router"
-import { requestLogin } from "@/service/auth"
 import { useTranslation } from "react-i18next"
+import {
+  TrendingUp,
+  ShieldCheck,
+  Zap,
+  ShoppingBag,
+  ArrowRight,
+  Eye,
+  EyeOff,
+  Sparkles,
+  Lock,
+  Mail,
+} from "lucide-react"
+import { requestLogin } from "@/service/auth"
+import { Button } from "@/components/ui"
+import { tutorialService } from "@/features/tutorials/services/tutorialService"
 
 export default function Login() {
   const navigate = useNavigate()
@@ -12,6 +25,9 @@ export default function Login() {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState("")
   const [rememberMe, setRememberMe] = useState(false)
+  const [showPassword, setShowPassword] = useState(false)
+  const [email, setEmail] = useState("hei.fiandrianana@gmail.com")
+  const [password, setPassword] = useState("Fiandrianana1357")
 
   const from =
     (location.state as { from?: { pathname?: string } } | null)?.from
@@ -20,109 +36,204 @@ export default function Login() {
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault()
 
-    const formData = new FormData(event.currentTarget)
-
-    const email = formData.get("email") as string
-    const password = formData.get("password") as string
-
     try {
       setLoading(true)
       setError("")
 
       const response = await requestLogin(email, password, rememberMe)
 
+      tutorialService.startNewLoginSession()
+
       localStorage.setItem("accessToken", response.tokens.accessToken)
       localStorage.setItem("currentStore", response.currentStore)
 
       navigate(from, { replace: true })
-    } catch (error) {
-      console.error(error)
-      setError(t("invalidCredentials"))
+    } catch (err) {
+      console.error(err)
+      setError(t("invalidCredentials") || "Identifiants invalides")
     } finally {
       setLoading(false)
     }
   }
 
+  const fillDemoCredentials = () => {
+    setEmail("hei.fiandrianana@gmail.com")
+    setPassword("Fiandrianana1357")
+  }
+
   return (
-    <main className="min-h-full bg-background flex items-center justify-center p-6">
-      <form
-        onSubmit={handleSubmit}
-        className="w-full max-w-sm bg-card border border-border rounded-lg p-6 shadow-sm"
-      >
-        <div className="mb-6">
-          <p className="text-xs font-medium uppercase tracking-wide text-primary">
-            {t("brand")}
-          </p>
+    <main className="min-h-full bg-background flex items-center justify-center p-4 sm:p-6 lg:p-8">
+      <div className="w-full max-w-4xl grid lg:grid-cols-2 rounded-3xl border border-border/80 bg-card shadow-2xl overflow-hidden">
+        {/* Left: Brand Value Pillar */}
+        <div className="hidden lg:flex flex-col justify-between p-10 bg-gradient-to-br from-primary via-blue-600 to-indigo-900 text-white relative overflow-hidden">
+          {/* Subtle background circles */}
+          <div className="absolute -top-24 -left-24 w-72 h-72 rounded-full bg-white/10 blur-2xl" />
+          <div className="absolute -bottom-24 -right-24 w-72 h-72 rounded-full bg-white/10 blur-2xl" />
 
-          <h1 className="mt-2 font-display text-2xl font-700">
-            {t("sellerPortal")}
-          </h1>
+          <div className="relative z-10">
+            <div className="flex items-center gap-2.5">
+              <div className="w-9 h-9 rounded-xl bg-white text-primary flex items-center justify-center font-bold shadow-sm">
+                <TrendingUp size={20} />
+              </div>
+              <span className="font-display font-extrabold text-xl tracking-tight">
+                Nova Market
+              </span>
+            </div>
 
-          <p className="mt-1 text-sm text-muted-foreground">
-            {t("loginDescription")}
-          </p>
+            <div className="mt-12 space-y-4">
+              <span className="px-3 py-1 rounded-full bg-white/15 backdrop-blur-xs text-xs font-semibold uppercase tracking-wider inline-block">
+                Espace Commerçant
+              </span>
+
+              <h2 className="font-display font-black text-3xl leading-tight">
+                Développez vos ventes à Madagascar en toute simplicité.
+              </h2>
+
+              <p className="text-sm text-white/80 leading-relaxed font-normal">
+                Pilotez vos commandes en temps réel, optimisez vos stocks et fidélisez vos clients depuis votre console marchande unifiée.
+              </p>
+            </div>
+          </div>
+
+          {/* Feature Badges */}
+          <div className="relative z-10 space-y-3 pt-8 border-t border-white/15">
+            <div className="flex items-center gap-3 text-xs text-white/90">
+              <div className="w-6 h-6 rounded-lg bg-white/10 flex items-center justify-center shrink-0">
+                <ShieldCheck size={14} />
+              </div>
+              <span>Reversements sécurisés Mvola, Orange Money & Banque</span>
+            </div>
+
+            <div className="flex items-center gap-3 text-xs text-white/90">
+              <div className="w-6 h-6 rounded-lg bg-white/10 flex items-center justify-center shrink-0">
+                <Zap size={14} />
+              </div>
+              <span>Expéditions fluides et notifications en temps réel</span>
+            </div>
+          </div>
         </div>
 
-        <label className="block text-sm font-medium" htmlFor="email">
-          {t("email")}
-        </label>
+        {/* Right: Modern Sign In Form */}
+        <div className="p-8 sm:p-10 flex flex-col justify-center">
+          <div className="mb-8">
+            <div className="flex items-center gap-2 lg:hidden mb-4">
+              <div className="w-8 h-8 rounded-xl bg-primary text-white flex items-center justify-center font-bold">
+                <TrendingUp size={16} />
+              </div>
+              <span className="font-display font-bold text-lg text-foreground">
+                Nova Market
+              </span>
+            </div>
 
-        <input
-          id="email"
-          name="email"
-          type="email"
-          autoComplete="email"
-          placeholder={t("emailPlaceholder")}
-          className="mt-2 w-full rounded-md border border-border bg-background px-3 py-2 text-sm outline-none focus:border-primary"
-          required
-        />
+            <h1 className="font-display font-extrabold text-2xl text-foreground tracking-tight">
+              {t("sellerPortal")}
+            </h1>
+            <p className="mt-1.5 text-xs text-muted-foreground leading-relaxed">
+              {t("loginDescription")}
+            </p>
+          </div>
 
-        <label className="mt-4 block text-sm font-medium" htmlFor="password">
-          {t("password")}
-        </label>
+          {/* Quick Demo Helper Pill */}
+          <div className="mb-6 p-3 rounded-xl bg-primary/10 border border-primary/20 flex items-center justify-between gap-3 text-xs">
+            <div className="flex items-center gap-2 text-primary font-medium">
+              <Sparkles size={14} />
+              <span>Compte test préconfiguré disponible</span>
+            </div>
+            <button
+              type="button"
+              onClick={fillDemoCredentials}
+              className="text-primary font-bold hover:underline shrink-0 cursor-pointer"
+            >
+              Remplir
+            </button>
+          </div>
 
-        <input
-          id="password"
-          name="password"
-          type="password"
-          autoComplete="current-password"
-          placeholder={t("passwordPlaceholder")}
-          className="mt-2 w-full rounded-md border border-border bg-background px-3 py-2 text-sm outline-none focus:border-primary"
-          required
-        />
+          <form onSubmit={handleSubmit} className="space-y-4">
+            <div>
+              <label className="block text-xs font-semibold text-foreground mb-1.5" htmlFor="email">
+                {t("email")}
+              </label>
+              <div className="relative flex items-center">
+                <Mail size={15} className="absolute left-3 text-muted-foreground pointer-events-none" />
+                <input
+                  id="email"
+                  name="email"
+                  type="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  autoComplete="email"
+                  placeholder={t("emailPlaceholder")}
+                  className="w-full pl-9.5 pr-3.5 py-2.5 text-sm rounded-xl border border-border bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-colors"
+                  required
+                />
+              </div>
+            </div>
 
-        <div className="mt-4 flex items-center gap-2">
-          <input
-            id="rememberMe"
-            name="rememberMe"
-            type="checkbox"
-            checked={rememberMe}
-            onChange={(event) => setRememberMe(event.target.checked)}
-            className="h-4 w-4 rounded border-border accent-primary"
-          />
+            <div>
+              <label className="block text-xs font-semibold text-foreground mb-1.5" htmlFor="password">
+                {t("password")}
+              </label>
+              <div className="relative flex items-center">
+                <Lock size={15} className="absolute left-3 text-muted-foreground pointer-events-none" />
+                <input
+                  id="password"
+                  name="password"
+                  type={showPassword ? "text" : "password"}
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  autoComplete="current-password"
+                  placeholder={t("passwordPlaceholder")}
+                  className="w-full pl-9.5 pr-10 py-2.5 text-sm rounded-xl border border-border bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-colors"
+                  required
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute right-3 p-1 text-muted-foreground hover:text-foreground cursor-pointer"
+                >
+                  {showPassword ? <EyeOff size={15} /> : <Eye size={15} />}
+                </button>
+              </div>
+            </div>
 
-          <label
-            htmlFor="rememberMe"
-            className="cursor-pointer text-sm text-muted-foreground"
-          >
-            {t("rememberMe")}
-          </label>
+            <div className="flex items-center justify-between pt-1">
+              <label className="flex items-center gap-2 cursor-pointer text-xs text-muted-foreground select-none">
+                <input
+                  type="checkbox"
+                  checked={rememberMe}
+                  onChange={(e) => setRememberMe(e.target.checked)}
+                  className="rounded border-border text-primary focus:ring-primary/20"
+                />
+                <span>{t("rememberMe")}</span>
+              </label>
+
+              <button
+                type="button"
+                className="text-xs text-primary hover:underline font-medium"
+              >
+                Mot de passe oublié ?
+              </button>
+            </div>
+
+            {error && (
+              <div className="p-3 rounded-xl bg-rose-500/10 border border-rose-500/20 text-rose-600 dark:text-rose-400 text-xs font-semibold animate-fade-in">
+                {error}
+              </div>
+            )}
+
+            <Button
+              type="submit"
+              variant="primary"
+              size="lg"
+              loading={loading}
+              className="w-full mt-2"
+            >
+              <span>{loading ? t("loggingIn") : t("login")}</span>
+              <ArrowRight size={15} />
+            </Button>
+          </form>
         </div>
-
-        {error && (
-          <p className="mt-3 text-sm text-destructive">
-            {error}
-          </p>
-        )}
-
-        <button
-          type="submit"
-          disabled={loading}
-          className="mt-6 w-full rounded-md bg-primary px-4 py-2.5 text-sm font-medium text-white hover:opacity-90 disabled:opacity-50"
-        >
-          {loading ? t("loggingIn") : t("login")}
-        </button>
-      </form>
+      </div>
     </main>
   )
 }

@@ -11,6 +11,8 @@ export interface Order {
   id: string
   buyerName: string
   buyerAvatar: string
+  buyerPhone?: string
+  buyerEmail?: string
   items: { name: string; qty: number; price: number }[]
   total: number
   status: OrderStatus
@@ -18,6 +20,10 @@ export interface Order {
   paymentMethod: string
   deliveryMethod: string
   city: string
+  district?: string
+  street?: string
+  instructions?: string
+  tracking?: string
   createdAt: string
 }
 
@@ -33,6 +39,7 @@ export interface Product {
   reviewsCount: number
   status: ProductStatus
   image: string
+  images?: string[]
   createdAt: string
 }
 
@@ -52,12 +59,14 @@ export interface Customer {
   id: string
   name: string
   email: string
+  phone?: string
   initials: string
   ordersCount: number
   totalSpent: number
   lastOrderDate: string
   status: "active" | "inactive"
   city: string
+  district?: string
 }
 
 export interface Review {
@@ -83,7 +92,7 @@ const topProductUnits = new Map(
   entities.dashboard.topProducts.map((product) => [product.id, product.units]),
 )
 
-export const orders: Order[] = entities.orders.map((order) => ({
+export const orders: Order[] = entities.orders.map((order, idx) => ({
   id: order.id,
   buyerName: order.buyerName,
   buyerAvatar: order.buyerName
@@ -92,6 +101,10 @@ export const orders: Order[] = entities.orders.map((order) => ({
     .join("")
     .slice(0, 2)
     .toUpperCase(),
+  buyerPhone:
+    order.address?.phone ??
+    `+261 34 ${String(12 + idx * 3).padStart(2, "0")} ${String(110 + idx * 17).padStart(3, "0")} 89`,
+  buyerEmail: `${order.buyerName.toLowerCase().replace(/\s+/g, ".")}@gmail.com`,
   items: order.items.map((item) => ({
     name: item.productName,
     qty: item.qty,
@@ -103,6 +116,10 @@ export const orders: Order[] = entities.orders.map((order) => ({
   paymentMethod: order.paymentMethod,
   deliveryMethod: order.deliveryMethod,
   city: order.address?.city ?? "Antananarivo",
+  district: order.address?.district ?? "Antananarivo Renivohitra",
+  street: order.address?.street ?? "Analakely",
+  instructions: order.address?.instructions ?? order.note ?? "Livrer à l'adresse indiquée, joignable par appel ou WhatsApp",
+  tracking: order.tracking ?? `TCK-${order.id.replace("ord-", "").toUpperCase()}-MDG`,
   createdAt: order.createdAt,
 }))
 
@@ -117,7 +134,7 @@ export const products: Product[] = entities.products.map((product) => ({
   rating: product.rating,
   reviewsCount: product.reviewsCount,
   status: product.status,
-  image: product.image,
+  image: product.images?.find((image) => image.isDefault)?.url ?? product.images?.[0]?.url ?? "",
   createdAt: product.createdAt,
 }))
 
@@ -143,16 +160,18 @@ export const inventoryItems: InventoryItem[] = products.map((product) => {
   }
 })
 
-export const customers: Customer[] = entities.customers.map((customer) => ({
+export const customers: Customer[] = entities.customers.map((customer, idx) => ({
   id: customer.id,
   name: customer.name,
   email: customer.email,
+  phone: `+261 34 ${String(21 + idx * 2).padStart(2, "0")} ${String(345 + idx * 9).padStart(3, "0")} 12`,
   initials: customer.avatarInitial,
   ordersCount: customer.ordersCount,
   totalSpent: customer.totalSpent,
   lastOrderDate: customer.lastOrderDate ?? "",
   status: customer.status,
   city: "Antananarivo",
+  district: idx % 2 === 0 ? "Analakely / Renivohitra" : "Ankorondrano / Ivandry",
 }))
 
 export const reviews: Review[] = entities.reviews.map((review) => ({

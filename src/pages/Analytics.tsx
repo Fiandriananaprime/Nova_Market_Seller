@@ -1,195 +1,330 @@
-import { useState } from "react";
+import { useState } from "react"
+import { useTranslation } from "react-i18next"
 import {
-  AreaChart, Area, BarChart, Bar, PieChart, Pie, Cell,
-  XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend
-} from "recharts";
-import { TrendingUp, ShoppingBag, Eye, Percent } from "lucide-react";
-import { revenueSeries, topProducts, categoryBreakdown, metrics, formatMGA } from "../hook/mock";
-import { PageHeader, KpiCard, Card, CardHeader, CardTitle, CardBody } from "../components/ui";
+  AreaChart,
+  Area,
+  BarChart,
+  Bar,
+  PieChart,
+  Pie,
+  Cell,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  ResponsiveContainer,
+} from "recharts"
+import {
+  TrendingUp,
+  ShoppingBag,
+  Eye,
+  Percent,
+  Sparkles,
+  ArrowUpRight,
+  Filter,
+  Download,
+} from "lucide-react"
+import {
+  revenueSeries,
+  topProducts,
+  categoryBreakdown,
+  metrics,
+  formatMGA,
+} from "@/hook/mock"
+import {
+  PageHeader,
+  KpiCard,
+  Card,
+  CardHeader,
+  CardTitle,
+  CardBody,
+  Badge,
+  Button,
+  Toast,
+} from "@/components/ui"
+
+const MONTH_MAP_FR: Record<string, string> = {
+  Jan: "Jan",
+  Feb: "Fév",
+  Mar: "Mar",
+  Apr: "Avr",
+  May: "Mai",
+  Jun: "Juin",
+  Jul: "Juil",
+  Aug: "Août",
+  Sep: "Sep",
+  Oct: "Oct",
+  Nov: "Nov",
+  Dec: "Déc",
+}
 
 const PERIOD_OPTIONS = [
-  { label: "Aujourd'hui", value: "today" },
   { label: "7 jours", value: "7d" },
   { label: "30 jours", value: "30d" },
-  { label: "3 mois", value: "3m" },
   { label: "12 mois", value: "12m" },
-];
+]
 
-const PIE_COLORS = ["#0077B6", "#5ABCB9", "#16262E", "#D0CCD0", "#EBE8F0"];
+const DONUT_COLORS = ["#2563EB", "#10B981", "#8B5CF6", "#F59E0B", "#06B6D4", "#EC4899"]
 
 function CustomTooltip({ active, payload, label }: any) {
-  if (!active || !payload?.length) return null;
+  if (!active || !payload?.length) return null
   return (
-    <div className="bg-card border border-border rounded-lg px-3 py-2 shadow-lg text-xs">
-      <p className="font-600 text-foreground mb-1">{label}</p>
+    <div className="bg-card/95 backdrop-blur-md border border-border rounded-xl p-3 shadow-xl text-xs">
+      <p className="font-semibold text-foreground mb-1.5">{label}</p>
       {payload.map((p: any) => (
-        <p key={p.name} style={{ color: p.color }} className="flex items-center justify-between gap-4">
-          <span>{p.name === "revenue" ? "Revenus" : p.name === "orders" ? "Commandes" : p.name}</span>
-          <span className="font-600">{p.name === "revenue" ? formatMGA(p.value) : p.value}</span>
-        </p>
+        <div key={p.name} className="flex items-center justify-between gap-4 py-0.5">
+          <span className="text-muted-foreground flex items-center gap-1.5">
+            <span
+              className="w-2 h-2 rounded-full"
+              style={{ backgroundColor: p.color }}
+            />
+            {p.name === "revenue" ? "Revenus" : "Commandes"}
+          </span>
+          <span className="font-bold text-foreground tabular-nums">
+            {p.name === "revenue" ? formatMGA(p.value) : `${p.value} commandes`}
+          </span>
+        </div>
       ))}
     </div>
-  );
+  )
 }
 
 export default function Analytics() {
-  const [period, setPeriod] = useState("12m");
+  const { t } = useTranslation()
+  const [period, setPeriod] = useState("12m")
+  const [toast, setToast] = useState<string | null>(null)
 
-  const slicedData = period === "7d" ? revenueSeries.slice(-2) :
-    period === "30d" ? revenueSeries.slice(-3) :
-    period === "3m" ? revenueSeries.slice(-3) :
-    revenueSeries;
+  const showToast = (msg: string) => {
+    setToast(msg)
+    setTimeout(() => setToast(null), 3000)
+  }
+
+  const slicedData =
+    period === "7d"
+      ? revenueSeries.slice(-2)
+      : period === "30d"
+      ? revenueSeries.slice(-4)
+      : revenueSeries
+
+  const handleExport = () => {
+    const csvContent =
+      "data:text/csv;charset=utf-8," +
+      ["Mois,Revenu (Ar),Commandes", ...slicedData.map((d) => `${d.month},${d.revenue},${d.orders}`)].join("\n")
+    const encodedUri = encodeURI(csvContent)
+    const link = document.createElement("a")
+    link.setAttribute("href", encodedUri)
+    link.setAttribute("download", `rapport_ventes_${period}.csv`)
+    document.body.appendChild(link)
+    link.click()
+    document.body.removeChild(link)
+    showToast("Rapport de ventes exporté au format CSV")
+  }
 
   return (
-    <div className="p-6 space-y-5 animate-fade-in">
-      {/* Header with period selector */}
-      <div className="flex items-start justify-between gap-4">
-        <PageHeader
-          title="Analytiques"
-          subtitle="Performance de votre boutique"
-        />
-        <div className="flex gap-1">
-          {PERIOD_OPTIONS.map((p) => (
-            <button
-              key={p.value}
-              onClick={() => setPeriod(p.value)}
-              className={`flex-shrink-0 px-3 py-1.5 rounded-md text-xs font-medium transition-colors cursor-pointer ${period === p.value ? "bg-primary text-white" : "bg-card border border-border text-muted-foreground hover:text-foreground"}`}
+    <div className="p-6 md:p-8 space-y-6 animate-fade-in max-w-7xl mx-auto">
+      {/* Page Header */}
+      <PageHeader
+        title={t("nav.analytics")}
+        subtitle="Analyses financières, comportementales et indicateurs de croissance"
+        actions={
+          <div className="flex items-center gap-2.5 flex-wrap">
+            <div data-tour="analytics-period-toggle" className="flex items-center gap-1 bg-muted p-1 rounded-xl">
+              {PERIOD_OPTIONS.map((p) => (
+                <button
+                  key={p.value}
+                  onClick={() => setPeriod(p.value)}
+                  className={`px-3 py-1 text-xs font-semibold rounded-lg transition-all cursor-pointer ${
+                    period === p.value
+                      ? "bg-card text-foreground shadow-xs"
+                      : "text-muted-foreground hover:text-foreground"
+                  }`}
+                >
+                  {p.label}
+                </button>
+              ))}
+            </div>
+
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleExport}
+              className="gap-1.5"
             >
-              {p.label}
-            </button>
-          ))}
-        </div>
+              <Download size={13} />
+              <span>Exporter CSV</span>
+            </Button>
+          </div>
+        }
+      />
+
+      {/* KPI Cards */}
+      <div data-tour="analytics-kpis" className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+        <KpiCard
+          label="Chiffre d'affaires"
+          value={formatMGA(metrics.revenue)}
+          change={metrics.revenueChange}
+          icon={<TrendingUp size={18} />}
+          accent
+          subtitle="Cumul période"
+        />
+
+        <KpiCard
+          label="Commandes validées"
+          value={metrics.orders.toString()}
+          change={metrics.ordersChange}
+          icon={<ShoppingBag size={18} />}
+          subtitle="Volume traité"
+        />
+
+        <KpiCard
+          label="Visites boutique"
+          value={metrics.storeViews.toLocaleString()}
+          change={8.3}
+          icon={<Eye size={18} />}
+          subtitle="Trafic entrant"
+        />
+
+        <KpiCard
+          label="Taux de conversion"
+          value={`${metrics.conversionRate}%`}
+          change={0.4}
+          icon={<Percent size={18} />}
+          subtitle="Visites → Achats"
+        />
       </div>
 
-      {/* KPIs */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        <KpiCard label="Revenus totaux" value={formatMGA(metrics.revenue)} change={metrics.revenueChange} icon={<TrendingUp size={16} />} accent />
-        <KpiCard label="Commandes" value={metrics.orders.toString()} change={metrics.ordersChange} icon={<ShoppingBag size={16} />} />
-        <KpiCard label="Vues boutique" value={metrics.storeViews.toLocaleString()} change={8.3} icon={<Eye size={16} />} />
-        <KpiCard label="Conversion" value={`${metrics.conversionRate}%`} change={0.4} icon={<Percent size={16} />} />
-      </div>
+      {/* Main Charts Row */}
+      <div data-tour="analytics-charts" className="grid lg:grid-cols-3 gap-6">
+        {/* Revenue & Volume Area Chart */}
+        <Card className="lg:col-span-2">
+          <CardHeader>
+            <div>
+              <CardTitle>Trajectoire des Ventes et Volume</CardTitle>
+              <p className="text-xs text-muted-foreground mt-0.5">
+                Chiffre d'affaires en Ariary et nombre de commandes mensuelles
+              </p>
+            </div>
+          </CardHeader>
 
-      {/* Revenue chart */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Évolution des revenus et commandes</CardTitle>
-        </CardHeader>
-        <CardBody className="pb-2">
-          <ResponsiveContainer width="100%" height={240}>
-            <AreaChart data={slicedData} margin={{ top: 4, right: 8, left: 0, bottom: 0 }}>
-              <defs>
-                <linearGradient id="revGrad2" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="5%" stopColor="#0077B6" stopOpacity={0.12} />
-                  <stop offset="95%" stopColor="#0077B6" stopOpacity={0} />
-                </linearGradient>
-              </defs>
-              <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" vertical={false} />
-              <XAxis dataKey="month" tick={{ fontSize: 10, fill: "var(--muted-foreground)" }} axisLine={false} tickLine={false} />
-              <YAxis
-                yAxisId="rev"
-                tick={{ fontSize: 10, fill: "var(--muted-foreground)" }}
-                axisLine={false}
-                tickLine={false}
-                tickFormatter={(v) => `${(v / 1_000_000).toFixed(0)}M`}
-                width={36}
-              />
-              <YAxis yAxisId="orders" orientation="right" tick={{ fontSize: 10, fill: "var(--muted-foreground)" }} axisLine={false} tickLine={false} width={32} />
-              <Tooltip content={<CustomTooltip />} />
-              <Area yAxisId="rev" type="monotone" dataKey="revenue" name="revenue" stroke="#0077B6" strokeWidth={2} fill="url(#revGrad2)" dot={false} activeDot={{ r: 4, fill: "#0077B6" }} />
-              <Bar yAxisId="orders" dataKey="orders" name="orders" fill="#5ABCB9" opacity={0.5} radius={[2, 2, 0, 0]} />
-            </AreaChart>
-          </ResponsiveContainer>
-        </CardBody>
-      </Card>
+          <CardBody className="pt-2">
+            <div className="h-72 w-full">
+              <ResponsiveContainer width="100%" height="100%">
+                <AreaChart
+                  data={slicedData}
+                  margin={{ top: 10, right: 10, left: 0, bottom: 0 }}
+                >
+                  <defs>
+                    <linearGradient id="analyticsGradient" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="5%" stopColor="#2563EB" stopOpacity={0.25} />
+                      <stop offset="95%" stopColor="#2563EB" stopOpacity={0.0} />
+                    </linearGradient>
+                  </defs>
 
-      {/* Top products + Category breakdown */}
-      <div className="grid lg:grid-cols-2 gap-4">
-        {/* Top products */}
-        <Card>
-          <CardHeader><CardTitle>Produits les plus vendus</CardTitle></CardHeader>
-          <CardBody className="pb-2">
-            <div className="space-y-3">
-              {topProducts.map((p, i) => (
-                <div key={p.name}>
-                  <div className="flex items-center justify-between mb-1.5">
-                    <div className="flex items-center gap-2 min-w-0">
-                      <span className="text-xs font-700 text-muted-foreground w-5">#{i + 1}</span>
-                      <span className="text-xs font-medium text-foreground truncate">{p.name}</span>
-                    </div>
-                    <div className="flex items-center gap-3 flex-shrink-0">
-                      <span className="text-xs font-600 text-foreground">{formatMGA(p.revenue)}</span>
-                      <span className={`text-[10px] font-600 ${p.growth >= 0 ? "text-[var(--success)]" : "text-[var(--destructive)]"}`}>
-                        {p.growth >= 0 ? "+" : ""}{p.growth}%
-                      </span>
-                    </div>
-                  </div>
-                  <div className="h-1.5 bg-muted rounded-full overflow-hidden">
-                    <div
-                      className="h-full rounded-full bg-primary"
-                      style={{ width: `${(p.revenue / topProducts[0].revenue) * 100}%`, opacity: 0.5 + (i === 0 ? 0.5 : (4 - i) * 0.1) }}
+                  <CartesianGrid
+                    strokeDasharray="3 3"
+                    stroke="var(--border)"
+                    vertical={false}
+                    opacity={0.5}
+                  />
+
+                  <XAxis
+                    dataKey="month"
+                    tick={{ fontSize: 11, fill: "var(--muted-foreground)" }}
+                    axisLine={false}
+                    tickLine={false}
+                    tickFormatter={(v) => MONTH_MAP_FR[v] || v}
+                  />
+
+                  <YAxis
+                    yAxisId="rev"
+                    tick={{ fontSize: 11, fill: "var(--muted-foreground)" }}
+                    axisLine={false}
+                    tickLine={false}
+                    tickFormatter={(v) => `${(v / 1_000_000).toFixed(1)}M`}
+                    width={45}
+                  />
+
+                  <Tooltip content={<CustomTooltip />} />
+
+                  <Area
+                    yAxisId="rev"
+                    type="monotone"
+                    dataKey="revenue"
+                    name="revenue"
+                    stroke="#2563EB"
+                    strokeWidth={2.5}
+                    fillOpacity={1}
+                    fill="url(#analyticsGradient)"
+                  />
+                </AreaChart>
+              </ResponsiveContainer>
+            </div>
+          </CardBody>
+        </Card>
+
+        {/* Category Share Donut Chart */}
+        <Card className="flex flex-col">
+          <CardHeader>
+            <div>
+              <CardTitle>Part de Marché par Catégorie</CardTitle>
+              <p className="text-xs text-muted-foreground mt-0.5">
+                Ventilation de vos ventes par segment
+              </p>
+            </div>
+          </CardHeader>
+
+          <CardBody className="flex-1 flex flex-col justify-between">
+            <div className="h-44 w-full">
+              <ResponsiveContainer width="100%" height="100%">
+                <PieChart>
+                  <Pie
+                    data={categoryBreakdown}
+                    dataKey="percentage"
+                    nameKey="name"
+                    cx="50%"
+                    cy="50%"
+                    innerRadius={45}
+                    outerRadius={65}
+                    paddingAngle={3}
+                  >
+                    {categoryBreakdown.map((_, index) => (
+                      <Cell
+                        key={`cell-${index}`}
+                        fill={DONUT_COLORS[index % DONUT_COLORS.length]}
+                      />
+                    ))}
+                  </Pie>
+                  <Tooltip />
+                </PieChart>
+              </ResponsiveContainer>
+            </div>
+
+            {/* Legend list */}
+            <div className="space-y-2 pt-2 border-t border-border/60">
+              {categoryBreakdown.map((cat, idx) => (
+                <div
+                  key={cat.name}
+                  className="flex items-center justify-between text-xs"
+                >
+                  <div className="flex items-center gap-2">
+                    <span
+                      className="w-2.5 h-2.5 rounded-full"
+                      style={{ backgroundColor: DONUT_COLORS[idx % DONUT_COLORS.length] }}
                     />
+                    <span className="text-foreground font-medium">{cat.name}</span>
                   </div>
+                  <span className="font-bold text-foreground tabular-nums">
+                    {cat.percentage}%
+                  </span>
                 </div>
               ))}
             </div>
           </CardBody>
         </Card>
-
-        {/* Category pie */}
-        <Card>
-          <CardHeader><CardTitle>Ventes par catégorie</CardTitle></CardHeader>
-          <CardBody>
-            <div className="flex items-center gap-4">
-              <ResponsiveContainer width={160} height={160}>
-                <PieChart>
-                  <Pie
-                    data={categoryBreakdown}
-                    cx="50%"
-                    cy="50%"
-                    innerRadius={45}
-                    outerRadius={70}
-                    dataKey="percentage"
-                    strokeWidth={2}
-                    stroke="var(--card)"
-                  >
-                    {categoryBreakdown.map((_, i) => (
-                      <Cell key={i} fill={PIE_COLORS[i % PIE_COLORS.length]} />
-                    ))}
-                  </Pie>
-                </PieChart>
-              </ResponsiveContainer>
-
-              <div className="flex-1 space-y-2">
-                {categoryBreakdown.map((c, i) => (
-                  <div key={c.name} className="flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                      <span className="w-2.5 h-2.5 rounded-sm flex-shrink-0" style={{ backgroundColor: PIE_COLORS[i % PIE_COLORS.length] }} />
-                      <span className="text-xs text-muted-foreground">{c.name}</span>
-                    </div>
-                    <span className="text-xs font-600 text-foreground">{c.percentage}%</span>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </CardBody>
-        </Card>
       </div>
 
-      {/* Monthly comparison bar */}
-      <Card>
-        <CardHeader><CardTitle>Comparaison mensuelle des commandes</CardTitle></CardHeader>
-        <CardBody className="pb-2">
-          <ResponsiveContainer width="100%" height={180}>
-            <BarChart data={revenueSeries} margin={{ top: 4, right: 8, left: 0, bottom: 0 }}>
-              <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" vertical={false} />
-              <XAxis dataKey="month" tick={{ fontSize: 10, fill: "var(--muted-foreground)" }} axisLine={false} tickLine={false} />
-              <YAxis tick={{ fontSize: 10, fill: "var(--muted-foreground)" }} axisLine={false} tickLine={false} width={30} />
-              <Tooltip content={<CustomTooltip />} />
-              <Bar dataKey="orders" name="orders" fill="#0077B6" radius={[3, 3, 0, 0]} />
-            </BarChart>
-          </ResponsiveContainer>
-        </CardBody>
-      </Card>
+      {/* Toast Feedback */}
+      {toast && <Toast message={toast} onDismiss={() => setToast(null)} />}
     </div>
-  );
+  )
 }
