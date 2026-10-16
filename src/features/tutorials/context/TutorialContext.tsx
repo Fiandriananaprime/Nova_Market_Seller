@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useRef, useCallback, useEffect } from "react"
+import React, { useState, useRef, useCallback, useEffect } from "react"
 import { useNavigate, useLocation } from "react-router"
 import { useTranslation } from "react-i18next"
 import type { Driver } from "driver.js"
@@ -7,20 +7,11 @@ import { tutorialService } from "../services/tutorialService"
 import { sellerOnboardingTour } from "../tours/sellerOnboarding"
 import { allTours } from "../tours/sectionTours"
 import type { TourDefinition, TourId } from "../types"
-
-export interface TutorialContextValue {
-  isTourActive: boolean
-  activeTourId: TourId | null
-  startTour: (tour: TourDefinition, onComplete?: () => void) => Promise<void>
-  replayTour: (tourId: TourId) => Promise<void>
-  stopTour: () => void
-}
-
-const TutorialContext = createContext<TutorialContextValue | null>(null)
+import { TutorialContext } from "./tutorialContextValue"
 
 let globalDriverInstance: Driver | null = null
 
-export function TutorialProvider({ children }: { children: React.ReactNode }) {
+export const TutorialProvider = ({ children }: { children: React.ReactNode }) => {
   const navigate = useNavigate()
   const location = useLocation()
   const { t } = useTranslation()
@@ -46,18 +37,18 @@ export function TutorialProvider({ children }: { children: React.ReactNode }) {
 
   const startTour = useCallback(
     async (tour: TourDefinition, onComplete?: () => void) => {
-      // Prevent overlapping concurrent start calls
+                                                   
       if (isStartingRef.current) return
       isStartingRef.current = true
 
       try {
-        // Destroy existing instance first
+                                          
         stopTour()
 
         setActiveTourId(tour.id)
         setIsTourActive(true)
 
-        // 1. Navigate if current route does not match tour entry route
+                                                                       
         if (location.pathname !== tour.route) {
           isNavigatingRef.current = true
           navigate(tour.route)
@@ -69,7 +60,7 @@ export function TutorialProvider({ children }: { children: React.ReactNode }) {
           return
         }
 
-        // 2. Wait for first element to be mounted in the DOM
+                                                             
         const el = await tutorialService.waitForElement(firstSelector, 5000)
         if (!el) {
           console.warn(`[Tutorial] Element ${firstSelector} not found within timeout for tour "${tour.id}".`)
@@ -163,12 +154,4 @@ export function TutorialProvider({ children }: { children: React.ReactNode }) {
       {children}
     </TutorialContext.Provider>
   )
-}
-
-export function useTutorial() {
-  const ctx = useContext(TutorialContext)
-  if (!ctx) {
-    throw new Error("useTutorial must be used within a TutorialProvider")
-  }
-  return ctx
-}
+};

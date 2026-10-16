@@ -10,10 +10,7 @@ import {
   X,
   Info,
   Search,
-  Play,
-  Pause,
   MapPin,
-  Sparkles,
 } from "lucide-react"
 import type {
   DeliveryRecord,
@@ -39,27 +36,25 @@ export interface DeliveryMapProps {
   filters?: DeliveryFilterOptions
   onChangeFilters?: (filters: DeliveryFilterOptions) => void
   stats?: DeliveryStats
-  isSimulating?: boolean
-  onToggleSimulation?: () => void
 }
 
-/**
- * Bridge component that securely captures the active Leaflet L.Map instance
- * via useMap hook and provides it to the parent DeliveryMap.
- */
-function MapInstanceBridge({ onMapReady }: { onMapReady: (map: L.Map) => void }) {
+   
+                                                                            
+                                                             
+   
+const MapInstanceBridge = ({ onMapReady }: { onMapReady: (map: L.Map) => void }) => {
   const map = useMap()
   useEffect(() => {
     onMapReady(map)
   }, [map, onMapReady])
   return null
-}
+};
 
-/**
- * Controller component to handle smooth pan/zoom, bounds fitting,
- * and live courier tracking.
- */
-function MapViewController({
+   
+                                                                  
+                             
+   
+const MapViewController = ({
   deliveries,
   selectedDelivery,
   focusRequest,
@@ -67,13 +62,13 @@ function MapViewController({
   deliveries: DeliveryRecord[]
   selectedDelivery: DeliveryRecord | null
   focusRequest?: { id: string; coordinates: Coordinates; timestamp: number } | null
-}) {
+}) => {
   const map = useMap()
   const prevSelectedIdRef = useRef<string | null>(null)
   const prevFocusTimestampRef = useRef<number | null>(null)
   const hasInitializedBoundsRef = useRef(false)
 
-  // Explicit centering requests (always fires when button is clicked)
+                                                                      
   useEffect(() => {
     if (focusRequest && focusRequest.timestamp !== prevFocusTimestampRef.current) {
       prevFocusTimestampRef.current = focusRequest.timestamp
@@ -85,7 +80,7 @@ function MapViewController({
     }
   }, [focusRequest, map])
 
-  // When a different delivery is selected, smoothly fly to its coordinates
+                                                                           
   useEffect(() => {
     if (selectedDelivery && selectedDelivery.id !== prevSelectedIdRef.current) {
       prevSelectedIdRef.current = selectedDelivery.id
@@ -99,7 +94,7 @@ function MapViewController({
     }
   }, [selectedDelivery, map])
 
-  // Follow courier movement during simulation if courier is actively selected
+                                                                              
   useEffect(() => {
     if (selectedDelivery) {
       map.panTo([selectedDelivery.coordinates.lat, selectedDelivery.coordinates.lng], {
@@ -109,7 +104,7 @@ function MapViewController({
     }
   }, [selectedDelivery, map])
 
-  // Fit bounds ONLY ONCE on initial map load - never re-triggers when unselecting
+                                                                                  
   useEffect(() => {
     if (!hasInitializedBoundsRef.current && deliveries.length > 0) {
       hasInitializedBoundsRef.current = true
@@ -123,7 +118,7 @@ function MapViewController({
   }, [deliveries, map])
 
   return null
-}
+};
 
 export const DeliveryMap: React.FC<DeliveryMapProps> = ({
   deliveries,
@@ -139,16 +134,14 @@ export const DeliveryMap: React.FC<DeliveryMapProps> = ({
   filters,
   onChangeFilters,
   stats,
-  isSimulating,
-  onToggleSimulation,
 }) => {
-  // Antananarivo center coordinates
+                                    
   const defaultCenter: [number, number] = [-18.8925, 47.521]
   const defaultZoom = 13
 
   const [mapInstance, setMapInstance] = useState<L.Map | null>(null)
 
-  // Invalidate map size on fullscreen toggle so Leaflet resizes smoothly without blank tiles
+                                                                                             
   useEffect(() => {
     if (mapInstance) {
       const timer = setTimeout(() => {
@@ -158,7 +151,7 @@ export const DeliveryMap: React.FC<DeliveryMapProps> = ({
     }
   }, [isFullscreen, mapInstance])
 
-  // Escape key listener to exit full screen
+                                            
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === "Escape" && isFullscreen) {
@@ -169,7 +162,7 @@ export const DeliveryMap: React.FC<DeliveryMapProps> = ({
     return () => window.removeEventListener("keydown", handleKeyDown)
   }, [isFullscreen, onToggleFullscreen])
 
-  // 100% reliable center-all handler using real Leaflet L.Map instance
+                                                                       
   const handleFitAll = () => {
     if (mapInstance && deliveries.length > 0) {
       const bounds = L.latLngBounds(
@@ -185,7 +178,7 @@ export const DeliveryMap: React.FC<DeliveryMapProps> = ({
     }
   }
 
-  // Centering on currently selected courier
+                                            
   const handleCenterOnSelected = () => {
     if (mapInstance && selectedDelivery) {
       mapInstance.flyTo(
@@ -196,7 +189,7 @@ export const DeliveryMap: React.FC<DeliveryMapProps> = ({
     }
   }
 
-  // Status tabs definition for fullscreen filter bar
+                                                     
   const statusTabs = stats
     ? [
         { id: "all", label: "Toutes", count: stats.totalActive + stats.deliveredToday },
@@ -216,10 +209,10 @@ export const DeliveryMap: React.FC<DeliveryMapProps> = ({
           : "relative w-full h-full min-h-[500px] lg:min-h-[620px] rounded-3xl overflow-hidden border border-border/80 shadow-xs bg-muted/40"
       }
     >
-      {/* ── Fullscreen Interactive Command Bar ── */}
+      
       {isFullscreen && (
         <div className="bg-card/95 backdrop-blur-md border-b border-border/80 px-4 py-2.5 flex items-center justify-between gap-3 shadow-sm z-[1100] shrink-0">
-          {/* Left: Brand title & live status indicator */}
+          
           <div className="flex items-center gap-3 shrink-0">
             <div className="flex items-center gap-2 text-primary font-display font-bold text-sm">
               <MapPin size={18} className="text-primary" />
@@ -229,17 +222,11 @@ export const DeliveryMap: React.FC<DeliveryMapProps> = ({
               </span>
             </div>
 
-            {isSimulating && (
-              <span className="hidden md:inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[10px] font-bold bg-teal-500/15 text-teal-700 dark:text-teal-300 border border-teal-500/30">
-                <Sparkles size={11} className="animate-spin text-teal-500" />
-                GPS Actif
-              </span>
-            )}
           </div>
 
-          {/* Center: Search input & Status Filter Badges */}
+          
           <div className="flex items-center gap-2.5 flex-1 max-w-2xl justify-center">
-            {/* Fullscreen Search Input */}
+            
             {filters && onChangeFilters && (
               <div className="relative w-40 sm:w-60 md:w-72">
                 <Search
@@ -267,7 +254,7 @@ export const DeliveryMap: React.FC<DeliveryMapProps> = ({
               </div>
             )}
 
-            {/* Status Filter Chips */}
+            
             {filters && onChangeFilters && statusTabs.length > 0 && (
               <div className="hidden lg:flex items-center gap-1 overflow-x-auto">
                 {statusTabs.map((tab) => {
@@ -305,28 +292,9 @@ export const DeliveryMap: React.FC<DeliveryMapProps> = ({
             )}
           </div>
 
-          {/* Right: Quick Actions & Exit Fullscreen Button */}
+          
           <div className="flex items-center gap-2 shrink-0">
-            {/* GPS Simulation Toggle */}
-            {onToggleSimulation && (
-              <button
-                type="button"
-                onClick={onToggleSimulation}
-                className={`p-2 rounded-xl border text-xs font-semibold transition-all cursor-pointer flex items-center gap-1.5 ${
-                  isSimulating
-                    ? "bg-teal-500/15 text-teal-700 dark:text-teal-300 border-teal-500/30"
-                    : "bg-card hover:bg-muted text-muted-foreground border-border/80"
-                }`}
-                title={isSimulating ? "Pause télémétrie" : "Démarrer simulation GPS"}
-              >
-                {isSimulating ? <Pause size={14} /> : <Play size={14} />}
-                <span className="hidden xl:inline">
-                  {isSimulating ? "Pause GPS" : "Simuler GPS"}
-                </span>
-              </button>
-            )}
-
-            {/* Overview / Fit Bounds Button */}
+            
             <button
               type="button"
               onClick={handleFitAll}
@@ -337,7 +305,7 @@ export const DeliveryMap: React.FC<DeliveryMapProps> = ({
               <span className="hidden xl:inline">Vue d'ensemble</span>
             </button>
 
-            {/* Exit Fullscreen Button */}
+            
             {onToggleFullscreen && (
               <button
                 type="button"
@@ -353,7 +321,7 @@ export const DeliveryMap: React.FC<DeliveryMapProps> = ({
         </div>
       )}
 
-      {/* ── Main Map Canvas Container ── */}
+      
       <div className={isFullscreen ? "relative w-full flex-1" : "relative w-full h-full"}>
         <MapContainer
           center={defaultCenter}
@@ -361,24 +329,24 @@ export const DeliveryMap: React.FC<DeliveryMapProps> = ({
           scrollWheelZoom={true}
           className="delivery-map-container"
         >
-          {/* OpenStreetMap Standard Tiles */}
+          
           <TileLayer
-            attribution='&copy; <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener noreferrer">OpenStreetMap</a> contributeurs'
-            url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+            attribution='Tiles &copy; <a href="https://www.esri.com/" target="_blank" rel="noopener noreferrer">Esri</a> &mdash; Sources: Esri, HERE, Garmin, USGS, Intermap, INCREMENT P, NRCan, Esri Japan, METI, Esri China (Hong Kong), Esri Korea, Esri (Thailand), NGCC, &copy; <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener noreferrer">OpenStreetMap contributors</a>, and the GIS User Community'
+            url="https://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/{z}/{y}/{x}"
             maxZoom={19}
           />
 
-          {/* Bridge to register real L.Map instance */}
+          
           <MapInstanceBridge onMapReady={setMapInstance} />
 
-          {/* Viewport controller */}
+          
           <MapViewController
             deliveries={deliveries}
             selectedDelivery={selectedDelivery}
             focusRequest={focusRequest}
           />
 
-          {/* ── Trajectory Polylines & Destination Points ── */}
+          
           {showTrajectories &&
             deliveries.map((delivery) => {
               const isSelected = selectedDelivery?.id === delivery.id
@@ -392,7 +360,7 @@ export const DeliveryMap: React.FC<DeliveryMapProps> = ({
               )
             })}
 
-          {/* ── Courier Markers ── */}
+          
           {deliveries.map((delivery) => (
             <DeliveryMarker
               key={`marker-${delivery.id}`}
@@ -403,9 +371,9 @@ export const DeliveryMap: React.FC<DeliveryMapProps> = ({
           ))}
         </MapContainer>
 
-        {/* Floating Map Controls & Overlays (Top-Right) */}
+        
         <div className="absolute top-4 right-4 z-[400] flex flex-col gap-2">
-          {/* Toggle Full Screen Button */}
+          
           {onToggleFullscreen && (
             <button
               type="button"
@@ -431,7 +399,7 @@ export const DeliveryMap: React.FC<DeliveryMapProps> = ({
             </button>
           )}
 
-          {/* Overview Button (Fit All Bounds) - Only if not already in top bar */}
+          
           {!isFullscreen && (
             <button
               type="button"
@@ -444,7 +412,7 @@ export const DeliveryMap: React.FC<DeliveryMapProps> = ({
             </button>
           )}
 
-          {/* Center on selected courier (when a delivery is active) */}
+          
           {selectedDelivery && (
             <button
               type="button"
@@ -457,7 +425,7 @@ export const DeliveryMap: React.FC<DeliveryMapProps> = ({
             </button>
           )}
 
-          {/* Toggle Trajectories Lines Button */}
+          
           {onToggleTrajectories && (
             <button
               type="button"
@@ -477,9 +445,9 @@ export const DeliveryMap: React.FC<DeliveryMapProps> = ({
           )}
         </div>
 
-        {/* Floating Status & Trajectory Legend (Bottom-Left) */}
+        
         <div className="absolute bottom-4 left-4 z-[400] bg-card/95 backdrop-blur-md border border-border/80 rounded-2xl p-2.5 shadow-lg hidden md:flex flex-col gap-2 text-xs">
-          {/* Status markers */}
+          
           <div className="flex items-center gap-3">
             <div className="flex items-center gap-1.5">
               <span className="w-2.5 h-2.5 rounded-full bg-teal-500 animate-pulse" />
@@ -499,7 +467,7 @@ export const DeliveryMap: React.FC<DeliveryMapProps> = ({
             </div>
           </div>
 
-          {/* Trajectory line legend */}
+          
           {showTrajectories && (
             <div className="pt-1.5 border-t border-border/60 flex items-center gap-3 text-[11px] text-muted-foreground">
               <div className="flex items-center gap-1.5">
@@ -518,7 +486,7 @@ export const DeliveryMap: React.FC<DeliveryMapProps> = ({
           )}
         </div>
 
-        {/* Active Live Tracking Floating Pill (Top-Left) */}
+        
         {selectedDelivery && (
           <div className="absolute top-4 left-4 z-[400] bg-card/95 backdrop-blur-md border border-primary/40 rounded-2xl p-3 shadow-xl max-w-sm flex items-center justify-between gap-3 animate-fade-in ring-1 ring-primary/20">
             <div className="min-w-0">
@@ -541,7 +509,7 @@ export const DeliveryMap: React.FC<DeliveryMapProps> = ({
             </div>
 
             <div className="flex items-center gap-1 shrink-0">
-              {/* Recenter Button */}
+              
               <button
                 type="button"
                 onClick={handleCenterOnSelected}
@@ -551,7 +519,7 @@ export const DeliveryMap: React.FC<DeliveryMapProps> = ({
                 <Navigation size={13} />
               </button>
 
-              {/* Reopen Details Button */}
+              
               {onOpenDetails && (
                 <button
                   type="button"
@@ -564,7 +532,7 @@ export const DeliveryMap: React.FC<DeliveryMapProps> = ({
                 </button>
               )}
 
-              {/* Stop Tracking Button */}
+              
               {onClearSelection && (
                 <button
                   type="button"
@@ -579,7 +547,7 @@ export const DeliveryMap: React.FC<DeliveryMapProps> = ({
           </div>
         )}
 
-        {/* Empty State Overlay if 0 deliveries match filters */}
+        
         {deliveries.length === 0 && (
           <div className="absolute inset-0 z-[400] bg-card/60 backdrop-blur-xs flex flex-col items-center justify-center p-6 text-center">
             <div className="w-12 h-12 rounded-2xl bg-muted flex items-center justify-center text-muted-foreground mb-3">

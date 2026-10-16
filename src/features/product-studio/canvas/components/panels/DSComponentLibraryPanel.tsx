@@ -12,17 +12,17 @@ import type { ImageLayer, Layer, ShapeLayer, TextLayer } from '@/features/produc
 
 type Filter = 'all' | DSComponentCategory
 
-// Each insert cascades slightly so repeated drops don't stack perfectly.
+                                                                         
 let insertCount = 0
 
-/**
- * Library of design-system components (buttons, inputs, cards,
- * badges, avatars, banners) the user can drop onto the canvas. Each component
- * is composited from primitive shape + text layers, so it renders through the
- * normal pipeline and is non-interactive by construction. Previews are built
- * from the very same layer specs as the inserted result — one source of truth.
- */
-export function DSComponentLibraryPanel() {
+   
+                                                               
+                                                                              
+                                                                              
+                                                                             
+                                                                               
+   
+export const DSComponentLibraryPanel = () => {
   const [filter, setFilter] = useState<Filter>('all')
   const addLayers = useDesignStore((s) => s.addLayers)
 
@@ -39,15 +39,15 @@ export function DSComponentLibraryPanel() {
 
     let specs = def.build(ox, oy)
 
-    // Photo avatars drop a *random* face — build() can't fetch (it's sync), so
-    // swap the sample URL for an inlined data URL here.
+                                                                               
+                                                        
     if (def.kind === 'photo-avatar') {
       const dataUrl = await randomAvatarDataUrl()
       specs = specs.map((s) => (s.type === 'image' ? { ...s, imageUrl: dataUrl } : s))
     }
 
-    // Grouped components get a fresh groupId per drop so each instance selects
-    // and moves as one unit (and repeated drops don't merge into one group).
+                                                                               
+                                                                             
     if (def.group) {
       const groupId = nanoid()
       specs = specs.map((s) => ({ ...s, groupId }))
@@ -62,7 +62,7 @@ export function DSComponentLibraryPanel() {
         Components
       </div>
 
-      {/* Category filter */}
+      
       <div className="flex gap-1 flex-wrap">
         <FilterTab label="All" active={filter === 'all'} onClick={() => setFilter('all')} />
         {DS_COMPONENT_CATEGORIES.map((cat) => (
@@ -75,7 +75,7 @@ export function DSComponentLibraryPanel() {
         ))}
       </div>
 
-      {/* Component grid */}
+      
       <div className="grid grid-cols-2 gap-2">
         {filtered.map((def) => (
           <button
@@ -99,12 +99,12 @@ export function DSComponentLibraryPanel() {
       </p>
     </div>
   )
-}
+};
 
 const PREVIEW_BOX = { w: 132, h: 64, pad: 8 }
 
 /** Renders a component's primitive layers as scaled HTML — a faithful thumbnail. */
-function ComponentPreview({ def }: { def: DSComponentDef }) {
+const ComponentPreview = ({ def }: { def: DSComponentDef }) => {
   const layers = useMemo(() => def.build(0, 0), [def])
 
   const availW = PREVIEW_BOX.w - PREVIEW_BOX.pad * 2
@@ -129,9 +129,9 @@ function ComponentPreview({ def }: { def: DSComponentDef }) {
       </div>
     </div>
   )
-}
+};
 
-function PreviewLayer({
+const PreviewLayer = ({
   layer,
   scale,
   offX,
@@ -141,7 +141,7 @@ function PreviewLayer({
   scale: number
   offX: number
   offY: number
-}) {
+}) => {
   const base: React.CSSProperties = {
     position: 'absolute',
     left: offX + layer.x * scale,
@@ -216,9 +216,9 @@ function PreviewLayer({
   }
 
   return null
-}
+};
 
-function FilterTab({ label, active, onClick }: { label: string; active: boolean; onClick: () => void }) {
+const FilterTab = ({ label, active, onClick }: { label: string; active: boolean; onClick: () => void }) => {
   return (
     <button
       className={`px-2.5 py-1 text-[12px] rounded-[5px] transition-colors cursor-pointer ${
@@ -229,4 +229,4 @@ function FilterTab({ label, active, onClick }: { label: string; active: boolean;
       {label}
     </button>
   )
-}
+};

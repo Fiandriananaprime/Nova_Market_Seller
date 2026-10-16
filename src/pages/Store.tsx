@@ -1,20 +1,17 @@
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import { useTranslation } from "react-i18next"
 import {
-  Store as StoreIcon,
-  Globe,
-  Phone,
-  Mail,
-  MapPin,
-  Clock,
   CheckCircle2,
-  Edit2,
   Camera,
-  Link,
-  Sparkles,
   Save,
 } from "lucide-react"
-import { storeInfo } from "@/hook/mock"
+import {
+  getSellerBusiness,
+  getStorePolicies,
+  updateSellerBusiness,
+  updateStorePolicies,
+} from "@/service/seller"
+import type { SellerBusiness, StorePolicies } from "@/type/seller"
 import {
   PageHeader,
   Button,
@@ -46,40 +43,83 @@ const defaultHours: Record<string, { open: string; close: string; closed: boolea
   Dimanche: { open: "", close: "", closed: true },
 }
 
-export default function Store() {
+const Store = () => {
   const { t } = useTranslation()
   const [tab, setTab] = useState<"profile" | "hours" | "policies">("profile")
-  const [vacationMode, setVacationMode] = useState(storeInfo.vacationMode)
+  const [store, setStore] = useState<SellerBusiness>({})
+  const [vacationMode, setVacationMode] = useState(false)
   const [hours, setHours] = useState(defaultHours)
+  const [policies, setPolicies] = useState<StorePolicies>({})
   const [toast, setToast] = useState<string | null>(null)
+  const [form, setForm] = useState({ name: "", description: "", location: "", phone: "", email: "", facebook: "", instagram: "", website: "" })
+  const [loading, setLoading] = useState(true)
+  const [saving, setSaving] = useState(false)
+  const [error, setError] = useState<string | null>(null)
 
-  const [form, setForm] = useState({
-    name: storeInfo.name ?? "",
-    description: storeInfo.description ?? "",
-    location: storeInfo.location ?? "",
-    phone: storeInfo.phone ?? "",
-    email: storeInfo.email ?? "",
-    facebook: storeInfo.socialLinks?.facebook ?? "",
-    instagram: storeInfo.socialLinks?.instagram ?? "",
-    website: storeInfo.socialLinks?.website ?? "",
-  })
+  useEffect(() => {
+    Promise.all([getSellerBusiness(), getStorePolicies()])
+      .then(([business, storePolicies]) => {
+        setStore(business)
+        setPolicies(storePolicies)
+        setForm({
+          name: business.name ?? "",
+          description: business.description ?? "",
+          location: business.location ?? "",
+          phone: business.contact?.phone ?? "",
+          email: business.contact?.email ?? "",
+          facebook: "",
+          instagram: "",
+          website: business.contact?.website ?? "",
+        })
+      })
+      .catch(() => setError("Impossible de charger les informations de la boutique."))
+      .finally(() => setLoading(false))
+  }, [])
 
   function showToast(msg: string) {
     setToast(msg)
     setTimeout(() => setToast(null), 3000)
   }
 
+  async function saveChanges() {
+    setSaving(true)
+    setError(null)
+    try {
+      if (tab === "profile") {
+        const updated = await updateSellerBusiness({
+          name: form.name,
+          description: form.description,
+          location: form.location,
+          contact: { phone: form.phone, email: form.email, website: form.website },
+        })
+        setStore(updated)
+        showToast("Profil de la boutique enregistré.")
+      } else if (tab === "policies") {
+        const updated = await updateStorePolicies(policies)
+        setPolicies(updated)
+        showToast("Politique de retour enregistrée.")
+      } else {
+        showToast("Les horaires et le mode vacances restent locaux : aucun endpoint de sauvegarde n'est disponible.")
+      }
+    } catch {
+      setError("L'enregistrement a échoué. Vérifiez votre connexion et réessayez.")
+    } finally {
+      setSaving(false)
+    }
+  }
+
   return (
     <div className="p-6 md:p-8 space-y-6 animate-fade-in max-w-7xl mx-auto">
-      {/* Page Header */}
+      
       <PageHeader
         title={t("store.title")}
-        subtitle={storeInfo.name}
+        subtitle={store.name ?? ""}
         actions={
           <Button
             variant="primary"
             size="md"
-            onClick={() => showToast("Modifications de la boutique enregistrées !")}
+            onClick={saveChanges}
+            loading={saving}
           >
             <Save size={14} />
             {t("store.saveChanges")}
@@ -87,12 +127,15 @@ export default function Store() {
         }
       />
 
-      {/* Cover & Brand Hero Banner */}
+      {loading && <p role="status" className="text-sm text-muted-foreground">Chargement des informations de la boutique…</p>}
+      {error && <p role="alert" className="rounded-xl border border-destructive/30 bg-destructive/5 p-3 text-sm text-destructive">{error}</p>}
+
+      
       <Card data-tour="store-hero" className="overflow-hidden">
         <div className="relative h-48 bg-gradient-to-r from-primary/30 to-blue-600/30">
-          {storeInfo.coverUrl && (
+          {store.coverUrl && (
             <img
-              src={storeInfo.coverUrl}
+              src={store.coverUrl}
               alt="Couverture"
               className="w-full h-full object-cover"
             />
@@ -106,9 +149,9 @@ export default function Store() {
         <div className="px-6 pb-6 pt-0 relative flex flex-col md:flex-row md:items-end justify-between gap-4 -mt-10">
           <div className="flex items-end gap-4">
             <div className="relative">
-              {storeInfo.logoUrl ? (
+              {store.logoUrl ? (
                 <img
-                  src={storeInfo.logoUrl}
+                  src={store.logoUrl}
                   alt="Logo"
                   className="w-20 h-20 rounded-2xl border-4 border-card object-cover bg-card shadow-md"
                 />
@@ -125,26 +168,26 @@ export default function Store() {
             <div className="mb-1">
               <div className="flex items-center gap-2">
                 <h2 className="font-display font-extrabold text-xl text-foreground">
-                  {storeInfo.name}
+                  {store.name}
                 </h2>
-                {storeInfo.verified && (
+                {store.verified && (
                   <CheckCircle2 size={18} className="text-primary fill-primary/10" />
                 )}
               </div>
 
               <div className="flex items-center gap-3 text-xs text-muted-foreground mt-0.5">
-                <span>{storeInfo.productsCount} produits</span>
+                <span>{store.productsCount ?? 0} produits</span>
                 <span>·</span>
-                <span>{storeInfo.followersCount.toLocaleString()} abonnés</span>
+                <span>{(store.followersCount ?? 0).toLocaleString()} abonnés</span>
                 <span>·</span>
                 <span className="text-amber-500 font-semibold">
-                  ★ {storeInfo.rating} ({storeInfo.reviewsCount} avis)
+                  ★ {store.rating ?? 0} ({store.reviewsCount ?? 0} avis)
                 </span>
               </div>
             </div>
           </div>
 
-          {/* Vacation Mode Toggle */}
+          
           <div data-tour="store-vacation" className="flex items-center gap-3 p-2.5 rounded-xl bg-muted/60 border border-border/60">
             <div className="flex items-center gap-2">
               <span className="text-xs font-semibold text-foreground">
@@ -154,11 +197,6 @@ export default function Store() {
                 type="button"
                 onClick={() => {
                   setVacationMode(!vacationMode)
-                  showToast(
-                    vacationMode
-                      ? "Mode vacances désactivé"
-                      : "Mode vacances activé"
-                  )
                 }}
                 className={`relative w-10 h-5 rounded-full transition-colors cursor-pointer ${
                   vacationMode ? "bg-amber-500" : "bg-muted-foreground/30"
@@ -172,14 +210,15 @@ export default function Store() {
               </button>
             </div>
 
-            <Badge variant={storeInfo.isOpen && !vacationMode ? "success" : "warning"}>
-              {vacationMode ? "En pause" : storeInfo.isOpen ? "Ouverte" : "Fermée"}
+            <Badge variant={store.isOpen && !vacationMode ? "success" : "warning"}>
+              {vacationMode ? "En pause (local)" : store.isOpen ? "Ouverte" : "Fermée"}
             </Badge>
           </div>
         </div>
       </Card>
+      <p className="text-xs text-muted-foreground">Le mode vacances, les horaires, les réseaux sociaux et les images n'ont pas d'endpoint de sauvegarde disponible.</p>
 
-      {/* Tabs Menu */}
+      
       <div data-tour="store-tabs" className="flex items-center gap-2 border-b border-border/80 pb-2">
         {(
           [
@@ -202,7 +241,7 @@ export default function Store() {
         ))}
       </div>
 
-      {/* TAB 1: Profile & Contact */}
+      
       {tab === "profile" && (
         <div data-tour="store-profile-form" className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <Card>
@@ -292,7 +331,7 @@ export default function Store() {
         </div>
       )}
 
-      {/* TAB 2: Operating Hours */}
+      
       {tab === "hours" && (
         <Card>
           <CardHeader>
@@ -363,7 +402,7 @@ export default function Store() {
         </Card>
       )}
 
-      {/* TAB 3: Policies */}
+      
       {tab === "policies" && (
         <Card>
           <CardHeader>
@@ -387,7 +426,8 @@ export default function Store() {
               </label>
               <textarea
                 rows={3}
-                defaultValue="Retours acceptés sous 7 jours après réception si l'emballage d'origine n'a pas été ouvert."
+                value={policies.returnPolicy ?? ""}
+                onChange={(event) => setPolicies({ ...policies, returnPolicy: event.target.value })}
                 className="w-full px-3.5 py-2 text-sm rounded-xl border border-border bg-card text-foreground focus:outline-none resize-none"
               />
             </div>
@@ -395,8 +435,9 @@ export default function Store() {
         </Card>
       )}
 
-      {/* Toast */}
+      
       {toast && <Toast message={toast} onDismiss={() => setToast(null)} />}
     </div>
   )
-}
+};
+export default Store

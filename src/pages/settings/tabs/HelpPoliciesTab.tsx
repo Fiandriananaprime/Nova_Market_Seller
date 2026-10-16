@@ -1,6 +1,5 @@
 import { useState } from "react"
 import {
-  HelpCircle,
   FileText,
   MessageCircle,
   PhoneCall,
@@ -14,11 +13,6 @@ import {
   LifeBuoy,
 } from "lucide-react"
 import { Card, CardHeader, CardTitle, CardBody, Button, Badge } from "@/components/ui"
-
-interface HelpPoliciesTabProps {
-  showToast?: (msg: string) => void
-  onShowToast?: (msg: string) => void
-}
 
 interface FaqItem {
   question: string
@@ -48,14 +42,8 @@ const FAQS: FaqItem[] = [
   },
 ]
 
-export function HelpPoliciesTab({ showToast, onShowToast }: HelpPoliciesTabProps) {
-  const triggerToast = showToast || onShowToast || (() => {})
+export const HelpPoliciesTab = ({ showToast }: { showToast: (message: string) => void }) => {
   const [openFaq, setOpenFaq] = useState<number | null>(0)
-  const [acceptedTerms, setAcceptedTerms] = useState({
-    sellerAgreement: true,
-    dataProtection: true,
-    qualityCharter: true,
-  })
 
   const toggleFaq = (index: number) => {
     setOpenFaq(openFaq === index ? null : index)
@@ -63,7 +51,7 @@ export function HelpPoliciesTab({ showToast, onShowToast }: HelpPoliciesTabProps
 
   return (
     <div className="space-y-6">
-      {/* 26. Aide et Support Vendeur */}
+      
       <Card>
         <CardHeader>
           <div className="flex items-center gap-2">
@@ -77,9 +65,9 @@ export function HelpPoliciesTab({ showToast, onShowToast }: HelpPoliciesTabProps
             Une équipe d'assistance Nova Market basée à Antananarivo est disponible pour vous accompagner dans vos opérations quotidiennes.
           </p>
 
-          {/* Quick contact channels */}
+          
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-            {/* WhatsApp Direct */}
+            
             <a
               href="https://wa.me/261340000000?text=Bonjour%20Support%20Nova%20Market,%20j'ai%20besoin%20d'aide%20pour%20mon%20compte%20vendeur"
               target="_blank"
@@ -99,7 +87,7 @@ export function HelpPoliciesTab({ showToast, onShowToast }: HelpPoliciesTabProps
               </div>
             </a>
 
-            {/* Téléphone fixe / mobile */}
+            
             <a
               href="tel:+261202200000"
               className="p-4 rounded-xl border border-border bg-card hover:bg-muted/50 transition-colors flex flex-col justify-between group"
@@ -117,7 +105,7 @@ export function HelpPoliciesTab({ showToast, onShowToast }: HelpPoliciesTabProps
               </div>
             </a>
 
-            {/* Email Marchand */}
+            
             <a
               href="mailto:support.seller@novamarket.mg"
               className="p-4 rounded-xl border border-border bg-card hover:bg-muted/50 transition-colors flex flex-col justify-between group"
@@ -136,7 +124,7 @@ export function HelpPoliciesTab({ showToast, onShowToast }: HelpPoliciesTabProps
             </a>
           </div>
 
-          {/* Interactive FAQ */}
+          
           <div className="pt-2 space-y-2">
             <p className="text-xs font-bold text-foreground flex items-center gap-1.5">
               <BookOpen size={14} className="text-primary" />
@@ -176,7 +164,7 @@ export function HelpPoliciesTab({ showToast, onShowToast }: HelpPoliciesTabProps
         </CardBody>
       </Card>
 
-      {/* 27. Conditions & Politiques Juridiques */}
+      
       <Card>
         <CardHeader>
           <div className="flex items-center gap-2">
@@ -186,7 +174,7 @@ export function HelpPoliciesTab({ showToast, onShowToast }: HelpPoliciesTabProps
           <Button
             variant="outline"
             size="sm"
-            onClick={() => onShowToast("Accords contractuels synchronisés")}
+            onClick={() => showToast("Accords contractuels synchronisés")}
           >
             <CheckCircle2 size={14} className="mr-1" />
             Attestation vérifiée
@@ -198,7 +186,7 @@ export function HelpPoliciesTab({ showToast, onShowToast }: HelpPoliciesTabProps
           </p>
 
           <div className="space-y-3">
-            {/* Contrat Vendeur */}
+            
             <div className="p-3.5 rounded-xl border border-border bg-card flex items-center justify-between">
               <div className="flex items-center gap-3">
                 <FileText size={18} className="text-primary" />
@@ -216,14 +204,14 @@ export function HelpPoliciesTab({ showToast, onShowToast }: HelpPoliciesTabProps
                 <Button
                   variant="ghost"
                   size="sm"
-                  onClick={() => onShowToast("Téléchargement du contrat PDF...")}
+                  onClick={() => showToast("Téléchargement du contrat PDF...")}
                 >
                   Lire PDF
                 </Button>
               </div>
             </div>
 
-            {/* Charte Qualité */}
+            
             <div className="p-3.5 rounded-xl border border-border bg-card flex items-center justify-between">
               <div className="flex items-center gap-3">
                 <FileText size={18} className="text-emerald-600" />
@@ -241,14 +229,14 @@ export function HelpPoliciesTab({ showToast, onShowToast }: HelpPoliciesTabProps
                 <Button
                   variant="ghost"
                   size="sm"
-                  onClick={() => onShowToast("Téléchargement de la charte qualité...")}
+                  onClick={() => showToast("Téléchargement de la charte qualité...")}
                 >
                   Lire PDF
                 </Button>
               </div>
             </div>
 
-            {/* Données personnelles */}
+            
             <div className="p-3.5 rounded-xl border border-border bg-card flex items-center justify-between">
               <div className="flex items-center gap-3">
                 <FileText size={18} className="text-blue-600" />
@@ -266,7 +254,7 @@ export function HelpPoliciesTab({ showToast, onShowToast }: HelpPoliciesTabProps
                 <Button
                   variant="ghost"
                   size="sm"
-                  onClick={() => onShowToast("Téléchargement de la politique vie privée...")}
+                  onClick={() => showToast("Téléchargement de la politique vie privée...")}
                 >
                   Lire PDF
                 </Button>
@@ -277,4 +265,4 @@ export function HelpPoliciesTab({ showToast, onShowToast }: HelpPoliciesTabProps
       </Card>
     </div>
   )
-}
+};

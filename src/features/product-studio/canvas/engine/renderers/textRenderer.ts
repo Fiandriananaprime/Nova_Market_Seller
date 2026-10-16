@@ -1,17 +1,16 @@
 import type { TextLayer } from '@/features/product-studio/canvas/types/design'
 import { wrapText, getFontString } from '@/features/product-studio/canvas/engine/textMeasure'
 
-/**
- * Render text with manual per-character letter spacing.
- * This works across all browsers unlike ctx.letterSpacing.
- */
-export function renderTextWithLetterSpacing(
+   
+                                                        
+                                                           
+   
+export const renderTextWithLetterSpacing = (
   ctx: CanvasRenderingContext2D,
   text: string,
   x: number,
   y: number,
-  spacing: number,
-) {
+  spacing: number,) => {
   let currentX = x
   for (let i = 0; i < text.length; i++) {
     const char = text[i]
@@ -19,13 +18,12 @@ export function renderTextWithLetterSpacing(
     const charWidth = ctx.measureText(char).width
     currentX += charWidth + spacing
   }
-}
+};
 
-export function renderTextLayer(
+export const renderTextLayer = (
   ctx: CanvasRenderingContext2D,
   layer: TextLayer,
-  scale: number,
-) {
+  scale: number,) => {
   const fontSize = layer.fontSize * scale
   const lineHeightPx = fontSize * layer.lineHeight
   const maxWidth = layer.width * scale
@@ -33,7 +31,7 @@ export function renderTextLayer(
 
   ctx.save()
 
-  // Apply text transform
+                         
   let text = layer.content
   if (layer.textTransform === 'uppercase') text = text.toUpperCase()
   else if (layer.textTransform === 'lowercase') text = text.toLowerCase()
@@ -44,7 +42,7 @@ export function renderTextLayer(
 
   const lines = wrapText(ctx, text, maxWidth, fontSize, layer.fontWeight, layer.letterSpacing)
 
-  // Vertical alignment offset
+                              
   const totalTextHeight = lines.length * lineHeightPx
   const layerHeight = layer.height * scale
   let yOffset = 0
@@ -65,14 +63,14 @@ export function renderTextLayer(
       x = maxWidth - line.width
     }
 
-    // Render with manual letter spacing (ctx.letterSpacing not supported in all browsers)
+                                                                                          
     if (Math.abs(lsPerChar) > 0.1) {
       renderTextWithLetterSpacing(ctx, line.text, x, y, lsPerChar)
     } else {
       ctx.fillText(line.text, x, y)
     }
 
-    // Text decoration
+                      
     if (layer.underline || layer.strikethrough) {
       ctx.save()
       ctx.strokeStyle = layer.color.hex
@@ -100,4 +98,4 @@ export function renderTextLayer(
   }
 
   ctx.restore()
-}
+};

@@ -3,14 +3,14 @@ import { useDesignStore } from '@/features/product-studio/canvas/store/useDesign
 import { useCoarsePointer } from '@/features/product-studio/canvas/hooks/useCoarsePointer'
 import type { TextLayer } from '@/features/product-studio/canvas/types/design'
 
-/**
- * Fullscreen text editor for touch devices. Inline canvas text editing is fiddly
- * on a phone (tiny, zoom-dependent, and the keyboard covers it), so when text
- * editing starts on a coarse pointer we take over the screen with a large,
- * comfortable field. Commits through the same `editingTextLayerId` flow as the
- * desktop inline overlay (which is suppressed on touch).
- */
-export function MobileTextEditor() {
+   
+                                                                                 
+                                                                              
+                                                                           
+                                                                               
+                                                         
+   
+export const MobileTextEditor = () => {
   const coarse = useCoarsePointer()
   const editingId = useDesignStore((s) => s.editingTextLayerId)
   const layer = useDesignStore((s) =>
@@ -28,7 +28,7 @@ export function MobileTextEditor() {
   useEffect(() => {
     if (!active || !layer) return
     setValue(layer.content)
-    // Focus on the next frame so the keyboard opens and the caret lands at the end.
+                                                                                    
     const id = requestAnimationFrame(() => {
       const el = ref.current
       if (!el) return
@@ -36,9 +36,9 @@ export function MobileTextEditor() {
       el.setSelectionRange(el.value.length, el.value.length)
     })
     return () => cancelAnimationFrame(id)
-    // Only re-run when the edited layer changes, not on every keystroke.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [editingId, active])
+                                                                         
+                                                           
+  }, [editingId, active, layer])
 
   if (!active || !layer) return null
 
@@ -77,4 +77,4 @@ export function MobileTextEditor() {
       />
     </div>
   )
-}
+};

@@ -2,12 +2,12 @@ import { useEffect, useRef } from 'react'
 import { motion } from 'motion/react'
 import { useContextMenuStore } from '@/features/product-studio/canvas/store/useContextMenuStore'
 
-/**
- * The shared right-click menu, mounted once in App. Renders the items set by the
- * most recent openMenu() call (frame / layer / canvas), clamped to stay on
- * screen. Closes on outside click, Escape, scroll, or resize.
- */
-export function ContextMenu() {
+   
+                                                                                 
+                                                                           
+                                                              
+   
+export const ContextMenu = () => {
   const open = useContextMenuStore((s) => s.open)
   const x = useContextMenuStore((s) => s.x)
   const y = useContextMenuStore((s) => s.y)
@@ -37,7 +37,7 @@ export function ContextMenu() {
 
   if (!open) return null
 
-  // Clamp so the menu never overflows the viewport.
+                                                    
   const menuW = 200
   const estH = items.length * 32 + 8
   const left = Math.max(8, Math.min(x, window.innerWidth - menuW - 8))
@@ -74,4 +74,4 @@ export function ContextMenu() {
       ))}
     </motion.div>
   )
-}
+};

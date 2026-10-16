@@ -2,33 +2,33 @@ import { useEffect, useRef } from 'react'
 import { useRouterStore, type Route } from '@/features/product-studio/canvas/store/useRouterStore'
 import { useDesignStore } from '@/features/product-studio/canvas/store/useDesignStore'
 
-/**
- * Bridges this app's in-memory state router with a parent `/studio` host when
- * it is embedded as an iframe. Two jobs:
- *   1. Announce ("navigate") the current view up to the host on every route
- *      change, so the host can mirror it in the URL + sidebar highlight.
- *   2. Apply "show" commands coming down from the host (sidebar clicks /
- *      browser back-forward) without reloading.
- *
- * The initial view is adopted synchronously by the router store (from `?view=`),
- * so there is no boot transient to announce. All of this no-ops when not
- * embedded (top-level window). Messages are same-origin and origin-validated.
- */
+   
+                                                                              
+                                         
+                                                                            
+                                                                         
+                                                                         
+                                                
+  
+                                                                                 
+                                                                         
+                                                                              
+   
 
 const SOURCE = 'tela-canvas'
 type View = 'editor' | 'files'
 
-function viewForRoute(route: Route): View {
+const viewForRoute = (route: Route):View => {
   return route.page === 'library' ? 'files' : 'editor'
-}
+};
 
 const isEmbedded = () => typeof window !== 'undefined' && window.parent !== window
 
-export function useStudioBridge() {
+export const useStudioBridge = () => {
   const route = useRouterStore((s) => s.route)
   const lastPosted = useRef<View | null>(null)
 
-  // child → parent: announce the current view (deduped).
+                                                         
   useEffect(() => {
     if (!isEmbedded()) return
     const view = viewForRoute(route)
@@ -43,7 +43,7 @@ export function useStudioBridge() {
     window.parent.postMessage(message, window.location.origin)
   }, [route])
 
-  // parent → child: apply a view the host asks for.
+                                                    
   useEffect(() => {
     if (!isEmbedded()) return
     function onMessage(e: MessageEvent) {
@@ -83,4 +83,4 @@ export function useStudioBridge() {
     window.addEventListener('novamarket-studio:open-image', openImage)
     return () => window.removeEventListener('novamarket-studio:open-image', openImage)
   }, [])
-}
+};

@@ -1,16 +1,8 @@
-import { createContext, useContext, useEffect, useState } from "react"
+import { useEffect, useState } from "react"
 import i18n from "../i18n"
+import { I18nContext, type Language } from "./langContextValue"
 
-type Language = "fr" | "en"
-
-interface I18nContextType {
-  language: Language
-  setLanguage: (language: Language) => void
-}
-
-const I18nContext = createContext<I18nContextType | undefined>(undefined)
-
-export function I18nProvider({ children }: { children: React.ReactNode }) {
+export const I18nProvider = ({ children }: { children: React.ReactNode }) => {
   const [language, setLanguageState] = useState<Language>(
     (i18n.language as Language) || "fr"
   )
@@ -37,14 +29,4 @@ export function I18nProvider({ children }: { children: React.ReactNode }) {
       {children}
     </I18nContext.Provider>
   )
-}
-
-export function useLang() {
-  const context = useContext(I18nContext)
-
-  if (!context) {
-    throw new Error("useLang must be used inside I18nProvider")
-  }
-
-  return context
 }

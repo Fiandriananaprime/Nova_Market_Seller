@@ -1,10 +1,10 @@
-/** A triangle that fills a w×h box (apex top-centre). */
-export function trianglePoints(w: number, h: number): [number, number][] {
+                                                         
+export const trianglePoints = (w: number, h: number):[number, number][] => {
   return [[w / 2, 0], [w, h], [0, h]]
-}
+};
 
-/** An n-pointed star filling a w×h box (elliptical, so it stretches with the box). */
-export function starPoints(w: number, h: number, points = 5, innerRatio = 0.42): [number, number][] {
+                                                                                      
+export const starPoints = (w: number, h: number, points = 5, innerRatio = 0.42):[number, number][] => {
   const cx = w / 2
   const cy = h / 2
   const out: [number, number][] = []
@@ -14,14 +14,14 @@ export function starPoints(w: number, h: number, points = 5, innerRatio = 0.42):
     out.push([cx + cx * f * Math.cos(angle), cy + cy * f * Math.sin(angle)])
   }
   return out
-}
+};
 
-/** A filled arrowhead triangle: tip at (tipX,tipY), pointing along (dirX,dirY). */
-export function arrowHeadPoints(tipX: number, tipY: number, dirX: number, dirY: number, size: number): [number, number][] {
+                                                                                   
+export const arrowHeadPoints = (tipX: number, tipY: number, dirX: number, dirY: number, size: number):[number, number][] => {
   const len = Math.hypot(dirX, dirY) || 1
   const ux = dirX / len
   const uy = dirY / len
-  const px = -uy // perpendicular
+  const px = -uy                 
   const py = ux
   const bx = tipX - ux * size
   const by = tipY - uy * size
@@ -30,16 +30,16 @@ export function arrowHeadPoints(tipX: number, tipY: number, dirX: number, dirY: 
     [bx + px * size * 0.55, by + py * size * 0.55],
     [bx - px * size * 0.55, by - py * size * 0.55],
   ]
-}
+};
 
-/** SVG `points` attribute string from a list of coordinates. */
-export function toPointsAttr(pts: readonly (readonly [number, number])[]): string {
+                                                                
+export const toPointsAttr = (pts: readonly (readonly [number, number])[]):string => {
   return pts.map(([x, y]) => `${Math.round(x * 100) / 100},${Math.round(y * 100) / 100}`).join(' ')
-}
+};
 
 /** Shortest distance from a point to a polyline (min over each segment). Used to
  *  hit-test and erase freehand strokes against the actual ink, not their bbox. */
-export function distToPolyline(px: number, py: number, pts: readonly (readonly [number, number])[]): number {
+export const distToPolyline = (px: number, py: number, pts: readonly (readonly [number, number])[]):number => {
   if (pts.length === 0) return Infinity
   if (pts.length === 1) return Math.hypot(px - pts[0][0], py - pts[0][1])
   let min = Infinity
@@ -54,4 +54,4 @@ export function distToPolyline(px: number, py: number, pts: readonly (readonly [
     if (d < min) min = d
   }
   return min
-}
+};

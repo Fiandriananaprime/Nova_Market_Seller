@@ -1,8 +1,8 @@
 import { useDesignStore } from '@/features/product-studio/canvas/store/useDesignStore'
 import { useUIStore } from '@/features/product-studio/canvas/store/useUIStore'
-import { getGridSnapTargets } from '@/features/product-studio/canvas/components/canvas/GridOverlay'
+import { getGridSnapTargets } from '@/features/product-studio/canvas/engine/gridSnap'
 
-const SNAP_THRESHOLD = 6 // px in design space
+const SNAP_THRESHOLD = 6                      
 
 interface DragState {
   type: 'move' | 'resize' | 'pan' | 'marquee' | 'draw' | 'group-resize' | 'rotate'
@@ -18,17 +18,16 @@ interface DragState {
   startPanY?: number
 }
 
-export function computeResize(
+export const computeResize = (
   drag: DragState,
   dx: number,
   dy: number,
-  constrainAspect = false,
-): { x?: number; y?: number; width?: number; height?: number } {
+  constrainAspect = false,):{ x?: number; y?: number; width?: number; height?: number } => {
   const h = drag.handle!
   const updates: { x?: number; y?: number; width?: number; height?: number } = {}
 
-  // Collect snap targets for edges: frame edges/center + grid + other layers'
-  // edges/centers (mirrors the move-time snapping in useSnapComputation).
+                                                                              
+                                                                          
   const state = useDesignStore.getState()
   const format = state.document.format
   const snapX: number[] = [0, format.width / 2, format.width]
@@ -84,8 +83,8 @@ export function computeResize(
     updates.height = Math.max(20, Math.round(snappedBottom - drag.startLayerY))
   }
 
-  // Constrain aspect ratio when Shift is held (Figma convention) or the layer
-  // has a persistent aspect-ratio lock.
+                                                                              
+                                        
   const layer = state.getLayer(drag.layerId)
   const shouldConstrainAspect = (constrainAspect || layer?.aspectRatioLocked) ?? false
   if (shouldConstrainAspect && drag.startLayerW > 0 && drag.startLayerH > 0) {
@@ -95,7 +94,7 @@ export function computeResize(
     } else if (updates.height != null && updates.width == null) {
       updates.width = Math.max(20, Math.round(updates.height * ratio))
     } else if (updates.width != null && updates.height != null) {
-      // Corner handle — use the larger delta to determine size
+                                                               
       const newRatio = updates.width / updates.height
       if (newRatio > ratio) {
         updates.height = Math.max(20, Math.round(updates.width / ratio))
@@ -106,4 +105,4 @@ export function computeResize(
   }
 
   return updates
-}
+};

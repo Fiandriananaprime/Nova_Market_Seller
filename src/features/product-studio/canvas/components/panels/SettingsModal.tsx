@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { useUIStore, type AppMode } from '@/features/product-studio/canvas/store/useUIStore'
+import { useUIStore } from '@/features/product-studio/canvas/store/useUIStore'
 import { useAIStore } from '@/features/product-studio/canvas/store/useAIStore'
 import { useIsMobile } from '@/features/product-studio/canvas/hooks/useIsMobile'
 import { Drawer, DrawerContent, DrawerTitle, DrawerClose } from '@/features/product-studio/canvas/components/ui/drawer'
@@ -7,7 +7,7 @@ import { AI_ENABLED } from '@/features/product-studio/canvas/lib/aiApi'
 import { AI_MODELS, normalizeAIModel } from '@/features/product-studio/canvas/lib/aiModels'
 import { Button } from '@/features/product-studio/canvas/components/ui/button'
 import { Input } from '@/features/product-studio/canvas/components/ui/input'
-import { SliderField } from '@/features/product-studio/canvas/components/controls/SliderField'
+
 import {
   X,
   Settings,
@@ -27,7 +27,7 @@ const SETTINGS_TABS: { id: SettingsTab; label: string; icon: typeof Settings }[]
   { id: 'appearance', label: 'Appearance', icon: Palette },
 ]
 
-export function SettingsModal() {
+export const SettingsModal = () => {
   const open = useUIStore((s) => s.settingsOpen)
   const setOpen = useUIStore((s) => s.setSettingsOpen)
   const [tab, setTab] = useState<SettingsTab>('general')
@@ -43,7 +43,7 @@ export function SettingsModal() {
     </>
   )
 
-  // Mobile: a bottom sheet with the tabs as a horizontal pill row.
+                                                                   
   if (isMobile) {
     return (
       <Drawer open={open} onOpenChange={(o) => !o && setOpen(false)}>
@@ -83,7 +83,7 @@ export function SettingsModal() {
         className="relative bg-white rounded-[12px] shadow-xl w-[700px] max-h-[80vh] overflow-hidden flex"
         onClick={(e) => e.stopPropagation()}
       >
-        {/* Sidebar */}
+        
         <div className="w-[200px] bg-card border-r border-border p-3 space-y-1 shrink-0">
           <div className="text-[11px] uppercase tracking-[0.12em] text-muted-foreground/60 font-medium px-3 py-2">
             Settings
@@ -106,7 +106,7 @@ export function SettingsModal() {
           })}
         </div>
 
-        {/* Content */}
+        
         <div className="flex-1 overflow-y-auto p-6">
           <div className="flex items-center justify-between mb-6">
             <h2 className="text-[17px] font-semibold text-foreground">
@@ -122,15 +122,15 @@ export function SettingsModal() {
       </div>
     </div>
   )
-}
+};
 
-function GeneralSettings() {
+const GeneralSettings = () => {
   const appMode = useUIStore((s) => s.appMode)
   const setAppMode = useUIStore((s) => s.setAppMode)
 
   return (
     <div className="space-y-6">
-      {/* Mode selector */}
+      
       <div className="space-y-3">
         <label className="text-[14px] font-medium text-foreground">Editor Mode</label>
         <p className="text-[13px] text-muted-foreground">Choose the level of control you want.</p>
@@ -186,7 +186,7 @@ function GeneralSettings() {
         </div>
       </div>
 
-      {/* Auto-save */}
+      
       <div className="space-y-2">
         <label className="text-[14px] font-medium text-foreground">Auto-Save</label>
         <p className="text-[13px] text-muted-foreground">Your work is automatically saved to your browser.</p>
@@ -196,7 +196,7 @@ function GeneralSettings() {
         </div>
       </div>
 
-      {/* Data */}
+      
       <div className="space-y-2">
         <label className="text-[14px] font-medium text-foreground">Data Storage</label>
         <p className="text-[13px] text-muted-foreground">All data is stored locally in your browser. Nothing is sent to our servers.</p>
@@ -221,9 +221,9 @@ function GeneralSettings() {
       </div>
     </div>
   )
-}
+};
 
-function AISettings() {
+const AISettings = () => {
   const model = useAIStore((s) => s.model)
   const productName = useAIStore((s) => s.productName)
   const productDescription = useAIStore((s) => s.productDescription)
@@ -262,9 +262,9 @@ function AISettings() {
       </div>
     </div>
   )
-}
+};
 
-function CanvasSettings() {
+const CanvasSettings = () => {
   const snapToGrid = useUIStore((s) => s.snapToGrid)
   const smartPadding = useUIStore((s) => s.smartPadding)
   const toggleSnap = useUIStore((s) => s.toggleSnap)
@@ -283,7 +283,7 @@ function CanvasSettings() {
         </p>
       )}
 
-      {/* Snapping is always on in Basic (a guardrail), so these toggles are Pro-only. */}
+      
       {isPro && (
         <div className="space-y-4">
           <h3 className="text-[14px] font-medium text-foreground">Snapping</h3>
@@ -342,9 +342,9 @@ function CanvasSettings() {
       )}
     </div>
   )
-}
+};
 
-function AppearanceSettings() {
+const AppearanceSettings = () => {
   return (
     <div className="space-y-6">
       <div className="space-y-3">
@@ -378,11 +378,11 @@ function AppearanceSettings() {
       </div>
     </div>
   )
-}
+};
 
 // --- Shared components ---
 
-function NudgeField({ label, value, onChange }: { label: string; value: number; onChange: (n: number) => void }) {
+const NudgeField = ({ label, value, onChange }: { label: string; value: number; onChange: (n: number) => void }) => {
   return (
     <label className="block">
       <span className="block text-[12px] font-medium text-foreground mb-1">{label}</span>
@@ -399,18 +399,18 @@ function NudgeField({ label, value, onChange }: { label: string; value: number; 
       </div>
     </label>
   )
-}
+};
 
-function SettingsField({ label, value, onChange }: { label: string; value: string; onChange: (v: string) => void }) {
+const SettingsField = ({ label, value, onChange }: { label: string; value: string; onChange: (v: string) => void }) => {
   return (
     <div className="space-y-1.5">
       <label className="text-[13px] text-muted-foreground font-normal">{label}</label>
       <Input className="rounded-[5px]" value={value} onChange={(e) => onChange(e.target.value)} />
     </div>
   )
-}
+};
 
-function SettingsTextarea({ label, value, onChange }: { label: string; value: string; onChange: (v: string) => void }) {
+const SettingsTextarea = ({ label, value, onChange }: { label: string; value: string; onChange: (v: string) => void }) => {
   return (
     <div className="space-y-1.5">
       <label className="text-[13px] text-muted-foreground font-normal">{label}</label>
@@ -421,9 +421,9 @@ function SettingsTextarea({ label, value, onChange }: { label: string; value: st
       />
     </div>
   )
-}
+};
 
-function SettingsToggle({ label, description, value, onChange }: { label: string; description: string; value: boolean; onChange: () => void }) {
+const SettingsToggle = ({ label, description, value, onChange }: { label: string; description: string; value: boolean; onChange: () => void }) => {
   return (
     <div className="flex items-start justify-between gap-4">
       <div>
@@ -446,4 +446,4 @@ function SettingsToggle({ label, description, value, onChange }: { label: string
       </button>
     </div>
   )
-}
+};

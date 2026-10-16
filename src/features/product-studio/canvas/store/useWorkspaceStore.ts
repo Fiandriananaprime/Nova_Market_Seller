@@ -8,13 +8,16 @@ import { useDesignStore } from '@/features/product-studio/canvas/store/useDesign
 import type { Frame, Workspace, Page } from '@/features/product-studio/canvas/types/workspace'
 import type { Layer, AdFormat, BackgroundLayer } from '@/features/product-studio/canvas/types/design'
 
-// --- Default frame ---
+const isRecord = (value: unknown):value is Record<string, unknown> => {
+  return typeof value === 'object' && value !== null
+};
 
-function createDefaultFrame(
+                        
+
+const createDefaultFrame = (
   format: AdFormat = DEFAULT_FORMAT,
   position: { x: number; y: number } = { x: 0, y: 0 },
-  name?: string,
-): Frame {
+  name?: string,):Frame => {
   return {
     id: nanoid(),
     name: name ?? format.label,
@@ -43,22 +46,21 @@ function createDefaultFrame(
     locked: false,
     visible: true,
   }
-}
+};
 
-function createDefaultPage(name: string = 'Scratchpad', includeFrame: boolean = false): Page {
+const createDefaultPage = (name: string = 'Scratchpad', includeFrame: boolean = false):Page => {
   return {
     id: nanoid(),
     name,
     frames: includeFrame ? [createDefaultFrame()] : [],
     looseElements: [],
   }
-}
+};
 
-// Helper to update frames in the active page
-function updateActivePageFrames(
+                                             
+const updateActivePageFrames = (
   workspace: Workspace,
-  updater: (frames: Frame[]) => Frame[],
-): Workspace {
+  updater: (frames: Frame[]) => Frame[],):Workspace => {
   return {
     ...workspace,
     pages: workspace.pages.map((p) =>
@@ -67,53 +69,48 @@ function updateActivePageFrames(
         : p
     ),
   }
-}
+};
 
-function getActivePageFrames(workspace: Workspace): Frame[] {
-  const page = workspace.pages.find((p) => p.id === workspace.activePageId)
-  return page?.frames ?? []
-}
-
-// --- Store ---
+                
 
 interface WorkspaceStore {
   workspace: Workspace
   activeFrameId: string | null
   activeFileId: string | null
-  // Multi-frame selection (ephemeral — drives marquee/outlines, not persisted).
+                                                                                
   selectedFrameIds: Set<string>
   setSelectedFrames: (ids: string[]) => void
 
-  // Page CRUD
+              
   addPage: (name?: string) => string
   removePage: (id: string) => void
   renamePage: (id: string, name: string) => void
   setActivePage: (id: string) => void
   getActivePage: () => Page | undefined
 
-  // Frame CRUD (operates on active page)
+                                         
   addFrame: (format?: AdFormat, position?: { x: number; y: number }, name?: string) => string
   removeFrame: (id: string) => void
   duplicateFrame: (id: string) => string
   updateFrame: (id: string, updates: Partial<Pick<Frame, 'name' | 'x' | 'y' | 'locked' | 'visible'>>) => void
-  /** Change a frame's format in place, reflowing its layers to fit the new size. */
+                                                                                    
   setFrameFormat: (id: string, format: AdFormat) => void
   setActiveFrame: (id: string | null) => void
 
-  // Convenience
+                
   getActiveFrame: () => Frame | undefined
   getFrame: (id: string) => Frame | undefined
 
-  // Auto-arrange frames
+                        
   arrangeFrames: (gap?: number) => void
 
-  // Frame layers
+                 
   addLayerToFrame: (frameId: string, layer: Omit<Layer, 'id' | 'zIndex'>) => string
   updateLayerInFrame: (frameId: string, layerId: string, updates: Partial<Layer>) => void
   removeLayerFromFrame: (frameId: string, layerId: string) => void
   renameFrame: (frameId: string, name: string) => void
 
-  // Generate all format variants
+                                 
   generateFormatVariants: (sourceFrameId: string) => void
 }
 
@@ -137,9 +134,9 @@ export const useWorkspaceStore = create<WorkspaceStore>()(
 
       setSelectedFrames: (ids) => set({ selectedFrameIds: new Set(ids) }),
 
-      // Page actions
+                     
       addPage: (name = 'New Page') => {
-        const page = createDefaultPage(name, true) // Non-scratchpad pages get a default frame
+        const page = createDefaultPage(name, true)                                            
         set((s) => ({
           workspace: {
             ...s.workspace,
@@ -192,7 +189,7 @@ export const useWorkspaceStore = create<WorkspaceStore>()(
         const page = get().getActivePage()
         if (!page) return id
 
-        // Auto-position: place to the right of the last frame with gap
+                                                                       
         if (!position) {
           const frames = page.frames
           if (frames.length > 0) {
@@ -391,8 +388,8 @@ export const useWorkspaceStore = create<WorkspaceStore>()(
             scaled.x = Math.round(relX * format.width - scaled.width / 2)
             scaled.y = Math.round(relY * format.height - scaled.height / 2)
 
-            if ('fontSize' in scaled) {
-              (scaled as any).fontSize = Math.round((scaled as any).fontSize * uniformScale)
+            if (scaled.type === 'text') {
+              scaled.fontSize = Math.round(scaled.fontSize * uniformScale)
             }
 
             return scaled
@@ -419,20 +416,26 @@ export const useWorkspaceStore = create<WorkspaceStore>()(
         activeFrameId: state.activeFrameId,
         activeFileId: state.activeFileId,
       }),
-      migrate: (persisted: any, version: number) => {
-        if (version < 2) {
+      migrate: (persisted: unknown, version: number) => {
+        if (version < 2 && isRecord(persisted) && isRecord(persisted.workspace)) {
           // Old format had workspace.frames — migrate to workspace.pages
-          const old = persisted as any
-          if (old?.workspace?.frames && !old?.workspace?.pages) {
+          const workspace = persisted.workspace
+          if (Array.isArray(workspace.frames) && !Array.isArray(workspace.pages)) {
             const pageId = nanoid()
-            old.workspace.pages = [{
-              id: pageId,
-              name: 'Scratchpad',
-              frames: old.workspace.frames,
-              looseElements: [],
-            }]
-            old.workspace.activePageId = pageId
-            delete old.workspace.frames
+            const { frames, ...rest } = workspace
+            return {
+              ...persisted,
+              workspace: {
+                ...rest,
+                pages: [{
+                  id: pageId,
+                  name: 'Scratchpad',
+                  frames: frames as Frame[],
+                  looseElements: [],
+                }],
+                activePageId: pageId,
+              },
+            }
           }
         }
         return persisted

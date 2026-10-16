@@ -1,6 +1,6 @@
-// A friendly, memorable name for a new file — a descriptive word + a flower,
-// hyphenated (e.g. "amber-marigold"). Nicer to scan than "Untitled 3", and
-// distinct enough to tell files apart at a glance.
+                                                                             
+                                                                           
+                                                   
 
 const ADJECTIVES = [
   'amber', 'azure', 'bright', 'calm', 'coral', 'crisp', 'dawn', 'dusk', 'ember',
@@ -18,8 +18,8 @@ const FLOWERS = [
 
 const pick = <T>(arr: T[]): T => arr[Math.floor(Math.random() * arr.length)]
 
-/** A random "adjective-flower" name. Pass existing names to avoid collisions. */
-export function generateFileName(taken: readonly string[] = []): string {
+                                                                                 
+export const generateFileName = (taken: readonly string[] = []):string => {
   const used = new Set(taken.map((n) => n.toLowerCase()))
   for (let i = 0; i < 12; i++) {
     const name = `${pick(ADJECTIVES)}-${pick(FLOWERS)}`
@@ -27,4 +27,4 @@ export function generateFileName(taken: readonly string[] = []): string {
   }
   // Extremely unlikely fallback: disambiguate with a short suffix.
   return `${pick(ADJECTIVES)}-${pick(FLOWERS)}-${Math.floor(Math.random() * 900 + 100)}`
-}
+};

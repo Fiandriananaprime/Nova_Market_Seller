@@ -13,10 +13,10 @@ import {
   AlignVerticalDistributeCenter,
 } from 'lucide-react'
 
-// An "object" for alignment/distribution: either a single ungrouped layer or a
-// whole group (layers sharing a groupId) treated as one unit via its combined
-// bounding box. Members move together by the same delta so the group's internal
-// layout is preserved.
+                                                                               
+                                                                              
+                                                                                
+                       
 interface AlignObject {
   ids: string[]
   x: number
@@ -25,7 +25,7 @@ interface AlignObject {
   height: number
 }
 
-export function AlignmentPanel() {
+export const AlignmentPanel = () => {
   const selectedLayerIds = useDesignStore((s) => s.selectedLayerIds)
   const layers = useDesignStore((s) => s.document.layers)
   const format = useDesignStore((s) => s.document.format)
@@ -40,8 +40,8 @@ export function AlignmentPanel() {
 
   const byId = new Map(selected.map((l) => [l.id, l]))
 
-  // Collapse the selection into alignment objects: one entry per ungrouped layer
-  // plus one entry per selected group (its combined bbox).
+                                                                                 
+                                                           
   const buildObjects = (): AlignObject[] => {
     const groups = new Map<string, Layer[]>()
     const objects: AlignObject[] = []
@@ -70,7 +70,7 @@ export function AlignmentPanel() {
     return objects
   }
 
-  // Shift every member of an object so its bbox left edge lands on `left`.
+                                                                           
   const setObjectLeft = (o: AlignObject, left: number) => {
     const dx = left - o.x
     for (const id of o.ids) {
@@ -79,7 +79,7 @@ export function AlignmentPanel() {
     }
   }
 
-  // Shift every member of an object so its bbox top edge lands on `top`.
+                                                                         
   const setObjectTop = (o: AlignObject, top: number) => {
     const dy = top - o.y
     for (const id of o.ids) {
@@ -94,7 +94,7 @@ export function AlignmentPanel() {
     pushSnapshot()
 
     if (objects.length === 1) {
-      // Single object → align to the frame as a unit.
+                                                      
       const o = objects[0]
       switch (alignment) {
         case 'left':
@@ -117,7 +117,7 @@ export function AlignmentPanel() {
           break
       }
     } else {
-      // Multiple objects → align to their combined bounding box.
+                                                                 
       const minX = Math.min(...objects.map((o) => o.x))
       const maxX = Math.max(...objects.map((o) => o.x + o.width))
       const minY = Math.min(...objects.map((o) => o.y))
@@ -150,7 +150,7 @@ export function AlignmentPanel() {
     }
   }
 
-  // Equalise the edge-to-edge gaps between objects (endpoints stay put).
+                                                                         
   const distribute = (direction: 'horizontal' | 'vertical') => {
     if (objects.length < 3) return
     pushSnapshot()
@@ -183,7 +183,7 @@ export function AlignmentPanel() {
     }
   }
 
-  // Equalise the spacing between object centers (endpoints stay put).
+                                                                      
   const distributeCenters = (direction: 'horizontal' | 'vertical') => {
     if (objects.length < 3) return
     pushSnapshot()
@@ -235,7 +235,7 @@ export function AlignmentPanel() {
         ))}
       </div>
 
-      {/* Distribute & Tidy */}
+      
       {selected.length >= 2 && (
         <div className="space-y-1">
           {objects.length >= 3 && (
@@ -279,7 +279,7 @@ export function AlignmentPanel() {
             </>
           )}
 
-          {/* Match size */}
+          
           <div className="flex gap-1">
             <button
               className="flex-1 py-1.5 text-[12px] hover:bg-muted rounded-[5px] text-muted-foreground hover:text-foreground transition-[color,background-color,transform] cursor-pointer active:scale-[0.96]"
@@ -312,4 +312,4 @@ export function AlignmentPanel() {
       )}
     </div>
   )
-}
+};

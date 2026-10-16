@@ -7,19 +7,19 @@ interface Props {
   layer: DrawLayer
 }
 
-/**
- * Restyle a committed stroke. The outline is regenerated from `points` via
- * getDrawPath at render time, so changing colour / width / taper / pressure /
- * smoothing here re-renders the same stroke with the new style — no redraw
- * needed. Mirrors the DrawToolPanel controls for a consistent mental model.
- */
-export function DrawPropertiesPanel({ layer }: Props) {
+   
+                                                                           
+                                                                              
+                                                                           
+                                                                            
+   
+export const DrawPropertiesPanel = ({ layer }: Props) => {
   const updateLayer = useDesignStore((s) => s.updateLayer)
   const pushSnapshot = useDesignStore((s) => s.pushSnapshot)
   const isHighlighter = layer.mode === 'highlighter'
 
-  // Fall back to the engine's per-mode defaults for strokes drawn before these
-  // fields existed, so the sliders start where the stroke actually renders.
+                                                                               
+                                                                            
   const taper = layer.taper ?? (isHighlighter ? 0 : 1)
   const thinning = layer.thinning ?? (isHighlighter ? 0 : 0.55)
   const smoothing = layer.streamline ?? (isHighlighter ? 0.4 : 0.5)
@@ -79,4 +79,4 @@ export function DrawPropertiesPanel({ layer }: Props) {
       )}
     </div>
   )
-}
+};

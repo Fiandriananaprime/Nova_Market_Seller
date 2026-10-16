@@ -9,12 +9,12 @@ interface Props {
   onClose: () => void
 }
 
-/**
- * Pick a composition. Each layout drops well-placed placeholder layers into the
- * current frame, adapted to its aspect ratio. A bottom sheet on mobile, a
- * centred modal on desktop.
- */
-export function LayoutPicker({ onClose }: Props) {
+   
+                                                                                
+                                                                          
+                            
+   
+export const LayoutPicker = ({ onClose }: Props) => {
   const format = useDesignStore((s) => s.document.format)
   const addLayers = useDesignStore((s) => s.addLayers)
   const pushSnapshot = useDesignStore((s) => s.pushSnapshot)
@@ -85,11 +85,11 @@ export function LayoutPicker({ onClose }: Props) {
       </div>
     </div>
   )
-}
+};
 
-// A wireframe preview: media boxes are filled, text is drawn as bars, the CTA as
-// a pill — so the thumbnail shows the actual composition for this frame's shape.
-function LayoutThumb({ layout, w, h }: { layout: DesignLayout; w: number; h: number }) {
+                                                                                 
+                                                                                 
+const LayoutThumb = ({ layout, w, h }: { layout: DesignLayout; w: number; h: number }) => {
   const PREVIEW_W = 150
   const previewH = Math.round(PREVIEW_W * (h / w))
   const s = PREVIEW_W / w
@@ -110,4 +110,4 @@ function LayoutThumb({ layout, w, h }: { layout: DesignLayout; w: number; h: num
       })}
     </svg>
   )
-}
+};

@@ -1,11 +1,11 @@
 import { useRef } from 'react'
 import { useAssetStore, ASSET_CATEGORIES } from '@/features/product-studio/canvas/store/useAssetStore'
 import { useDesignStore } from '@/features/product-studio/canvas/store/useDesignStore'
-import { Upload, Search, Trash2, Plus } from 'lucide-react'
+import { Upload, Search, Trash2 } from 'lucide-react'
 import { measureImportedSvg } from '@/features/product-studio/canvas/engine/svgMeasure'
 import type { ImageLayer, SvgLayer } from '@/features/product-studio/canvas/types/design'
 
-export function AssetLibraryPanel() {
+export const AssetLibraryPanel = () => {
   const assets = useAssetStore((s) => s.getFilteredAssets())
   const searchQuery = useAssetStore((s) => s.searchQuery)
   const activeCategory = useAssetStore((s) => s.activeCategory)
@@ -28,7 +28,7 @@ export function AssetLibraryPanel() {
 
   const handleAddToCanvas = (asset: typeof assets[0]) => {
     if (asset.type === 'svg' || asset.type === 'icon') {
-      // Decode base64 back to SVG string
+                                         
       const raw = atob(asset.dataUrl.split(',')[1] ?? '')
       const { svgContent, width, height } = measureImportedSvg(raw)
       addLayer({
@@ -73,7 +73,7 @@ export function AssetLibraryPanel() {
         Asset Library
       </div>
 
-      {/* Search */}
+      
       <div className="relative">
         <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground/40" />
         <input
@@ -84,7 +84,7 @@ export function AssetLibraryPanel() {
         />
       </div>
 
-      {/* Categories */}
+      
       <div className="flex gap-1 flex-wrap">
         {ASSET_CATEGORIES.map((cat) => (
           <button
@@ -102,7 +102,7 @@ export function AssetLibraryPanel() {
         ))}
       </div>
 
-      {/* Upload */}
+      
       <div
         className="border-2 border-dashed border-border rounded-[7px] p-4 text-center cursor-pointer hover:border-primary/30 hover:bg-primary/5 transition-colors"
         onClick={() => fileInputRef.current?.click()}
@@ -125,7 +125,7 @@ export function AssetLibraryPanel() {
         />
       </div>
 
-      {/* Assets grid */}
+      
       {assets.length === 0 ? (
         <p className="text-[12px] text-muted-foreground/50 text-center py-4">
           No assets yet. Upload images, SVGs, or icons.
@@ -157,7 +157,7 @@ export function AssetLibraryPanel() {
                 className="w-full h-full object-contain p-1"
               />
 
-              {/* Delete button */}
+              
               <button
                 className="absolute top-1 right-1 p-1 bg-white/90 rounded-[3px] opacity-0 group-hover:opacity-100 transition-opacity hover:bg-destructive/10 cursor-pointer"
                 onClick={(e) => {
@@ -169,7 +169,7 @@ export function AssetLibraryPanel() {
                 <Trash2 className="w-3 h-3 text-muted-foreground hover:text-destructive" />
               </button>
 
-              {/* Name */}
+              
               <div className="absolute bottom-0 left-0 right-0 bg-black/50 px-1.5 py-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
                 <span className="text-[9px] text-white truncate block">{asset.name}</span>
               </div>
@@ -179,4 +179,4 @@ export function AssetLibraryPanel() {
       )}
     </div>
   )
-}
+};

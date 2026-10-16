@@ -14,45 +14,43 @@ import { trianglePoints, starPoints, arrowHeadPoints } from '@/features/product-
 import { renderTextLayer } from '@/features/product-studio/canvas/engine/renderers/textRenderer'
 import { renderGradientLayer } from '@/features/product-studio/canvas/engine/renderers/gradientRenderer'
 
-/**
- * Per-render options. Shader backgrounds are WebGL and can't render synchronously
- * inside the 2D pipeline, so callers choose how to handle them:
- * - `suppressShaderBg` (live editor): draw nothing — a live React overlay sits behind the canvas.
- * - `shaderCanvases` (export / thumbnail): pre-captured stills, drawn like an image.
- * - neither: fall back to the shader's first color (cheap, for any sync path).
- */
+   
+                                                                                  
+                                                                
+                                                                                                  
+                                                                                     
+                                                                               
+   
 export interface RenderOptions {
   suppressShaderBg?: boolean
   shaderCanvases?: Map<string, HTMLCanvasElement>
-  // Skip painting this layer — used so a text layer being edited inline
-  // isn't drawn underneath the live <textarea> overlay (avoids ghosting).
+                                                                        
+                                                                          
   hideLayerId?: string
 }
 
-// Re-export sub-renderers so existing imports still work
+                                                         
 export { renderTextLayer } from '@/features/product-studio/canvas/engine/renderers/textRenderer'
 export { renderGradientLayer } from '@/features/product-studio/canvas/engine/renderers/gradientRenderer'
 
-// --- Background layer ---
+                           
 
-function renderSolidBackground(
+const renderSolidBackground = (
   ctx: CanvasRenderingContext2D,
   layer: BackgroundLayer,
   w: number,
-  h: number,
-) {
+  h: number,) => {
   if (layer.fill.type !== 'solid') return
   ctx.fillStyle = layer.fill.color.hex
   ctx.fillRect(0, 0, w, h)
-}
+};
 
-function renderGradientBackground(
+const renderGradientBackground = (
   ctx: CanvasRenderingContext2D,
   _layer: BackgroundLayer,
   w: number,
   h: number,
-  fill: GradientFill,
-) {
+  fill: GradientFill,) => {
   let gradient: CanvasGradient
 
   if (fill.gradientType === 'linear') {
@@ -73,16 +71,15 @@ function renderGradientBackground(
 
   ctx.fillStyle = gradient
   ctx.fillRect(0, 0, w, h)
-}
+};
 
-function renderImageBackground(
+const renderImageBackground = (
   ctx: CanvasRenderingContext2D,
   _layer: BackgroundLayer,
   w: number,
   h: number,
   imageUrl: string,
-  fit: 'cover' | 'contain' | 'fill',
-) {
+  fit: 'cover' | 'contain' | 'fill',) => {
   const img = getOrLoadImage(imageUrl)
   if (!img) return
 
@@ -110,7 +107,7 @@ function renderImageBackground(
     }
     ctx.drawImage(img, sx, sy, sw, sh, 0, 0, w, h)
   } else {
-    // contain
+              
     if (imgAspect > canvasAspect) {
       dw = w
       dh = w / imgAspect
@@ -122,15 +119,14 @@ function renderImageBackground(
     dy = (h - dh) / 2
     ctx.drawImage(img, dx, dy, dw, dh)
   }
-}
+};
 
-function renderShaderBackground(
+const renderShaderBackground = (
   ctx: CanvasRenderingContext2D,
   layer: BackgroundLayer,
   w: number,
   h: number,
-  opts?: RenderOptions,
-) {
+  opts?: RenderOptions,) => {
   if (layer.fill.type !== 'shader') return
 
   const captured = opts?.shaderCanvases?.get(layer.id)
@@ -138,20 +134,19 @@ function renderShaderBackground(
     ctx.drawImage(captured, 0, 0, w, h)
     return
   }
-  // Live editor: a React shader overlay sits behind the canvas — leave transparent.
+                                                                                    
   if (opts?.suppressShaderBg) return
-  // Any other sync path (e.g. a thumbnail without a capture): cheap solid fallback.
+                                                                                    
   ctx.fillStyle = layer.fill.colors[0] ?? '#2563eb'
   ctx.fillRect(0, 0, w, h)
-}
+};
 
-export function renderBackgroundLayer(
+export const renderBackgroundLayer = (
   ctx: CanvasRenderingContext2D,
   layer: BackgroundLayer,
   w: number,
   h: number,
-  opts?: RenderOptions,
-) {
+  opts?: RenderOptions,) => {
   switch (layer.fill.type) {
     case 'solid':
       renderSolidBackground(ctx, layer, w, h)
@@ -166,15 +161,14 @@ export function renderBackgroundLayer(
       renderShaderBackground(ctx, layer, w, h, opts)
       break
   }
-}
+};
 
-// --- Image layer ---
+                      
 
-export function renderImageLayer(
+export const renderImageLayer = (
   ctx: CanvasRenderingContext2D,
   layer: ImageLayer,
-  scale: number,
-) {
+  scale: number,) => {
   const img = getOrLoadImage(layer.imageUrl)
   if (!img) return
 
@@ -183,14 +177,14 @@ export function renderImageLayer(
 
   ctx.save()
 
-  // Border radius clip
+                       
   if (layer.borderRadius > 0) {
     ctx.beginPath()
     ctx.roundRect(0, 0, w, h, layer.borderRadius * scale)
     ctx.clip()
   }
 
-  // Crop source rect
+                     
   const sx = layer.cropX * img.naturalWidth
   const sy = layer.cropY * img.naturalHeight
   const sw = layer.cropW * img.naturalWidth
@@ -212,7 +206,7 @@ export function renderImageLayer(
     }
     ctx.drawImage(img, drawSx, drawSy, drawSw, drawSh, 0, 0, w, h)
   } else {
-    // contain
+              
     const imgAspect = sw / sh
     const layerAspect = w / h
     let dw: number, dh: number
@@ -229,20 +223,19 @@ export function renderImageLayer(
   }
 
   ctx.restore()
-}
+};
 
-// --- SVG layer ---
+                    
 
-export function renderSvgLayer(
+export const renderSvgLayer = (
   ctx: CanvasRenderingContext2D,
   layer: SvgLayer,
-  scale: number,
-) {
+  scale: number,) => {
   const w = layer.width * scale
   const h = layer.height * scale
 
-  // Encode SVG as a data URL and cache. Key must vary with both the monochrome
-  // tint and the per-colour override map so edits invalidate the cached raster.
+                                                                               
+                                                                                
   const overrideKey = layer.colorOverrides
     ? Object.entries(layer.colorOverrides).map(([k, v]) => `${k}:${v.hex}`).sort().join('|')
     : ''
@@ -280,15 +273,14 @@ export function renderSvgLayer(
   }
 
   ctx.drawImage(img, 0, 0, w, h)
-}
+};
 
 // --- Shape layer ---
 
-export function renderShapeLayer(
+export const renderShapeLayer = (
   ctx: CanvasRenderingContext2D,
   layer: ShapeLayer,
-  scale: number,
-) {
+  scale: number,) => {
   const w = layer.width * scale
   const h = layer.height * scale
   const r = layer.borderRadius * scale
@@ -379,18 +371,17 @@ export function renderShapeLayer(
   }
 
   ctx.restore()
-}
+};
 
 // --- Main dispatch ---
 
-export function renderLayer(
+export const renderLayer = (
   ctx: CanvasRenderingContext2D,
   layer: Layer,
   canvasWidth: number,
   canvasHeight: number,
   scale: number,
-  opts?: RenderOptions,
-) {
+  opts?: RenderOptions,) => {
   if (!layer.visible || layer.opacity <= 0) return
 
   ctx.save()
@@ -458,14 +449,14 @@ export function renderLayer(
   }
 
   ctx.restore()
-}
+};
 
 // Freehand stroke — identical geometry to the SVG renderer (getDrawPath), but
 // *filled* via Path2D since the outline is a variable-width polygon, not a
 // stroked centreline. The caller has already translated to the layer origin (in
 // scaled px); we scale the local design-unit points here so width/position match
 // the scene.
-function renderDrawLayer(ctx: CanvasRenderingContext2D, layer: DrawLayer, scale: number): void {
+const renderDrawLayer = (ctx: CanvasRenderingContext2D, layer: DrawLayer, scale: number):void => {
   const sx = layer.natWidth ? layer.width / layer.natWidth : 1
   const sy = layer.natHeight ? layer.height / layer.natHeight : 1
   const d = getDrawPath({
@@ -489,4 +480,4 @@ function renderDrawLayer(ctx: CanvasRenderingContext2D, layer: DrawLayer, scale:
   }
   ctx.fill(new Path2D(d))
   ctx.restore()
-}
+};

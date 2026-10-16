@@ -1,13 +1,10 @@
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import {
   Tag,
   Percent,
   Plus,
   Trash2,
-  Calendar,
-  CheckCircle2,
   Copy,
-  ShoppingBag,
 } from "lucide-react"
 import {
   Card,
@@ -17,7 +14,13 @@ import {
   Button,
   Badge,
 } from "@/components/ui"
-import { formatMGA } from "@/hook/mock"
+import { formatMGA } from "@/hook/format"
+import {
+  createSellerPromotion,
+  deleteSellerPromotion,
+  getSellerPromotions,
+} from "@/service/seller"
+import type { SellerPromotion } from "@/type/seller"
 
 interface PromoCode {
   id: string
@@ -30,43 +33,28 @@ interface PromoCode {
   active: boolean
 }
 
-export function PromotionsTab({
+const mapPromotion = (promotion: SellerPromotion):PromoCode => {
+  return {
+    id: promotion.id,
+    code: promotion.code ?? promotion.name,
+    discountType: promotion.type === "percentage" ? "percent" : "fixed",
+    value: promotion.discount,
+    minSpend: promotion.minimumOrderAmount ?? 0,
+    expiresAt: promotion.endDate,
+    usageCount: promotion.usedCount ?? 0,
+    active: promotion.status === "active",
+  }
+};
+
+export const PromotionsTab = ({
   showToast,
 }: {
   showToast: (msg: string) => void
-}) {
-  const [promos, setPromos] = useState<PromoCode[]>([
-    {
-      id: "promo-1",
-      code: "BIENVENUE10",
-      discountType: "percent",
-      value: 10,
-      minSpend: 50000,
-      expiresAt: "2026-12-31",
-      usageCount: 48,
-      active: true,
-    },
-    {
-      id: "promo-2",
-      code: "LIVRAISONFREE",
-      discountType: "fixed",
-      value: 7000,
-      minSpend: 100000,
-      expiresAt: "2026-11-15",
-      usageCount: 19,
-      active: true,
-    },
-    {
-      id: "promo-3",
-      code: "TSENA2026",
-      discountType: "fixed",
-      value: 20000,
-      minSpend: 250000,
-      expiresAt: "2026-10-31",
-      usageCount: 7,
-      active: false,
-    },
-  ])
+}) => {
+  const [promos, setPromos] = useState<PromoCode[]>([])
+  const [loading, setLoading] = useState(true)
+  const [saving, setSaving] = useState(false)
+  const [error, setError] = useState<string | null>(null)
 
   const [showAddForm, setShowAddForm] = useState(false)
   const [newPromo, setNewPromo] = useState({
@@ -77,47 +65,57 @@ export function PromotionsTab({
     expiresAt: "2026-12-31",
   })
 
-  function handleAddPromo(e: React.FormEvent) {
+  useEffect(() => {
+    getSellerPromotions()
+      .then((items) => setPromos(items.map(mapPromotion)))
+      .catch(() => setError("Impossible de charger les codes promotionnels."))
+      .finally(() => setLoading(false))
+  }, [])
+
+  async function handleAddPromo(e: React.FormEvent) {
     e.preventDefault()
-    if (!newPromo.code) return
-
-    const created: PromoCode = {
-      id: `promo-${Date.now()}`,
-      code: newPromo.code.toUpperCase().trim(),
-      discountType: newPromo.discountType,
-      value: Number(newPromo.value),
-      minSpend: Number(newPromo.minSpend),
-      expiresAt: newPromo.expiresAt,
-      usageCount: 0,
-      active: true,
+    if (!newPromo.code || saving) return
+    setSaving(true)
+    setError(null)
+    try {
+      const created = await createSellerPromotion({
+        name: newPromo.code.toUpperCase().trim(),
+        type: newPromo.discountType === "percent" ? "percentage" : "fixed",
+        discount: Number(newPromo.value),
+        startDate: new Date().toISOString().slice(0, 10),
+        endDate: newPromo.expiresAt,
+      })
+      setPromos((current) => [mapPromotion(created), ...current])
+      setShowAddForm(false)
+      setNewPromo({
+        code: "",
+        discountType: "percent",
+        value: 10,
+        minSpend: 40000,
+        expiresAt: "2026-12-31",
+      })
+      showToast(`Promotion ${created.code ?? created.name} créée.`)
+    } catch {
+      setError("Impossible de créer cette promotion.")
+    } finally {
+      setSaving(false)
     }
-
-    setPromos([created, ...promos])
-    setShowAddForm(false)
-    setNewPromo({
-      code: "",
-      discountType: "percent",
-      value: 10,
-      minSpend: 40000,
-      expiresAt: "2026-12-31",
-    })
-    showToast(`Code promo ${created.code} créé avec succès !`)
   }
 
-  function handleTogglePromo(id: string) {
-    setPromos((prev) =>
-      prev.map((p) => (p.id === id ? { ...p, active: !p.active } : p))
-    )
-    showToast("Statut du code promotionnel mis à jour")
-  }
-
-  function handleDeletePromo(id: string) {
-    setPromos((prev) => prev.filter((p) => p.id !== id))
-    showToast("Code promo supprimé")
+  async function handleDeletePromo(id: string) {
+    try {
+      await deleteSellerPromotion(id)
+      setPromos((prev) => prev.filter((promo) => promo.id !== id))
+      showToast("Code promo supprimé.")
+    } catch {
+      setError("Impossible de supprimer ce code promotionnel.")
+    }
   }
 
   return (
     <div className="space-y-6">
+      {loading && <p role="status" className="text-xs text-muted-foreground">Chargement des promotions…</p>}
+      {error && <p role="alert" className="rounded-xl border border-destructive/30 bg-destructive/5 p-3 text-xs text-destructive">{error}</p>}
       <Card>
         <CardHeader>
           <div className="flex items-center gap-2">
@@ -223,15 +221,16 @@ export function PromotionsTab({
                 >
                   Annuler
                 </Button>
-                <Button variant="primary" size="sm" type="submit">
+                <Button variant="primary" size="sm" type="submit" loading={saving} disabled={saving}>
                   Activer le code promo
                 </Button>
               </div>
             </form>
           )}
 
-          {/* List of active promos */}
+          
           <div className="divide-y divide-border/60 rounded-xl border border-border bg-card overflow-hidden">
+            {!loading && promos.length === 0 && <p className="p-4 text-center text-xs text-muted-foreground">Aucune promotion enregistrée.</p>}
             {promos.map((promo) => (
               <div
                 key={promo.id}
@@ -280,13 +279,14 @@ export function PromotionsTab({
                   <Button
                     variant={promo.active ? "outline" : "primary"}
                     size="sm"
-                    onClick={() => handleTogglePromo(promo.id)}
+                    disabled
+                    title="Le contrat PromotionInput ne permet pas de modifier le statut."
                   >
-                    {promo.active ? "Désactiver" : "Activer"}
+                    {promo.active ? "Désactivation indisponible" : "Activation indisponible"}
                   </Button>
                   <button
                     type="button"
-                    onClick={() => handleDeletePromo(promo.id)}
+                    onClick={() => void handleDeletePromo(promo.id)}
                     className="p-1.5 rounded-lg text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/40 transition-colors cursor-pointer"
                     title="Supprimer"
                   >

@@ -3,27 +3,27 @@
 @import "shadcn/tailwind.css";
 @import "@fontsource-variable/inter";
 
-/* Inter Variable is the bundled default. To use your own brand font, add an
-   @font-face here and set FONT_FAMILY in src/engine/textMeasure.ts. */
+                                                                            
+                                                                       
 
 @custom-variant dark (&:is(.dark *));
 
 :root {
-  /* Brand tokens — Neutrals (see src/brand/palette.ts) */
+                                                          
   --charcoal: #100f0f;
   --cloud: #f8f8f3;
   --paper: #f2f2eb;
   --stone: #ebe9e1;
 
-  /* Brand tokens — Brand */
+                            
   --brand-dark: #0f172a;
   --brand-primary: #2563eb;
   --brand-accent: #dbeafe;
 
-  /* Brand tokens — Accent CTA scale */
+                                       
   --ember-500: #F56139;
 
-  /* Semantic mapping */
+                        
   --background: #f8f8f3;
   --foreground: #100f0f;
   --card: #f2f2eb;
@@ -43,13 +43,13 @@
   --input: #ebe9e1;
   --ring: #2563eb;
 
-  /* Radius */
+              
   --radius: 5px;
 
-  /* Shadow (single permitted shadow) */
+                                        
   --shadow-subtle: 0 1px 2px 0 rgba(17, 17, 17, 0.05);
 
-  /* Sidebar */
+               
   --sidebar: #f2f2eb;
   --sidebar-foreground: #100f0f;
   --sidebar-primary: #2563eb;
@@ -59,7 +59,7 @@
   --sidebar-border: #ebe9e1;
   --sidebar-ring: #2563eb;
 
-  /* Charts (brand-derived) */
+                              
   --chart-1: #2563eb;
   --chart-2: #F56139;
   --chart-3: #0f172a;
@@ -70,10 +70,10 @@
 }
 
 @theme inline {
-  /* UI chrome renders in the platform system font first — SF Pro on Apple
-     devices (-apple-system must lead), Segoe on Windows — then falls back to the
-     bundled Inter. Canvas/design text stays Inter via engine/textMeasure.ts so
-     exports are identical across devices. */
+                                                                          
+                                                                                 
+                                                                               
+                                             
   --font-heading: -apple-system, BlinkMacSystemFont, 'Segoe UI Variable', 'Inter Variable', ui-sans-serif, system-ui, sans-serif;
   --font-sans: -apple-system, BlinkMacSystemFont, 'Segoe UI Variable', 'Inter Variable', ui-sans-serif, system-ui, sans-serif;
   --color-sidebar-ring: var(--sidebar-ring);
@@ -119,7 +119,7 @@
 @layer base {
   * {
     @apply border-border outline-ring/50;
-    /* No grey flash on tap (native-web tell #4). */
+                                                    
     -webkit-tap-highlight-color: transparent;
   }
   body {
@@ -127,13 +127,13 @@
     overflow: hidden;
     height: 100dvh;
     font-optical-sizing: auto;
-    /* Crisper type on macOS (make-interfaces #8) */
+                                                    
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
     text-rendering: optimizeLegibility;
-    /* Avoid orphans in body copy (make-interfaces #10) */
+                                                          
     text-wrap: pretty;
-    /* Kill the ~300ms tap delay and the long-press share callout (native-web §7). */
+                                                                                     
     touch-action: manipulation;
     -webkit-touch-callout: none;
   }
@@ -142,30 +142,30 @@
   }
   #root {
     height: 100dvh;
-    /* Dark backdrop revealed when a sheet scales the app back (iOS depth). */
+                                                                              
     background-color: #000;
   }
-  /* Balanced headings — no lonely last word (make-interfaces #10) */
+                                                                     
   h1, h2, h3, h4 {
     text-wrap: balance;
   }
-  /* Chrome is UI — never selectable. Content stays selectable. (native-web §7) */
+                                                                                  
   button, [role="button"], nav, header, label, .no-select {
     -webkit-user-select: none;
     user-select: none;
   }
-  /* Inputs must be ≥16px or iOS zooms the viewport on focus (native-web §7). */
+                                                                                
   input, textarea, select {
     font-size: max(16px, 1em);
   }
-  /* In an installed PWA, stop the whole-page rubber-band / pull-to-refresh. */
+                                                                               
   @media (display-mode: standalone) {
     html, body { overscroll-behavior: none; }
   }
 }
 
-/* Respect the user's motion preference everywhere (emil principle #4).
-   Single global guard so individual components don't each have to opt in. */
+                                                                       
+                                                                             
 @media (prefers-reduced-motion: reduce) {
   *,
   ::before,
@@ -177,14 +177,14 @@
   }
 }
 
-/* Subtle 1px outline on DOM images for consistent edge depth (make-interfaces #11).
-   Pure black at low opacity — never a tinted neutral that reads as dirt. */
+                                                                                    
+                                                                            
 img:not([data-no-outline]) {
   outline: 1px solid rgba(0, 0, 0, 0.1);
   outline-offset: -1px;
 }
 
-/* Scrollbar */
+               
 ::-webkit-scrollbar {
   width: 6px;
 }
@@ -199,16 +199,16 @@ img:not([data-no-outline]) {
   background: #c2bcae;
 }
 
-/* Hide the scrollbar while preserving scrollability (used on the sidebar panels). */
+                                                                                     
 .no-scrollbar {
-  scrollbar-width: none; /* Firefox */
-  -ms-overflow-style: none; /* legacy Edge/IE */
+  scrollbar-width: none;              
+  -ms-overflow-style: none;                     
 }
 .no-scrollbar::-webkit-scrollbar {
-  display: none; /* Chromium/Safari */
+  display: none;                      
 }
 
-/* Canvas checkerboard (transparency indicator) */
+                                                  
 .canvas-checkerboard {
   background-image:
     linear-gradient(45deg, #e0e0e0 25%, transparent 25%),
@@ -219,27 +219,27 @@ img:not([data-no-outline]) {
   background-position: 0 0, 0 8px, 8px -8px, -8px 0;
 }
 
-/* Mobile property sheet: the desktop inspector packs many small controls, so
-   on touch we floor every control to a comfortable tap target (make-interfaces
-   §16, ≥40px) and bump control/label text for legibility. Scoped to the sheet
-   so desktop density is untouched. */
+                                                                             
+                                                                               
+                                                                              
+                                      
 @media (max-width: 767px) {
   .mobile-inspector select,
   .mobile-inspector input,
   .mobile-inspector textarea {
     min-height: 44px;
-    /* Must be ≥16px, or iOS zooms the viewport when the field focuses. */
+                                                                          
     font-size: 16px;
   }
   .mobile-inspector button {
     min-height: 40px;
     min-width: 40px;
   }
-  /* Segmented / pill button labels read too small at 11–12px on a phone. */
+                                                                            
   .mobile-inspector button {
     font-size: 14px;
   }
-  /* A touch more breathing room between control groups. */
+                                                           
   .mobile-inspector > * + * {
     margin-top: 0.25rem;
   }

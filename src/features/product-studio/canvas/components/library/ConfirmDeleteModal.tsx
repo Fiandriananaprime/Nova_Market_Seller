@@ -4,20 +4,20 @@ import { Trash2 } from 'lucide-react'
 
 interface Props {
   open: boolean
-  /** Name of the thing being deleted, shown quoted in the title. */
+                                                                    
   itemName?: string
-  /** e.g. "file" | "folder" — tunes the body copy. */
+                                                      
   kind?: string
   onConfirm: () => void
   onCancel: () => void
 }
 
-/**
- * Confirmation before a destructive delete. Grows from centre (never teleports),
- * fades its backdrop, and settles on the golden easing curve. The safe action
- * (Cancel) takes focus so an accidental Enter/Escape can't destroy anything.
- */
-export function ConfirmDeleteModal({ open, itemName, kind = 'file', onConfirm, onCancel }: Props) {
+   
+                                                                                 
+                                                                              
+                                                                             
+   
+export const ConfirmDeleteModal = ({ open, itemName, kind = 'file', onConfirm, onCancel }: Props) => {
   const cancelRef = useRef<HTMLButtonElement>(null)
 
   useEffect(() => {
@@ -26,7 +26,7 @@ export function ConfirmDeleteModal({ open, itemName, kind = 'file', onConfirm, o
       if (e.key === 'Escape') { e.preventDefault(); onCancel() }
     }
     window.addEventListener('keydown', onKey)
-    // Focus the safe action; Enter then dismisses rather than deletes.
+                                                                       
     const raf = requestAnimationFrame(() => cancelRef.current?.focus())
     return () => { window.removeEventListener('keydown', onKey); cancelAnimationFrame(raf) }
   }, [open, onCancel])
@@ -40,10 +40,10 @@ export function ConfirmDeleteModal({ open, itemName, kind = 'file', onConfirm, o
       animate={{ opacity: 1 }}
       transition={{ duration: 0.18 }}
     >
-          {/* Backdrop — dim + soft blur, click to dismiss. */}
+          
           <div className="absolute inset-0 bg-black/40 backdrop-blur-[2px]" onClick={onCancel} />
 
-          {/* Panel — grows in on the golden curve; concentric radius (20 → 10). */}
+          
           <motion.div
             role="alertdialog"
             aria-modal="true"
@@ -92,4 +92,4 @@ export function ConfirmDeleteModal({ open, itemName, kind = 'file', onConfirm, o
           </motion.div>
     </motion.div>
   )
-}
+};

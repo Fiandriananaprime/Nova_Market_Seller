@@ -1,11 +1,7 @@
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import {
   Building2,
-  FileCheck2,
   Receipt,
-  Upload,
-  CheckCircle2,
-  Clock,
   ShieldCheck,
   Download,
 } from "lucide-react"
@@ -17,34 +13,65 @@ import {
   Button,
   Badge,
 } from "@/components/ui"
+import { getSellerBusiness, updateSellerBusiness } from "@/service/seller"
+import type { SellerBusiness } from "@/type/seller"
 
-export function BusinessTab({
+export const BusinessTab = ({
   showToast,
 }: {
   showToast: (msg: string) => void
-}) {
+}) => {
   const [legalForm, setLegalForm] = useState({
-    companyName: "Nova Distribution Madagascar SARLU",
-    legalStatus: "SARLU (Société à Responsabilité Limitée Unipersonnelle)",
-    nif: "4001928374",
-    stat: "47910 11 2026 0 10452",
-    rcs: "RCS Antananarivo 2026 B 00812",
-    address: "Lot IV B 25 Analakely, Antananarivo Renivohitra",
-    city: "Antananarivo",
-    region: "Analamanga",
-    vatSubject: true,
-    vatNumber: "MG4001928374",
-    invoicePrefix: "INV-2026-",
+    companyName: "", legalStatus: "", nif: "", stat: "", rcs: "", address: "", city: "", region: "",
+    vatSubject: false, vatNumber: "", invoicePrefix: "",
   })
+  const [loading, setLoading] = useState(true)
+  const [saving, setSaving] = useState(false)
+  const [error, setError] = useState<string | null>(null)
 
-  function handleSave(e: React.FormEvent) {
+  useEffect(() => {
+    getSellerBusiness()
+      .then((business) => {
+        const fields = business as SellerBusiness & Record<string, unknown>
+        setLegalForm((current) => ({
+          ...current,
+          companyName: typeof fields.companyName === "string" ? fields.companyName : business.name ?? "",
+          legalStatus: typeof fields.legalStatus === "string" ? fields.legalStatus : "",
+          nif: typeof fields.nif === "string" ? fields.nif : "",
+          stat: typeof fields.stat === "string" ? fields.stat : "",
+          rcs: typeof fields.rcs === "string" ? fields.rcs : "",
+          address: typeof fields.address === "string" ? fields.address : business.location ?? "",
+          city: typeof fields.city === "string" ? fields.city : "",
+          region: typeof fields.region === "string" ? fields.region : "",
+          vatSubject: typeof fields.vatSubject === "boolean" ? fields.vatSubject : false,
+          vatNumber: typeof fields.vatNumber === "string" ? fields.vatNumber : "",
+          invoicePrefix: typeof fields.invoicePrefix === "string" ? fields.invoicePrefix : "",
+        }))
+      })
+      .catch(() => setError("Impossible de charger les informations professionnelles."))
+      .finally(() => setLoading(false))
+  }, [])
+
+  async function handleSave(e: React.FormEvent) {
     e.preventDefault()
-    showToast("Informations juridiques et fiscales enregistrées")
+    setSaving(true)
+    setError(null)
+    try {
+      await updateSellerBusiness({
+        name: legalForm.companyName,
+        location: legalForm.address,
+      })
+      showToast("Nom commercial et adresse enregistrés.")
+    } catch {
+      setError("Impossible d'enregistrer les informations professionnelles.")
+    } finally {
+      setSaving(false)
+    }
   }
 
   return (
     <div className="space-y-6">
-      {/* 5. Informations Professionnelles & Registre Malagasy */}
+      
       <Card>
         <CardHeader>
           <div className="flex items-center gap-2">
@@ -61,6 +88,9 @@ export function BusinessTab({
           </Badge>
         </CardHeader>
         <CardBody>
+          {loading && <p role="status" className="mb-3 text-xs text-muted-foreground">Chargement des informations…</p>}
+          {error && <p role="alert" className="mb-3 text-xs text-destructive">{error}</p>}
+          <p className="mb-3 text-[11px] text-muted-foreground">Le contrat entreprise ne définit que le nom commercial et l’adresse ; les champs juridiques/fiscaux restent locaux.</p>
           <form onSubmit={handleSave} className="space-y-4">
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
@@ -152,7 +182,7 @@ export function BusinessTab({
             </div>
 
             <div className="pt-2 flex justify-end">
-              <Button type="submit" variant="primary" size="sm">
+              <Button type="submit" variant="primary" size="sm" loading={saving} disabled={loading}>
                 Mettre à jour les informations légales
               </Button>
             </div>
@@ -160,7 +190,7 @@ export function BusinessTab({
         </CardBody>
       </Card>
 
-      {/* 6. Vérification et Conformité KYC */}
+      
       <Card>
         <CardHeader>
           <div className="flex items-center gap-2">
@@ -172,95 +202,16 @@ export function BusinessTab({
               </p>
             </div>
           </div>
-          <Badge variant="success">Vendeur Vérifié ✓</Badge>
+          <Badge variant="neutral">Statut KYC non fourni par le profil entreprise</Badge>
         </CardHeader>
         <CardBody className="space-y-4">
-          <div className="p-4 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl bg-emerald-500 text-white flex items-center justify-center shrink-0">
-                <CheckCircle2 size={20} />
-              </div>
-              <div>
-                <p className="text-sm font-bold text-foreground">
-                  Statut de conformité : Validé
-                </p>
-                <p className="text-xs text-muted-foreground">
-                  Votre badge de confiance est actif et visible sur l'ensemble de vos fiches produits.
-                </p>
-              </div>
-            </div>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => showToast("Attestation de conformité téléchargée")}
-            >
-              <Download size={13} />
-              Attestation PDF
-            </Button>
-          </div>
-
-          <div className="space-y-3 pt-2">
-            <h4 className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
-              Pièces justificatives déposées
-            </h4>
-
-            <div className="divide-y divide-border/60 rounded-xl border border-border bg-card overflow-hidden">
-              <div className="p-3.5 flex items-center justify-between gap-3 text-xs">
-                <div className="flex items-center gap-2.5">
-                  <FileCheck2 size={16} className="text-emerald-600 shrink-0" />
-                  <div>
-                    <p className="font-semibold text-foreground">
-                      Carte d'Identité Nationale (CIN) / Passeport du gérant
-                    </p>
-                    <p className="text-muted-foreground text-[11px]">
-                      CIN-Rakoto-Andry-2026.pdf · Validé le 12/01/2026
-                    </p>
-                  </div>
-                </div>
-                <Badge variant="success">Vérifié</Badge>
-              </div>
-
-              <div className="p-3.5 flex items-center justify-between gap-3 text-xs">
-                <div className="flex items-center gap-2.5">
-                  <FileCheck2 size={16} className="text-emerald-600 shrink-0" />
-                  <div>
-                    <p className="font-semibold text-foreground">
-                      Carte Fiscale NIF / Attestation STAT
-                    </p>
-                    <p className="text-muted-foreground text-[11px]">
-                      NIF-STAT-Nova-Distribution.pdf · Validé le 12/01/2026
-                    </p>
-                  </div>
-                </div>
-                <Badge variant="success">Vérifié</Badge>
-              </div>
-
-              <div className="p-3.5 flex items-center justify-between gap-3 text-xs bg-muted/20">
-                <div className="flex items-center gap-2.5">
-                  <Upload size={16} className="text-primary shrink-0" />
-                  <div>
-                    <p className="font-semibold text-foreground">
-                      Mettre à jour un document justificatif
-                    </p>
-                    <p className="text-muted-foreground text-[11px]">
-                      En cas de renouvellement de gérance ou changement d'adresse
-                    </p>
-                  </div>
-                </div>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => showToast("Téléversement de document disponible")}
-                >
-                  Téléverser
-                </Button>
-              </div>
-            </div>
+          <div className="rounded-xl border border-dashed border-border p-4 text-sm text-muted-foreground">
+            Le statut de conformité et les documents KYC ne sont pas fournis par le contrat de profil entreprise actuel.
           </div>
         </CardBody>
       </Card>
 
-      {/* 14. Facturation et Fiscalité */}
+      
       <Card>
         <CardHeader>
           <div className="flex items-center gap-2">

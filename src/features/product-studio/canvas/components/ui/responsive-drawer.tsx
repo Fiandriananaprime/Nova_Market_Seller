@@ -8,20 +8,20 @@ interface ResponsiveDrawerProps {
   onOpenChange: (open: boolean) => void
   title?: string
   children: ReactNode
-  /** Desktop-only: extra classes on the motion wrapper */
+                                                          
   desktopClassName?: string
-  /** Desktop-only: y offset for enter/exit animation (default 8) */
+                                                                    
   desktopAnimateY?: number
 }
 
-export function ResponsiveDrawer({
+export const ResponsiveDrawer = ({
   open,
   onOpenChange,
   title,
   children,
   desktopClassName,
   desktopAnimateY = 8,
-}: ResponsiveDrawerProps) {
+}: ResponsiveDrawerProps) => {
   const isMobile = useIsMobile()
 
   if (isMobile) {
@@ -50,4 +50,4 @@ export function ResponsiveDrawer({
       )}
     </AnimatePresence>
   )
-}
+};

@@ -7,21 +7,21 @@ import { LayerInspector } from '@/features/product-studio/canvas/components/pane
 import { useDesignStore } from '@/features/product-studio/canvas/store/useDesignStore'
 import { haptic } from '@/features/product-studio/canvas/lib/haptics'
 
-/**
- * Mobile-only control cluster (bottom-left corner, clearing the centred
- * FloatingToolbar). Progressive disclosure: Layers is always available; the
- * properties sheet (the desktop inspector, in a bottom drawer) appears only when
- * a layer is selected — so the canvas stays uncluttered until you ask to edit.
- */
-// A round 44px action in the bottom-left selection cluster.
-function ClusterButton({
+   
+                                                                        
+                                                                            
+                                                                                 
+                                                                               
+   
+                                                            
+const ClusterButton = ({
   label, onClick, variant = 'default', children,
 }: {
   label: string
   onClick: () => void
   variant?: 'default' | 'primary' | 'danger'
   children: React.ReactNode
-}) {
+}) => {
   const tone =
     variant === 'primary'
       ? 'bg-primary text-primary-foreground'
@@ -42,13 +42,13 @@ function ClusterButton({
       {children}
     </motion.button>
   )
-}
+};
 
 // iOS-style detents: a medium height and a (near) full height. Sheets open at
 // medium and can be dragged up to large.
 const DETENTS: number[] = [0.55, 0.92]
 
-export function MobileControlSheet() {
+export const MobileControlSheet = () => {
   const [drawer, setDrawer] = useState<'layers' | 'inspector' | null>(null)
   const [propSnap, setPropSnap] = useState<number | string | null>(DETENTS[0])
   const [layerSnap, setLayerSnap] = useState<number | string | null>(DETENTS[0])
@@ -81,8 +81,7 @@ export function MobileControlSheet() {
             exit={{ opacity: 0, y: 10 }}
             transition={{ duration: 0.2, ease: [0.16, 1, 0.3, 1] }}
           >
-            {/* Selection actions — spring in only when something is selected
-                (progressive disclosure): Edit properties, Duplicate, Delete. */}
+            
             <AnimatePresence>
               {isText && activeLayer && (
                 <ClusterButton key="text" label="Edit text" onClick={() => useDesignStore.getState().setEditingTextLayerId(activeLayer.id)} variant="primary">
@@ -106,7 +105,7 @@ export function MobileControlSheet() {
               )}
             </AnimatePresence>
 
-            {/* Layers — always available */}
+            
             <button
               aria-label="Layers"
               className="h-11 w-11 flex items-center justify-center bg-foreground text-background rounded-full shadow-lg transition-transform active:scale-[0.96]"
@@ -119,8 +118,7 @@ export function MobileControlSheet() {
         )}
       </AnimatePresence>
 
-      {/* Layers drawer — opens at the medium detent, drag up to large. The body
-          is flex-1/min-h-0 so the header stays pinned and scrolling works. */}
+      
       <Drawer open={drawer === 'layers'} onOpenChange={(open) => !open && setDrawer(null)} snapPoints={DETENTS} activeSnapPoint={layerSnap} setActiveSnapPoint={setLayerSnap}>
         <DrawerContent className="mt-0 h-[92vh] max-h-none">
           <SheetHeader title="Layers" />
@@ -130,7 +128,7 @@ export function MobileControlSheet() {
         </DrawerContent>
       </Drawer>
 
-      {/* Properties drawer — the shared inspector, on demand. */}
+      
       <Drawer open={drawer === 'inspector'} onOpenChange={(open) => !open && setDrawer(null)} snapPoints={DETENTS} activeSnapPoint={propSnap} setActiveSnapPoint={setPropSnap}>
         <DrawerContent className="mt-0 h-[92vh] max-h-none">
           <SheetHeader title={activeLayer?.name ?? 'Properties'} />
@@ -141,11 +139,11 @@ export function MobileControlSheet() {
       </Drawer>
     </>
   )
-}
+};
 
 // Sheet header: a visible title (also the accessible DrawerTitle) + a Done pill
 // with a ≥40px hit area. Tapping down / dragging the sheet also dismisses.
-function SheetHeader({ title }: { title: string }) {
+const SheetHeader = ({ title }: { title: string }) => {
   return (
     <div className="flex shrink-0 items-center justify-between px-4 pb-3 pt-0.5">
       <DrawerTitle className="p-0 text-[16px] font-semibold text-foreground">{title}</DrawerTitle>
@@ -156,4 +154,4 @@ function SheetHeader({ title }: { title: string }) {
       </DrawerClose>
     </div>
   )
-}
+};

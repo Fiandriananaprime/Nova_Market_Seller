@@ -1,15 +1,10 @@
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import { useTranslation } from "react-i18next"
 import {
-  User,
   Sun,
   Moon,
-  Globe,
-  Sliders,
   AlertTriangle,
   Eye,
-  Sparkles,
-  Lock,
 } from "lucide-react"
 import {
   Card,
@@ -20,13 +15,14 @@ import {
   Badge,
   ConfirmModal,
 } from "@/components/ui"
+import { getSellerProfile, getSellerSettings, updateSellerProfile, updateSellerSettings } from "@/service/seller"
 
-export function AccountTab({
+export const AccountTab = ({
   showToast,
 }: {
   showToast: (msg: string) => void
-}) {
-  const { t, i18n } = useTranslation()
+}) => {
+  const { i18n } = useTranslation()
   const [theme, setTheme] = useState<"light" | "dark">(
     document.documentElement.classList.contains("dark") ? "dark" : "light"
   )
@@ -35,14 +31,34 @@ export function AccountTab({
   const [showCloseModal, setShowCloseModal] = useState(false)
 
   const [form, setForm] = useState({
-    firstName: "Andry",
-    lastName: "Rakoto",
-    email: "hei.fiandrianana@gmail.com",
-    phone: "+261 34 00 000 00",
+    firstName: "",
+    lastName: "",
+    email: "",
+    phone: "",
     timezone: "Indian/Antananarivo (EAT UTC+3)",
     currency: "Ariary malgache (MGA)",
     dateFormat: "DD/MM/YYYY",
   })
+  const [loading, setLoading] = useState(true)
+  const [saving, setSaving] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+
+  useEffect(() => {
+    Promise.all([getSellerProfile(), getSellerSettings()])
+      .then(([profile, settings]) => {
+        setForm((current) => ({
+          ...current,
+          firstName: profile.firstName ?? "",
+          lastName: profile.lastName ?? "",
+          email: profile.email ?? "",
+          phone: profile.phone ?? "",
+        }))
+        if (settings.theme === "light" || settings.theme === "dark") setTheme(settings.theme)
+        if (settings.lang) void i18n.changeLanguage(settings.lang)
+      })
+      .catch(() => setError("Impossible de charger le profil et les préférences."))
+      .finally(() => setLoading(false))
+  }, [i18n])
 
   function toggleTheme(newTheme: "light" | "dark") {
     setTheme(newTheme)
@@ -54,14 +70,30 @@ export function AccountTab({
     showToast(`Mode ${newTheme === "dark" ? "Sombre" : "Clair"} activé`)
   }
 
-  function handleSaveProfile(e: React.FormEvent) {
+  async function handleSaveProfile(e: React.FormEvent) {
     e.preventDefault()
-    showToast("Profil et préférences générales enregistrés")
+    setSaving(true)
+    setError(null)
+    try {
+      await Promise.all([
+        updateSellerProfile({
+          firstName: form.firstName,
+          lastName: form.lastName,
+          phone: form.phone,
+        }),
+        updateSellerSettings({ theme, lang: i18n.language }),
+      ])
+      showToast("Profil et préférences enregistrés.")
+    } catch {
+      setError("Impossible d'enregistrer le profil et les préférences.")
+    } finally {
+      setSaving(false)
+    }
   }
 
   return (
     <div className="space-y-6">
-      {/* 1. Profil Personnel & Coordonnées */}
+      
       <Card>
         <CardHeader>
           <div>
@@ -73,19 +105,19 @@ export function AccountTab({
           <Badge variant="primary">Titulaire Compte</Badge>
         </CardHeader>
         <CardBody>
+          {loading && <p role="status" className="mb-3 text-xs text-muted-foreground">Chargement du profil…</p>}
+          {error && <p role="alert" className="mb-3 text-xs text-destructive">{error}</p>}
           <form onSubmit={handleSaveProfile} className="space-y-4">
             <div className="flex items-center gap-4 pb-2">
               <div className="w-16 h-16 rounded-2xl bg-gradient-to-tr from-primary to-primary/80 text-white font-display font-extrabold text-xl flex items-center justify-center shadow-sm">
-                AR
+                {`${form.firstName[0] ?? ""}${form.lastName[0] ?? ""}` || "—"}
               </div>
               <div>
                 <p className="font-semibold text-sm text-foreground">
                   {form.firstName} {form.lastName}
                 </p>
                 <p className="text-xs text-muted-foreground">{form.email}</p>
-                <p className="text-[11px] text-emerald-600 dark:text-emerald-400 font-medium mt-0.5">
-                  Numéro vérifié : {form.phone}
-                </p>
+                {form.phone && <p className="text-[11px] text-muted-foreground font-medium mt-0.5">{form.phone}</p>}
               </div>
             </div>
 
@@ -138,15 +170,16 @@ export function AccountTab({
             </div>
 
             <div className="pt-2 flex justify-end">
-              <Button type="submit" variant="primary" size="sm">
+              <Button type="submit" variant="primary" size="sm" loading={saving} disabled={loading}>
                 Enregistrer les coordonnées
               </Button>
             </div>
           </form>
+          <p className="mt-3 text-[11px] text-muted-foreground">Fuseau horaire, devise, format de date et préférences d’accessibilité restent locaux : aucun endpoint de sauvegarde n’est défini.</p>
         </CardBody>
       </Card>
 
-      {/* 23 & 24. Préférences Générales & Langue / Région */}
+      
       <Card>
         <CardHeader>
           <div>
@@ -257,7 +290,7 @@ export function AccountTab({
         </CardBody>
       </Card>
 
-      {/* 25. Accessibilité & Affichage */}
+      
       <Card>
         <CardHeader>
           <div className="flex items-center gap-2">
@@ -365,7 +398,7 @@ export function AccountTab({
         </CardBody>
       </Card>
 
-      {/* 29. Gestion et Fermeture du Compte (Zone de Danger) */}
+      
       <Card className="border-rose-500/30">
         <CardHeader className="bg-rose-500/5">
           <div className="flex items-center gap-2">

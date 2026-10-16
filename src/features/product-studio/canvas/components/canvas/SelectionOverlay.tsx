@@ -2,8 +2,8 @@ import { motion } from 'motion/react'
 import { useDesignStore } from '@/features/product-studio/canvas/store/useDesignStore'
 import { useCoarsePointer } from '@/features/product-studio/canvas/hooks/useCoarsePointer'
 
-const ROTATE_HANDLE_OFFSET = 22 // px above the top edge (screen space)
-const ROTATE_HANDLE_R = 5 // radius of the round rotation handle
+const ROTATE_HANDLE_OFFSET = 22                                        
+const ROTATE_HANDLE_R = 5                                       
 
 interface Props {
   zoom: number
@@ -23,11 +23,11 @@ const HANDLE_DEFS = (w: number, h: number) => [
   { id: 'w', cx: 0, cy: h / 2, cursor: 'ew-resize' },
 ]
 
-export function SelectionOverlay({ zoom, onResizeStart, onGroupResizeStart }: Props) {
+export const SelectionOverlay = ({ zoom, onResizeStart, onGroupResizeStart }: Props) => {
   const selectedLayerIds = useDesignStore((s) => s.selectedLayerIds)
   const layers = useDesignStore((s) => s.document.layers)
   const autoLayouts = useDesignStore((s) => s.document.autoLayouts)
-  // Finger-friendly, circular handles on touch/pen; small squares on mouse.
+                                                                            
   const coarse = useCoarsePointer()
   const HANDLE_SIZE = coarse ? 18 : 8
   const HANDLE_HALF = HANDLE_SIZE / 2
@@ -36,11 +36,11 @@ export function SelectionOverlay({ zoom, onResizeStart, onGroupResizeStart }: Pr
   const selectedLayers = layers.filter((l) => selectedLayerIds.has(l.id) && l.type !== 'background')
   if (selectedLayers.length === 0) return null
 
-  // An Auto Layout group is resized through its own container-box handles
-  // (AutoLayoutOverlay) — not the generic group box, which would *scale* the
-  // children. Suppress the group box here only when the WHOLE Auto Layout group
-  // is selected; selecting a single child still shows that child's handles
-  // (resizing it reflows the container, which is the intended behaviour).
+                                                                          
+                                                                             
+                                                                                
+                                                                           
+                                                                          
   const groupIds = new Set(selectedLayers.map((l) => l.groupId))
   const soleGroupId = groupIds.size === 1 ? selectedLayers[0].groupId : undefined
   const memberCount = soleGroupId
@@ -53,11 +53,7 @@ export function SelectionOverlay({ zoom, onResizeStart, onGroupResizeStart }: Pr
 
   return (
     <svg className="absolute top-0 left-0 pointer-events-none" style={{ width: '100%', height: '100%', overflow: 'visible' }}>
-      {/* Single selection — handles directly on the layer. The whole group is
-          rotated to match the layer so the box + handles sit on the rotated
-          bounds (rotate around the layer center, i.e. w/2, h/2 in local space).
-          An Auto Layout group (multi + suppressed) shows no per-layer handles —
-          its container box + resize handles come from AutoLayoutOverlay. */}
+      
       {selectedLayers.length === 1 && !isAutoLayoutGroup && selectedLayers.map((layer) => {
         const x = layer.x * zoom
         const y = layer.y * zoom
@@ -67,15 +63,13 @@ export function SelectionOverlay({ zoom, onResizeStart, onGroupResizeStart }: Pr
         const transform = `translate(${x}, ${y})` + (rotation ? ` rotate(${rotation}, ${w / 2}, ${h / 2})` : '')
         return (
           <g key={layer.id} transform={transform}>
-            {/* Ring fades in and handles spring from their centres when a layer
-                is selected — keyed by layer.id so it re-pops per new selection
-                but doesn't re-animate while dragging/resizing. */}
+            
             <motion.rect
               x={0} y={0} width={w} height={h} fill="none" stroke="#2563eb" strokeWidth={1.5}
               initial={{ opacity: 0 }} animate={{ opacity: 1 }}
               transition={{ duration: 0.12, ease: [0.16, 1, 0.3, 1] }}
             />
-            {/* Rotation handle: round grip above the top-center, on a short stem. */}
+            
             <line
               x1={w / 2} y1={0} x2={w / 2} y2={-ROTATE_HANDLE_OFFSET}
               stroke="#2563eb" strokeWidth={1.5}
@@ -108,8 +102,7 @@ export function SelectionOverlay({ zoom, onResizeStart, onGroupResizeStart }: Pr
         )
       })}
 
-      {/* Multi selection — thin outline per layer + one combined bbox with handles
-          that scale the whole group together. */}
+      
       {isMulti && (() => {
         const minX = Math.min(...selectedLayers.map((l) => l.x))
         const minY = Math.min(...selectedLayers.map((l) => l.y))
@@ -148,4 +141,4 @@ export function SelectionOverlay({ zoom, onResizeStart, onGroupResizeStart }: Pr
       })()}
     </svg>
   )
-}
+};

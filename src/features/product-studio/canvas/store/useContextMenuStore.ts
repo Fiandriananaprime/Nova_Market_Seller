@@ -15,16 +15,16 @@ interface ContextMenuState {
   x: number
   y: number
   items: ContextMenuItem[]
-  /** Open a menu at screen coords with a target-specific set of items. */
+                                                                          
   openMenu: (x: number, y: number, items: ContextMenuItem[]) => void
   close: () => void
 }
 
-/**
- * Single shared right-click menu. Trigger sites (frame, layer row, canvas) build
- * their own item list with closures and call openMenu(); <ContextMenu/> (mounted
- * once in App) renders it. Keeps one menu on screen and one dismiss path.
- */
+   
+                                                                                 
+                                                                                 
+                                                                          
+   
 export const useContextMenuStore = create<ContextMenuState>((set) => ({
   open: false,
   x: 0,

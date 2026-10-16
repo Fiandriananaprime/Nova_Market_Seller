@@ -1,8 +1,8 @@
 import type { TourDefinition } from "../types"
 
-// ─────────────────────────────────────────────────────────────
-// ORDERS – Pipeline Kanban & traitement
-// ─────────────────────────────────────────────────────────────
+                                                                
+                                        
+                                                                
 export const ordersTour: TourDefinition = {
   id: "orders",
   route: "/orders",
@@ -48,9 +48,9 @@ export const ordersTour: TourDefinition = {
   ],
 }
 
-// ─────────────────────────────────────────────────────────────
-// PRODUCTS – Catalogue & références
-// ─────────────────────────────────────────────────────────────
+                                                                
+                                    
+                                                                
 export const productsTour: TourDefinition = {
   id: "products",
   route: "/products",
@@ -96,9 +96,9 @@ export const productsTour: TourDefinition = {
   ],
 }
 
-// ─────────────────────────────────────────────────────────────
-// INVENTORY – Stock & alertes
-// ─────────────────────────────────────────────────────────────
+                                                                
+                              
+                                                                
 export const inventoryTour: TourDefinition = {
   id: "inventory",
   route: "/inventory",
@@ -144,9 +144,9 @@ export const inventoryTour: TourDefinition = {
   ],
 }
 
-// ─────────────────────────────────────────────────────────────
-// ANALYTICS – Rapports & performances
-// ─────────────────────────────────────────────────────────────
+                                                                
+                                      
+                                                                
 export const analyticsTour: TourDefinition = {
   id: "analytics",
   route: "/analytics",
@@ -192,9 +192,9 @@ export const analyticsTour: TourDefinition = {
   ],
 }
 
-// ─────────────────────────────────────────────────────────────
-// DELIVERIES – Carte de suivi GPS simulé
-// ─────────────────────────────────────────────────────────────
+                                                                
+                                         
+                                                                
 export const deliveriesTour: TourDefinition = {
   id: "deliveries",
   route: "/deliveries",
@@ -249,9 +249,9 @@ export const deliveriesTour: TourDefinition = {
   ],
 }
 
-// ─────────────────────────────────────────────────────────────
-// CUSTOMERS – CRM & segmentation
-// ─────────────────────────────────────────────────────────────
+                                                                
+                                 
+                                                                
 export const customersTour: TourDefinition = {
   id: "customers",
   route: "/customers",
@@ -297,9 +297,9 @@ export const customersTour: TourDefinition = {
   ],
 }
 
-// ─────────────────────────────────────────────────────────────
-// REVIEWS – Avis & réputation
-// ─────────────────────────────────────────────────────────────
+                                                                
+                              
+                                                                
 export const reviewsTour: TourDefinition = {
   id: "reviews",
   route: "/reviews",
@@ -345,9 +345,9 @@ export const reviewsTour: TourDefinition = {
   ],
 }
 
-// ─────────────────────────────────────────────────────────────
-// STORE – Page de gestion de la boutique
-// ─────────────────────────────────────────────────────────────
+                                                                
+                                         
+                                                                
 export const storeTour: TourDefinition = {
   id: "store",
   route: "/store",
@@ -393,9 +393,9 @@ export const storeTour: TourDefinition = {
   ],
 }
 
-// ─────────────────────────────────────────────────────────────
-// SETTINGS – Configuration & paramètres
-// ─────────────────────────────────────────────────────────────
+                                                                
+                                        
+                                                                
 export const settingsTour: TourDefinition = {
   id: "settings",
   route: "/settings",
@@ -441,9 +441,9 @@ export const settingsTour: TourDefinition = {
   ],
 }
 
-// ─────────────────────────────────────────────────────────────
-// All tours registry
-// ─────────────────────────────────────────────────────────────
+                                                                
+                     
+                                                                
 export const allTours: TourDefinition[] = [
   ordersTour,
   productsTour,

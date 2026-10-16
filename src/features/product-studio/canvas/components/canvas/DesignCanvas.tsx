@@ -2,7 +2,7 @@ import { useRef, useEffect, useCallback } from 'react'
 import { useDesignStore } from '@/features/product-studio/canvas/store/useDesignStore'
 import { renderToContext } from '@/features/product-studio/canvas/engine/compositor'
 
-export function DesignCanvas() {
+export const DesignCanvas = () => {
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const rafRef = useRef<number>(0)
 
@@ -45,4 +45,4 @@ export function DesignCanvas() {
   }, [draw])
 
   return <canvas ref={canvasRef} className="block pointer-events-none" />
-}
+};

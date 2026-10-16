@@ -4,6 +4,8 @@
   "loginDescription": "Sign in to manage your stores, orders, and product catalog.",
   "email": "Email address",
   "emailPlaceholder": "seller@novamarket.mg",
+  "emailOrPhone": "Email or phone",
+  "emailOrPhonePlaceholder": "seller@novamarket.mg or +261...",
   "password": "Password",
   "passwordPlaceholder": "••••••••••••",
   "rememberMe": "Remember me",
@@ -142,6 +144,8 @@
     "export": "Export",
     "store": "Store",
     "notifications": "Notifications",
+    "realtimeConnected": "real-time notifications connected",
+    "reconnecting": "reconnecting to notifications",
     "markAllRead": "Mark all as read",
     "open": "Open",
     "closed": "Closed"
@@ -463,6 +467,11 @@
       }
     }
   },
+  "aiExperience": {
+    "fullscreen": "Full screen",
+    "exitFullscreen": "Exit full screen",
+    "ready": "Ready when you are"
+  },
   "aiAutomation": {
     "title":"AI Assistant & Automations","subtitle":"Understand your business and prepare automated operations in one workspace.","tabsLabel":"AI and automation workspace","tab":{"assistant":"AI Assistant","automations":"Automations"},"plan":{"free":"Free","pro":"Pro","max":"Max"},"history":"Conversations","newConversation":"New conversation","searchHistory":"Search conversations","recent":"Recent","emptyHistory":"Conversations will appear here when an AI service is connected.","quota":"AI quota","quotaType":{"basic":"Basic quota","increased":"Increased quota","five-times-free":"Up to 5× the Free quota"},"quotaUnavailable":"Usage and renewal details are unavailable without server data.","upgrade":"View plans","assistant":"Seller assistant","assistantCaption":"Contextual help for your store","welcome":"Hello, how can I help?","welcomeDescription":"Ask about sales, products, inventory, or orders. Answers require a connection to the seller AI service.","backendUnavailable":"AI service unavailable: no answer will be simulated until the backend is connected.","composerPlaceholder":"Ask a question about your store…","composerHint":"Enter to send · Shift + Enter for a new line","send":"Send","prompt":{"sales":"How are my sales performing this week?","stock":"Which products need restocking soon?","description":"Help me improve a product description.","promote":"Which products should I promote?","bestSellers":"Analyze my best-selling products.","cancelled":"How can I reduce cancelled orders?","promotion":"Help me prepare a promotion.","summary":"Summarize my store’s performance."},"stat":{"total":"Workflows","active":"Active","paused":"Paused","failed":"Failed"},"automationIntro":"Automate repetitive store operations","proIntro":"Pro supports simple rules once the automation service is available.","freeIntro":"Browse templates. Pro unlocks simple rules; Max adds supported advanced capabilities.","create":"Create automation","unlock":"Explore Pro","templatesTitle":"Workflow templates","templatesSubtitle":"Examples of triggers and actions. They cannot run yet.","searchTemplates":"Search templates","filterLabel":"Filter by plan","filterAll":"All plans","templateOnly":"Example","trigger":"Trigger","action":"Action","configure":"Configure","unlockTemplate":"View plans","executionHistory":"Execution history","noExecutions":"No executions","historyBackendRequired":"History will appear when the workflow engine is connected.","builderTitle":"Create automation","builderUnavailable":"The backend cannot save, test, or activate workflows yet. Form changes are not saved.","workflowName":"Name","workflowNamePlaceholder":"e.g. Low-stock alert","workflowDescription":"Description","triggerSelect":"Choose a trigger","cancel":"Cancel","saveDraft":"Save draft","activate":"Activate","template":{"lowStock":"Low-stock alert","lowStockDetail":"Notify the team when an item falls below its threshold.","newOrder":"New order notification","newOrderDetail":"Alert the seller when an order arrives.","unprocessed":"Unprocessed order reminder","unprocessedDetail":"Remind about an order left pending beyond a set duration.","outOfStock":"Out-of-stock alert","outOfStockDetail":"Flag unavailable products and suggest replenishment.","report":"Performance report","reportDetail":"Prepare a recurring report if the reporting service is available.","delivery":"Delivery delay alert","deliveryDetail":"Alert the seller when a shipment exceeds its expected time.","optimize":"AI-assisted product optimization","optimizeDetail":"Suggest product description improvements on request.","sales":"Sales threshold alert","salesDetail":"Notify the seller when a sales target is reached.","promotion":"Promotion scheduling","promotionDetail":"Prepare a scheduled activation if promotions are supported.","restockSuggestion":"Restock suggestion","restockDetail":"Suggest replenishment using stock and sales pace."},"trigger":{"lowStock":"Stock below threshold","newOrder":"New order","unprocessed":"Order remains unprocessed","outOfStock":"Product unavailable","schedule":"Scheduled time","deliveryDelay":"Delivery exceeds threshold","manual":"Manual request","salesThreshold":"Sales threshold reached","stockSales":"Stock and sales"},"action":{"notify":"Notify seller","restock":"Suggest replenishment","reportAction":"Prepare a report","suggest":"Create a suggestion for review","promotionAction":"Prepare a promotion"}
   },
@@ -472,8 +481,13 @@
     "simulatedData": "Simulated Data",
     "telemetryActive": "Telemetry Active",
     "refresh": "Refresh",
+    "loadMore": "Load more deliveries",
     "bannerTitle": "Logistics Simulation Mode",
-    "bannerDesc": "This interactive map dashboard simulates real-time courier GPS tracking across Antananarivo (Analakely, Ankorondrano, Ivato, Tanjombato). Toggle the « Simulate GPS » button to view live telemetry updates.",
+    "bannerDesc": "Positions and status updates arrive in real time. Delivery and notification history remain available through the API.",
+    "noLiveTracking": "No couriers being tracked",
+    "liveConnections": "live connections",
+    "realtimeConnectedDescription": "The map receives live positions and status changes. Historical data remains available through the API.",
+    "realtimeDisconnectedDescription": "Initial state and history are loaded from the API. The map reconnects automatically to the tracking stream.",
     "kpiInTransit": "In Transit",
     "kpiInTransitSub": "Couriers on route",
     "kpiAwaiting": "Awaiting Dispatch",

@@ -8,11 +8,11 @@ import { SliderField } from '@/features/product-studio/canvas/components/control
 import { Button } from '@/features/product-studio/canvas/components/ui/button'
 import { Download, Check, Copy, ClipboardCheck } from 'lucide-react'
 
-// Copying an image to the clipboard is only possible where the async Clipboard
-// API supports it (Chromium, Safari) — hide the button elsewhere.
+                                                                               
+                                                                  
 const CAN_COPY_IMAGE = typeof navigator !== 'undefined' && 'clipboard' in navigator && typeof ClipboardItem !== 'undefined'
 
-export function ExportPanel() {
+export const ExportPanel = () => {
   const document = useDesignStore((s) => s.document)
 
   const [format, setFormat] = useState<'png' | 'jpg' | 'webp' | 'svg'>('png')
@@ -35,8 +35,8 @@ export function ExportPanel() {
     }
   }
 
-  // Copy the design to the clipboard as a PNG (the only image type clipboards
-  // reliably accept), so it can be pasted straight into Slack, docs, Figma, etc.
+                                                                              
+                                                                                 
   const handleCopy = async () => {
     setCopyState('copying')
     try {
@@ -55,12 +55,12 @@ export function ExportPanel() {
         Export
       </div>
 
-      {/* Preview info */}
+      
       <div className="text-[13px] text-muted-foreground tabular-nums">
         {document.format.label} — {document.format.width * dpr} x {document.format.height * dpr}px
       </div>
 
-      {/* Format */}
+      
       <div className="space-y-1.5">
         <label className="text-[13px] text-muted-foreground font-normal">Format</label>
         <div className="flex gap-1">
@@ -81,7 +81,7 @@ export function ExportPanel() {
         </div>
       </div>
 
-      {/* Quality (jpg/webp only) */}
+      
       {(format === 'jpg' || format === 'webp') && (
         <SliderField
           label="Quality"
@@ -94,7 +94,7 @@ export function ExportPanel() {
         />
       )}
 
-      {/* DPI */}
+      
       <div className="space-y-1.5">
         <label className="text-[13px] text-muted-foreground font-normal">Scale</label>
         <div className="flex gap-1">
@@ -115,8 +115,7 @@ export function ExportPanel() {
         </div>
       </div>
 
-      {/* Export button — a small "ship" moment: the label morphs and a soft
-          chime + pulse fire on success. */}
+      
       <motion.div
         animate={justExported ? { scale: [1, 1.04, 1] } : { scale: 1 }}
         transition={{ duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
@@ -142,7 +141,7 @@ export function ExportPanel() {
         </Button>
       </motion.div>
 
-      {/* Copy the design straight to the clipboard as a PNG. */}
+      
       {CAN_COPY_IMAGE && (
         <Button
           variant="outline"
@@ -156,4 +155,4 @@ export function ExportPanel() {
       )}
     </div>
   )
-}
+};

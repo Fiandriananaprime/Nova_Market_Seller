@@ -14,15 +14,13 @@ import {
   ChevronDown,
   Monitor,
   ArrowLeft,
-  Save,
   Bookmark,
   Clock,
   Trash2,
 } from 'lucide-react'
 
-export function TopBar() {
+export const TopBar = () => {
   const isSellerImageEditor = sessionStorage.getItem('novamarket-studio-image-editor') === '1'
-  const route = useRouterStore((s) => s.route)
   const navigate = useRouterStore((s) => s.navigate)
   const documentName = useDesignStore((s) => s.document.name)
   const activeFileId = useWorkspaceStore((s) => s.activeFileId)
@@ -71,11 +69,11 @@ export function TopBar() {
 
   return (
     <header className="h-14 bg-card border-b border-border flex items-center px-2.5 md:px-5 gap-1.5 md:gap-4 shrink-0">
-      {/* Back to Files */}
+      
       {!isSellerImageEditor && <button
         className="flex items-center gap-2 text-muted-foreground hover:text-foreground transition-colors cursor-pointer shrink-0"
         onClick={() => {
-          // Save current workspace pages back to the file store before leaving
+                                                                               
           const { activeFileId, workspace } = useWorkspaceStore.getState()
           if (activeFileId) {
             useFileStore.getState().updateFilePages(activeFileId, workspace.pages)
@@ -89,7 +87,7 @@ export function TopBar() {
 
       <div className="w-px h-5 bg-border hidden md:block" />
 
-      {/* Document name — the scratchpad's name is fixed, so it's read-only. */}
+      
       <input
         className={`text-[15px] font-medium text-foreground bg-transparent border-none outline-none min-w-0 max-w-[240px] rounded-[5px] px-2 py-1 transition-colors ${
           isScratchpad ? 'cursor-default select-none' : 'hover:bg-muted/50 focus:bg-muted/50'
@@ -108,7 +106,7 @@ export function TopBar() {
         }}
       />
 
-      {/* Format selector */}
+      
       <div className="relative" ref={formatRef}>
         <button
           className="flex items-center gap-2 px-3 py-1.5 text-[13px] text-muted-foreground bg-muted/50 hover:bg-muted rounded-[5px] transition-colors"
@@ -129,7 +127,7 @@ export function TopBar() {
 
       <div className="flex-1" />
 
-      {/* Undo / Redo */}
+      
       <div className="flex items-center gap-0.5">
         <Button
           variant="ghost"
@@ -153,7 +151,7 @@ export function TopBar() {
         </Button>
       </div>
 
-      {/* Save Version */}
+      
       <div className="relative hidden md:block" ref={versionsRef}>
         <div className="flex items-center gap-0.5">
           <Button
@@ -232,7 +230,7 @@ export function TopBar() {
         )}
       </div>
 
-      {/* Settings */}
+      
       {!isSellerImageEditor && <Button
         variant="ghost"
         size="icon-xs"
@@ -243,7 +241,7 @@ export function TopBar() {
         <Settings className="w-4 h-4" />
       </Button>}
 
-      {/* Export */}
+      
       {!isSellerImageEditor && <Button
         size="sm"
         className="rounded-[5px] gap-1.5"
@@ -254,4 +252,4 @@ export function TopBar() {
       </Button>}
     </header>
   )
-}
+};

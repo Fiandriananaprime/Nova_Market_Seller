@@ -1,16 +1,16 @@
-/**
- * Tutorial Service - Manages session-scoped tracking and persistence
- * for Driver.js tours in Nova Market Seller Frontend.
- */
+   
+                                                                     
+                                                      
+   
 
 const STORAGE_SESSION_ID = "nova_seller_session_id"
 const STORAGE_TOUR_PREFIX = "nova_tour_session_"
 
 export const tutorialService = {
-  /**
-   * Retrieves or initializes the current login session ID.
-   * A session starts upon login and is invalidated upon logout.
-   */
+     
+                                                           
+                                                                
+     
   getCurrentSessionId(): string {
     let sessionId = localStorage.getItem(STORAGE_SESSION_ID)
     if (!sessionId) {
@@ -62,11 +62,9 @@ export const tutorialService = {
     localStorage.setItem(`${STORAGE_TOUR_PREFIX}${sessionId}_onboarding`, "true")
   },
 
-  /**
-   * Checks if an access token exists (verifying user is in an authenticated session).
-   */
+  /** Checks whether a tutorial session has been started after successful login. */
   isAuthenticated(): boolean {
-    return Boolean(localStorage.getItem("accessToken"))
+    return Boolean(localStorage.getItem(STORAGE_SESSION_ID))
   },
 
   /**

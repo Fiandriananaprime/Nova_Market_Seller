@@ -6,6 +6,7 @@ import {
   Truck,
   Phone,
   Navigation,
+  AlertTriangle,
 } from "lucide-react"
 import type { DeliveryRecord } from "../types/deliveryTracking.types"
 import { formatMGA } from "@/hook/format"
@@ -53,15 +54,15 @@ export const DeliveryDetails: React.FC<DeliveryDetailsProps> = ({
 
   return (
     <div className="fixed inset-0 z-[2000] flex justify-end">
-      {/* Backdrop */}
+      
       <div
         className="fixed inset-0 bg-foreground/40 backdrop-blur-xs transition-opacity animate-fade-in"
         onClick={onClose}
       />
 
-      {/* Slide-Over Drawer Content */}
+      
       <div className="relative w-full max-w-lg bg-card border-l border-border h-full flex flex-col shadow-2xl z-10 animate-slide-down">
-        {/* Header */}
+        
         <div className="flex items-center justify-between px-6 py-4 border-b border-border bg-muted/20">
           <div>
             <div className="flex items-center gap-2.5">
@@ -87,9 +88,9 @@ export const DeliveryDetails: React.FC<DeliveryDetailsProps> = ({
           </button>
         </div>
 
-        {/* Scrollable Body */}
+        
         <div className="flex-1 overflow-y-auto p-6 space-y-6">
-          {/* Urgent Delay Alert if applicable */}
+          
           {delivery.isDelayed && delivery.delayReason && (
             <div className="p-4 rounded-2xl bg-rose-500/10 border border-rose-500/30 flex items-start gap-3">
               <AlertTriangle className="text-rose-600 dark:text-rose-400 shrink-0 mt-0.5" size={18} />
@@ -104,7 +105,7 @@ export const DeliveryDetails: React.FC<DeliveryDetailsProps> = ({
             </div>
           )}
 
-          {/* Timeline Tracking Stepper */}
+          
           <div className="space-y-3">
             <h4 className="text-xs font-bold text-muted-foreground uppercase tracking-wider">
               Chronologie d'acheminement
@@ -143,7 +144,7 @@ export const DeliveryDetails: React.FC<DeliveryDetailsProps> = ({
             </div>
           </div>
 
-          {/* Driver Card */}
+          
           <div className="space-y-2.5">
             <h4 className="text-xs font-bold text-muted-foreground uppercase tracking-wider">
               Coursier & Véhicule
@@ -189,7 +190,7 @@ export const DeliveryDetails: React.FC<DeliveryDetailsProps> = ({
             )}
           </div>
 
-          {/* Destination Details */}
+          
           <div className="space-y-2.5">
             <h4 className="text-xs font-bold text-muted-foreground uppercase tracking-wider">
               Point de livraison & Destinataire
@@ -225,7 +226,7 @@ export const DeliveryDetails: React.FC<DeliveryDetailsProps> = ({
             </div>
           </div>
 
-          {/* Package Content & Items */}
+          
           <div className="space-y-2.5">
             <h4 className="text-xs font-bold text-muted-foreground uppercase tracking-wider">
               Contenu du colis ({delivery.items.length} articles)
@@ -257,7 +258,7 @@ export const DeliveryDetails: React.FC<DeliveryDetailsProps> = ({
             </div>
           </div>
 
-          {/* GPS Telemetry Metadata */}
+          
           <div className="p-3.5 rounded-2xl bg-muted/20 border border-border/60 text-[11px] space-y-1 font-mono text-muted-foreground">
             <div className="flex items-center justify-between">
               <span>Coordonnées GPS :</span>
@@ -272,7 +273,7 @@ export const DeliveryDetails: React.FC<DeliveryDetailsProps> = ({
           </div>
         </div>
 
-        {/* Footer Actions */}
+        
         <div className="p-4 border-t border-border bg-card/80 backdrop-blur-xs flex items-center justify-between gap-3">
           <button
             type="button"

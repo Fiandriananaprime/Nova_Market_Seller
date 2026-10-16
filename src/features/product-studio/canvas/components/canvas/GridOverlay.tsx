@@ -1,11 +1,11 @@
 import { useDesignStore } from '@/features/product-studio/canvas/store/useDesignStore'
-import { useUIStore, resolveGrid, type GridConfig } from '@/features/product-studio/canvas/store/useUIStore'
+import { useUIStore, resolveGrid } from '@/features/product-studio/canvas/store/useUIStore'
 
 interface Props {
   zoom: number
 }
 
-export function GridOverlay({ zoom }: Props) {
+export const GridOverlay = ({ zoom }: Props) => {
   const showGrid = useUIStore((s) => s.showGrid)
   const gridConfig = useUIStore((s) => s.gridConfig)
   const format = useDesignStore((s) => s.document.format)
@@ -14,8 +14,8 @@ export function GridOverlay({ zoom }: Props) {
 
   const w = format.width * zoom
   const h = format.height * zoom
-  // Resolve against the active frame so the grid fills it and adapts to its
-  // aspect ratio (square modules, proportional margins/gutters).
+                                                                            
+                                                                 
   const { columns, rows, padding, gutter, cellW, cellH } = resolveGrid(gridConfig, format)
 
   const innerW = format.width - padding * 2
@@ -55,24 +55,4 @@ export function GridOverlay({ zoom }: Props) {
       <line x1={0} y1={h / 2} x2={w} y2={h / 2} stroke="#F56139" strokeWidth={0.5} strokeDasharray="6 4" opacity={0.25} />
     </svg>
   )
-}
-
-export function getGridSnapTargets(
-  format: { width: number; height: number },
-  gridConfig: GridConfig,
-): { snapX: number[]; snapY: number[] } {
-  const { columns, rows, padding, gutter, cellW, cellH } = resolveGrid(gridConfig, format)
-  const snapX: number[] = [padding]
-  const snapY: number[] = [padding]
-  for (let col = 0; col <= columns; col++) {
-    const x = padding + col * (cellW + gutter)
-    snapX.push(Math.round(x))
-    if (col < columns) snapX.push(Math.round(x + cellW))
-  }
-  for (let row = 0; row <= rows; row++) {
-    const y = padding + row * (cellH + gutter)
-    snapY.push(Math.round(y))
-    if (row < rows) snapY.push(Math.round(y + cellH))
-  }
-  return { snapX: [...new Set(snapX)], snapY: [...new Set(snapY)] }
 }

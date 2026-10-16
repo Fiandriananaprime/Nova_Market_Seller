@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react'
 import { useDesignStore } from '@/features/product-studio/canvas/store/useDesignStore'
 
 interface Measurement {
-  // Lines to draw (from point to point)
+                                        
   lines: Array<{ x1: number; y1: number; x2: number; y2: number; label: string }>
 }
 
@@ -10,7 +10,7 @@ interface Props {
   zoom: number
 }
 
-export function DistanceMeasurement({ zoom }: Props) {
+export const DistanceMeasurement = ({ zoom }: Props) => {
   const [altHeld, setAltHeld] = useState(false)
   const [, setMousePos] = useState<{ x: number; y: number } | null>(null)
   const activeLayerId = useDesignStore((s) => s.activeLayerId)
@@ -36,7 +36,7 @@ export function DistanceMeasurement({ zoom }: Props) {
   const activeLayer = layers.find((l) => l.id === activeLayerId)
   if (!activeLayer || activeLayer.type === 'background') return null
 
-  // Measure distances to canvas edges
+                                      
   const measurements: Measurement = { lines: [] }
 
   const ax = activeLayer.x
@@ -44,7 +44,7 @@ export function DistanceMeasurement({ zoom }: Props) {
   const aw = activeLayer.width
   const ah = activeLayer.height
 
-  // Distance to canvas edges
+                             
   const distTop = ay
   const distBottom = format.height - (ay + ah)
   const distLeft = ax
@@ -90,7 +90,7 @@ export function DistanceMeasurement({ zoom }: Props) {
               strokeWidth={1}
               strokeDasharray="3 2"
             />
-            {/* End caps */}
+            
             {isVertical ? (
               <>
                 <line x1={x1 - 4} y1={y1} x2={x1 + 4} y2={y1} stroke="#F56139" strokeWidth={1} />
@@ -102,7 +102,7 @@ export function DistanceMeasurement({ zoom }: Props) {
                 <line x1={x2} y1={y2 - 4} x2={x2} y2={y2 + 4} stroke="#F56139" strokeWidth={1} />
               </>
             )}
-            {/* Label */}
+            
             <rect
               x={midLX - 16}
               y={midLY - 8}
@@ -127,4 +127,4 @@ export function DistanceMeasurement({ zoom }: Props) {
       })}
     </svg>
   )
-}
+};

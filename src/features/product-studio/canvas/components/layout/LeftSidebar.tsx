@@ -8,12 +8,12 @@ import { useIsProMode } from '@/features/product-studio/canvas/hooks/useIsProMod
 
 type Tab = 'layers' | 'components' | 'assets' | 'icons'
 
-export function LeftSidebar() {
+export const LeftSidebar = () => {
   const [tab, setTab] = useState<Tab>('layers')
   const isPro = useIsProMode()
 
-  // Also honour the dock event (if/when the floating dock is mounted) so both
-  // entry points drive the same tab state.
+                                                                              
+                                           
   useEffect(() => {
     const handler = (e: Event) => {
       const detail = (e as CustomEvent).detail as Tab
@@ -49,8 +49,7 @@ export function LeftSidebar() {
               }`}
             >
               <Icon className="w-[15px] h-[15px] shrink-0" />
-              {/* Only the active tab spells out its label; the rest collapse to
-                  icon-only (tooltip via title) so all four fit the sidebar. */}
+              
               <span
                 className={`overflow-hidden whitespace-nowrap transition-[max-width,opacity,margin] duration-200 ease-out ${
                   active ? 'max-w-[120px] opacity-100 ml-1.5' : 'max-w-0 opacity-0 ml-0'
@@ -71,4 +70,4 @@ export function LeftSidebar() {
       </div>
     </aside>
   )
-}
+};

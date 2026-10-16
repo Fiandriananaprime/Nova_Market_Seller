@@ -18,7 +18,7 @@ interface DeliveryListProps {
   onSelectDelivery: (record: DeliveryRecord) => void
 }
 
-function StatusBadge({ status }: { status: DeliveryStatus }) {
+const StatusBadge = ({ status }: { status: DeliveryStatus }) => {
   if (status === "in_transit") {
     return (
       <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[10px] font-bold bg-teal-500/15 text-teal-700 dark:text-teal-300 border border-teal-500/30">
@@ -49,7 +49,7 @@ function StatusBadge({ status }: { status: DeliveryStatus }) {
       En attente
     </span>
   )
-}
+};
 
 export const DeliveryList: React.FC<DeliveryListProps> = ({
   deliveries,
@@ -58,7 +58,7 @@ export const DeliveryList: React.FC<DeliveryListProps> = ({
 }) => {
   return (
     <div className="flex flex-col h-full bg-card rounded-3xl border border-border/80 shadow-xs overflow-hidden">
-      {/* Header bar */}
+      
       <div className="px-5 py-3.5 border-b border-border/60 bg-muted/20 flex items-center justify-between">
         <div className="flex items-center gap-2">
           <Truck size={16} className="text-primary" />
@@ -71,7 +71,7 @@ export const DeliveryList: React.FC<DeliveryListProps> = ({
         </span>
       </div>
 
-      {/* Scrollable list */}
+      
       <div className="flex-1 overflow-y-auto divide-y divide-border/60 max-h-[580px] lg:max-h-[640px] p-2 space-y-1.5">
         {deliveries.length === 0 ? (
           <div className="p-8 text-center text-muted-foreground">
@@ -97,7 +97,7 @@ export const DeliveryList: React.FC<DeliveryListProps> = ({
                     : "bg-card hover:bg-muted/50 border-border/60 hover:border-border"
                 }`}
               >
-                {/* Reference & Status */}
+                
                 <div className="flex items-center justify-between gap-2">
                   <div className="flex items-center gap-2">
                     <span className="font-display font-bold text-xs text-foreground tracking-tight">
@@ -111,7 +111,7 @@ export const DeliveryList: React.FC<DeliveryListProps> = ({
                   <StatusBadge status={delivery.status} />
                 </div>
 
-                {/* Recipient and District */}
+                
                 <div className="mt-2 flex items-start gap-1.5 text-xs">
                   <MapPin size={13} className="text-primary shrink-0 mt-0.5" />
                   <div className="min-w-0 flex-1">
@@ -124,7 +124,7 @@ export const DeliveryList: React.FC<DeliveryListProps> = ({
                   </div>
                 </div>
 
-                {/* Driver & Timing Footer */}
+                
                 <div className="mt-2.5 pt-2 border-t border-border/40 flex items-center justify-between text-[11px] text-muted-foreground">
                   <div className="flex items-center gap-1.5 truncate">
                     {delivery.driver ? (
@@ -166,7 +166,7 @@ export const DeliveryList: React.FC<DeliveryListProps> = ({
                   </div>
                 </div>
 
-                {/* Delay Alert Callout */}
+                
                 {delivery.isDelayed && delivery.delayReason && (
                   <div className="mt-2 p-1.5 rounded-lg bg-rose-500/10 border border-rose-500/20 text-rose-700 dark:text-rose-400 text-[10px] font-medium leading-tight">
                     ⚠️ {delivery.delayReason}

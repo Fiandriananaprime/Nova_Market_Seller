@@ -1,21 +1,19 @@
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import { useTranslation } from "react-i18next"
 import {
-  Search,
   AlertTriangle,
   Package,
-  Edit2,
-  RefreshCw,
   Plus,
   Minus,
   CheckCircle2,
-  AlertCircle,
   SlidersHorizontal,
-  ArrowUpDown,
   TrendingDown,
   Warehouse,
 } from "lucide-react"
-import { inventoryItems, formatFullMGA, type InventoryItem } from "@/hook/mock"
+
+import { getInventory, updateInventory } from "@/service/inventory"
+import type { InventoryItem } from "@/type/inventory"
+import { useStore } from "@/context/useStore"
 import {
   PageHeader,
   Button,
@@ -27,11 +25,16 @@ import {
   Badge,
 } from "@/components/ui"
 
-export default function Inventory() {
+const Inventory = () => {
   const { t } = useTranslation()
+  const { selectedStore, loading: storeLoading } = useStore()
   const [search, setSearch] = useState("")
   const [statusFilter, setStatusFilter] = useState<string>("all")
-  const [items, setItems] = useState<InventoryItem[]>(inventoryItems)
+  const [items, setItems] = useState<InventoryItem[]>([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
+  const [adjustmentError, setAdjustmentError] = useState<string | null>(null)
+  const [savingProductId, setSavingProductId] = useState<string | null>(null)
   const [toast, setToast] = useState<string | null>(null)
   const [editingItemId, setEditingItemId] = useState<string | null>(null)
   const [editValues, setEditValues] = useState<{ stock: number; threshold: number }>({
@@ -39,18 +42,33 @@ export default function Inventory() {
     threshold: 10,
   })
 
+  useEffect(() => {
+    if (storeLoading) return
+    let active = true
+    setLoading(true)
+    setError(null)
+    getInventory(selectedStore?.id).then(({ data }) => {
+      if (active) setItems(data)
+    }).catch(() => {
+      if (active) setError("L’inventaire n’a pas pu être chargé. Vérifiez votre connexion puis réessayez.")
+    }).finally(() => {
+      if (active) setLoading(false)
+    })
+    return () => { active = false }
+  }, [selectedStore?.id, storeLoading])
+
   const showNotification = (msg: string) => {
     setToast(msg)
     setTimeout(() => setToast(null), 3000)
   }
 
-  // Stock telemetry calculations
+                                 
   const totalStockUnits = items.reduce((sum, i) => sum + i.stock, 0)
   const outOfStockItems = items.filter((i) => i.status === "out_of_stock")
   const lowStockItems = items.filter((i) => i.status === "low_stock")
   const normalStockItems = items.filter((i) => i.status === "in_stock")
 
-  // Filter
+           
   const filtered = items.filter((i) => {
     const matchSearch =
       i.name.toLowerCase().includes(search.toLowerCase()) ||
@@ -62,55 +80,44 @@ export default function Inventory() {
     return matchSearch && matchStatus
   })
 
-  // Quick Inline Stepper Adjustment
-  function handleQuickStep(productId: string, delta: number) {
-    setItems((prev) =>
-      prev.map((item) => {
-        if (item.productId !== productId) return item
-        const newStock = Math.max(0, item.stock + delta)
-        const available = Math.max(0, newStock - item.reserved)
-        const status =
-          newStock === 0
-            ? "out_of_stock"
-            : newStock <= item.threshold
-            ? "low_stock"
-            : "in_stock"
-        return { ...item, stock: newStock, available, status }
-      })
-    )
-    showNotification("Quantité ajustée")
+                                    
+  async function saveAdjustment(item: InventoryItem, stock: number, threshold: number) {
+    const adjustment = { stock: Math.max(0, stock), threshold: Math.max(1, threshold) }
+    setSavingProductId(item.productId)
+    setAdjustmentError(null)
+    try {
+      await updateInventory(item.productId, adjustment)
+      setItems((prev) => prev.map((current) => {
+        if (current.productId !== item.productId) return current
+        const available = Math.max(0, adjustment.stock - current.reserved)
+        const status = adjustment.stock === 0
+          ? "out_of_stock"
+          : adjustment.stock <= adjustment.threshold ? "low_stock" : "in_stock"
+        return { ...current, ...adjustment, available, status }
+      }))
+      showNotification("Paramètres de stock enregistrés")
+      return true
+    } catch {
+      setAdjustmentError("La mise à jour du stock a échoué. Réessayez.")
+      return false
+    } finally {
+      setSavingProductId(null)
+    }
   }
 
-  // Save detailed adjustment
-  function handleSaveAdjustment(productId: string) {
-    setItems((prev) =>
-      prev.map((item) => {
-        if (item.productId !== productId) return item
-        const newStock = Math.max(0, editValues.stock)
-        const newThreshold = Math.max(1, editValues.threshold)
-        const available = Math.max(0, newStock - item.reserved)
-        const status =
-          newStock === 0
-            ? "out_of_stock"
-            : newStock <= newThreshold
-            ? "low_stock"
-            : "in_stock"
-        return {
-          ...item,
-          stock: newStock,
-          threshold: newThreshold,
-          available,
-          status,
-        }
-      })
-    )
-    setEditingItemId(null)
-    showNotification("Paramètres de stock enregistrés")
+  async function handleQuickStep(item: InventoryItem, delta: number) {
+    await saveAdjustment(item, item.stock + delta, item.threshold)
+  }
+
+  async function handleSaveAdjustment(item: InventoryItem) {
+    if (await saveAdjustment(item, editValues.stock, editValues.threshold)) {
+      setEditingItemId(null)
+    }
   }
 
   return (
     <div className="p-6 md:p-8 space-y-6 animate-fade-in max-w-7xl mx-auto">
-      {/* Page Header */}
+      
       <PageHeader
         title={t("inventory.title")}
         subtitle={t("inventory.subtitle")}
@@ -121,9 +128,13 @@ export default function Inventory() {
         }
       />
 
-      {/* Stock Health Radar Overview */}
-      <div data-tour="inventory-radar" className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        {/* Total SKUs */}
+      {error && <div role="alert" className="rounded-xl border border-rose-300 bg-rose-50 px-4 py-3 text-sm text-rose-900 dark:border-rose-900 dark:bg-rose-950/30 dark:text-rose-100">{error}</div>}
+      {adjustmentError && <div role="alert" className="rounded-xl border border-rose-300 bg-rose-50 px-4 py-3 text-sm text-rose-900 dark:border-rose-900 dark:bg-rose-950/30 dark:text-rose-100">{adjustmentError}</div>}
+      {loading && <div role="status" aria-live="polite" className="rounded-2xl border border-border bg-card p-8 text-center text-sm text-muted-foreground">Chargement de l’inventaire…</div>}
+
+      
+      {!loading && !error && <div data-tour="inventory-radar" className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        
         <div className="bg-card rounded-2xl border border-border/80 p-5 shadow-xs flex items-center justify-between">
           <div>
             <p className="text-xs text-muted-foreground font-medium">Total Unités</p>
@@ -137,7 +148,7 @@ export default function Inventory() {
           </div>
         </div>
 
-        {/* Normal Stock */}
+        
         <div className="bg-card rounded-2xl border border-border/80 p-5 shadow-xs flex items-center justify-between">
           <div>
             <p className="text-xs text-muted-foreground font-medium">Stock Sain</p>
@@ -145,7 +156,7 @@ export default function Inventory() {
               {normalStockItems.length}
             </p>
             <p className="text-[11px] text-emerald-600 dark:text-emerald-400 mt-0.5 font-medium">
-              {Math.round((normalStockItems.length / items.length) * 100)}% du catalogue
+              {items.length ? Math.round((normalStockItems.length / items.length) * 100) : 0}% du catalogue
             </p>
           </div>
           <div className="w-10 h-10 rounded-xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 flex items-center justify-center">
@@ -153,7 +164,7 @@ export default function Inventory() {
           </div>
         </div>
 
-        {/* Low Stock Alert */}
+        
         <div className="bg-card rounded-2xl border border-border/80 p-5 shadow-xs flex items-center justify-between">
           <div>
             <p className="text-xs text-muted-foreground font-medium">Stock Faible</p>
@@ -169,7 +180,7 @@ export default function Inventory() {
           </div>
         </div>
 
-        {/* Out of Stock */}
+        
         <div className="bg-card rounded-2xl border border-border/80 p-5 shadow-xs flex items-center justify-between">
           <div>
             <p className="text-xs text-muted-foreground font-medium">Ruptures</p>
@@ -184,10 +195,10 @@ export default function Inventory() {
             <TrendingDown size={18} />
           </div>
         </div>
-      </div>
+      </div>}
 
-      {/* Filter and Search Bar */}
-      <div data-tour="inventory-filters" className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-card p-3 rounded-2xl border border-border/80 shadow-xs">
+      
+      {!loading && !error && <><div data-tour="inventory-filters" className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-card p-3 rounded-2xl border border-border/80 shadow-xs">
         <SearchInput
           value={search}
           onChange={(v) => setSearch(v)}
@@ -242,7 +253,7 @@ export default function Inventory() {
         </div>
       </div>
 
-      {/* Inventory Interactive Health Cards */}
+      
       <div data-tour="inventory-items-grid" className="space-y-4">
         {filtered.length === 0 ? (
           <Card>
@@ -269,7 +280,7 @@ export default function Inventory() {
                       : "border-border/80 hover:border-border"
                   }`}
                 >
-                  {/* Item Header */}
+                  
                   <div className="flex items-start justify-between gap-3">
                     <div className="min-w-0">
                       <div className="flex items-center gap-2">
@@ -288,7 +299,7 @@ export default function Inventory() {
                     <InventoryBadge status={item.status} />
                   </div>
 
-                  {/* Stock Level Visual Bar */}
+                  
                   <div className="space-y-1.5">
                     <div className="flex items-center justify-between text-xs">
                       <span className="text-muted-foreground font-medium">Jauge de disponibilité :</span>
@@ -311,7 +322,7 @@ export default function Inventory() {
                     </div>
                   </div>
 
-                  {/* Inline Stepper / Detailed Edit Box */}
+                  
                   {isEditing ? (
                     <div className="p-3.5 rounded-xl bg-muted/60 border border-border/80 space-y-3 animate-fade-in">
                       <div className="grid grid-cols-2 gap-3 text-xs">
@@ -360,7 +371,8 @@ export default function Inventory() {
                         <Button
                           size="sm"
                           variant="primary"
-                          onClick={() => handleSaveAdjustment(item.productId)}
+                          disabled={savingProductId === item.productId}
+                          onClick={() => void handleSaveAdjustment(item)}
                         >
                           Valider
                         </Button>
@@ -368,7 +380,7 @@ export default function Inventory() {
                     </div>
                   ) : (
                     <div className="flex items-center justify-between pt-2 border-t border-border/60">
-                      {/* Inline quick stepper */}
+                      
                       <div
                         data-tour={index === 0 ? "inventory-steppers" : undefined}
                         className="flex items-center gap-1.5"
@@ -376,8 +388,8 @@ export default function Inventory() {
                         <span className="text-xs text-muted-foreground mr-1">Ajuster:</span>
                         <button
                           title="Retirer 1 unité"
-                          disabled={item.stock === 0}
-                          onClick={() => handleQuickStep(item.productId, -1)}
+                          disabled={item.stock === 0 || savingProductId === item.productId}
+                          onClick={() => void handleQuickStep(item, -1)}
                           className="w-7 h-7 rounded-lg border border-border bg-card hover:bg-muted text-muted-foreground hover:text-foreground flex items-center justify-center transition-colors cursor-pointer disabled:opacity-40"
                         >
                           <Minus size={13} />
@@ -387,7 +399,8 @@ export default function Inventory() {
                         </span>
                         <button
                           title="Ajouter 1 unité"
-                          onClick={() => handleQuickStep(item.productId, 1)}
+                          disabled={savingProductId === item.productId}
+                          onClick={() => void handleQuickStep(item, 1)}
                           className="w-7 h-7 rounded-lg border border-border bg-card hover:bg-muted text-muted-foreground hover:text-foreground flex items-center justify-center transition-colors cursor-pointer"
                         >
                           <Plus size={13} />
@@ -397,6 +410,7 @@ export default function Inventory() {
                       <Button
                         size="sm"
                         variant="outline"
+                        disabled={savingProductId === item.productId}
                         onClick={() => {
                           setEditingItemId(item.productId)
                           setEditValues({
@@ -416,9 +430,11 @@ export default function Inventory() {
           </div>
         )}
       </div>
+      </>}
 
-      {/* Toast alert */}
+      
       {toast && <Toast message={toast} onDismiss={() => setToast(null)} />}
     </div>
   )
-}
+};
+export default Inventory

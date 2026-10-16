@@ -1,8 +1,8 @@
 import { entities } from "@/mock/entities"
-import { PaymentStatus as ApiPaymentStatus } from "@/type/order"
+import { OrderStatus as ApiOrderStatus, PaymentStatus as ApiPaymentStatus } from "@/type/order"
 import { productStatus as ApiProductStatus } from "@/type/product"
 
-export type OrderStatus = "pending" | "confirmed" | "processing" | "preparing" | "shipped" | "delivered" | "cancelled"
+export type OrderStatus = ApiOrderStatus
 export type PaymentStatus = ApiPaymentStatus
 export type ProductStatus = ApiProductStatus
 export type InventoryStatus = "in_stock" | "low_stock" | "out_of_stock"
@@ -165,7 +165,7 @@ export const customers: Customer[] = entities.customers.map((customer, idx) => (
   name: customer.name,
   email: customer.email,
   phone: `+261 34 ${String(21 + idx * 2).padStart(2, "0")} ${String(345 + idx * 9).padStart(3, "0")} 12`,
-  initials: customer.avatarInitial,
+  initials: customer.avatarInitial ?? customer.name.slice(0, 2).toUpperCase(),
   ordersCount: customer.ordersCount,
   totalSpent: customer.totalSpent,
   lastOrderDate: customer.lastOrderDate ?? "",

@@ -10,6 +10,7 @@ import { useWorkspaceStore } from '@/features/product-studio/canvas/store/useWor
 import type {
   DesignDocument,
   Layer,
+  LayerInput,
   LayerId,
   ToolMode,
   AdFormat,
@@ -19,27 +20,58 @@ import type {
   AutoLayoutConfig,
 } from '@/features/product-studio/canvas/types/design'
 
-// --- Sync helper: write design store layers back to workspace frame ---
+const isRecord = (value: unknown):value is Record<string, unknown> => {
+  return typeof value === 'object' && value !== null
+};
+
+const isPersistedDesignDocument = (value: unknown):value is DesignDocument => {
+  if (
+    !isRecord(value) ||
+    !isRecord(value.format) ||
+    !Array.isArray(value.layers)
+  ) {
+    return false
+  }
+
+  const { format } = value
+  return (
+    typeof value.id === 'string' &&
+    typeof value.name === 'string' &&
+    typeof value.createdAt === 'string' &&
+    typeof value.updatedAt === 'string' &&
+    typeof format.id === 'string' &&
+    typeof format.label === 'string' &&
+    (format.platform === 'linkedin' ||
+      format.platform === 'instagram' ||
+      format.platform === 'facebook' ||
+      format.platform === 'generic') &&
+    typeof format.width === 'number' &&
+    typeof format.height === 'number' &&
+    typeof format.aspectRatio === 'string'
+  )
+};
+
+                                                                         
 let _syncScheduled = false
-// Guards reflow re-entry: reflowGroup rewrites member x/y directly, and the
-// updateLayer resize-hook must not fire another reflow while one is in flight.
+                                                                            
+                                                                               
 let _reflowing = false
-// Auto-width text hugs its content: measure the natural (unwrapped) bounds and
-// return a box that fits the widest line + all lines. Used on create and when
-// the text/font changes, so the box tracks the text like Figma's auto-width.
-function fitAutoWidthText(layer: TextLayer): { width: number; height: number } {
+                                                                               
+                                                                              
+                                                                             
+const fitAutoWidthText = (layer: TextLayer):{ width: number; height: number } => {
   const bounds = getTextBounds(createMeasureContext(), { ...layer, width: 100000 })
   return { width: Math.ceil(bounds.width) + 4, height: Math.ceil(bounds.height) + 2 }
-}
+};
 
-// Auto-height keeps the width and grows/shrinks the box to fit the wrapped text.
-function fitAutoHeightText(layer: TextLayer): { height: number } {
+                                                                                 
+const fitAutoHeightText = (layer: TextLayer):{ height: number } => {
   const bounds = getTextBounds(createMeasureContext(), layer)
   return { height: Math.ceil(bounds.height) + 2 }
-}
+};
 
-function _syncBackToFrame() {
-  // Debounce to avoid hammering workspace store on rapid mutations
+const _syncBackToFrame = () => {
+                                                                   
   if (_syncScheduled) return
   _syncScheduled = true
   queueMicrotask(() => {
@@ -54,8 +86,8 @@ function _syncBackToFrame() {
     const frame = wsState.getFrame(frameId)
     if (!frame) return
 
-    // Update layers in the workspace frame
-    // We replace all layers at once by updating the frame via the page updater
+                                           
+                                                                               
     useWorkspaceStore.setState((s) => ({
       workspace: {
         ...s.workspace,
@@ -74,13 +106,13 @@ function _syncBackToFrame() {
       },
     }))
   })
-}
+};
 
-// --- Legacy group migration ---
-// Older documents stored groups as a separate `GroupLayer` container with
-// `childIds`. We now tag members with a flat `groupId` instead. Convert any
-// container layers into tags on their children and drop the containers.
-function normalizeGroupContainers(layers: Layer[]): Layer[] {
+                                 
+                                                                          
+                                                                            
+                                                                        
+const normalizeGroupContainers = (layers: Layer[]):Layer[] => {
   const containers = layers.filter((l) => l.type === 'group') as GroupLayer[]
   if (containers.length === 0) return layers
 
@@ -93,14 +125,14 @@ function normalizeGroupContainers(layers: Layer[]): Layer[] {
     .map((l) =>
       childToGroup.has(l.id) ? ({ ...l, groupId: childToGroup.get(l.id) } as Layer) : l,
     )
-}
+};
 
-// --- History config ---
+                         
 const MAX_HISTORY = 100
 
-// --- Default document ---
+                           
 
-function createDefaultBackground(): BackgroundLayer {
+const createDefaultBackground = (): BackgroundLayer => {
   return {
     id: nanoid(),
     type: 'background',
@@ -116,9 +148,9 @@ function createDefaultBackground(): BackgroundLayer {
     zIndex: 0,
     fill: { type: 'solid', color: getBrandColor('cloud') },
   }
-}
+};
 
-function createDefaultDocument(): DesignDocument {
+const createDefaultDocument = (): DesignDocument => {
   const now = new Date().toISOString()
   return {
     id: nanoid(),
@@ -128,9 +160,9 @@ function createDefaultDocument(): DesignDocument {
     createdAt: now,
     updatedAt: now,
   }
-}
+};
 
-// --- Saved version type ---
+                             
 interface SavedVersion {
   id: string
   name: string
@@ -138,107 +170,107 @@ interface SavedVersion {
   createdAt: string
 }
 
-// --- Store ---
+                
 
 interface DesignStore {
-  // Document
+             
   document: DesignDocument
 
-  // Selection
+              
   selectedLayerIds: Set<LayerId>
   activeLayerId: LayerId | null
 
-  // Canvas
+           
   tool: ToolMode
   zoom: number
   panOffset: { x: number; y: number }
 
-  // Text editing
+                 
   editingTextLayerId: LayerId | null
 
-  // The layer under the cursor (desktop hover feedback). Transient, not persisted.
+                                                                                   
   hoveredLayerId: LayerId | null
 
-  // History
+            
   history: DesignDocument[]
   historyIndex: number
 
-  // Saved versions
+                   
   savedVersions: SavedVersion[]
 
-  // --- Actions ---
+                    
 
-  // Layer CRUD
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  addLayer: (layerWithoutId: Record<string, any>) => LayerId
-  // Insert several layers at once (e.g. a design-system component made of a
-  // shape + label). Pushes a single undo snapshot, stacks z-indices in order,
-  // and leaves every new layer selected so it can be dragged as one unit.
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  addLayers: (layersWithoutId: Array<Record<string, any>>) => LayerId[]
+               
+                                                                
+  addLayer: (layerWithoutId: LayerInput) => LayerId
+                                                                            
+                                                                              
+                                                                          
+                                                                
+  addLayers: (layersWithoutId: LayerInput[]) => LayerId[]
   removeLayer: (id: LayerId) => void
   removeLayers: (ids: LayerId[]) => void
   updateLayer: <T extends Layer>(id: LayerId, updates: Partial<T>) => void
   duplicateLayer: (id: LayerId) => void
   reorderLayer: (id: LayerId, newZIndex: number) => void
-  // Reorder the whole current selection as a block (preserving its relative
-  // order) in one undo step. `front`/`back` jump to the top/bottom (above the
-  // background); `forward`/`backward` move one step.
+                                                                            
+                                                                              
+                                                     
   reorderSelection: (ids: LayerId[], mode: 'front' | 'back' | 'forward' | 'backward') => void
   groupSelectedLayers: () => void
   ungroupSelectedLayers: () => void
   ungroupLayer: (id: LayerId) => void
 
-  // Auto Layout — Figma-style flow layout on a group (keyed by groupId).
+                                                                         
   applyAutoLayout: () => void
   removeAutoLayout: (groupId: string) => void
   updateAutoLayoutConfig: (groupId: string, partial: Partial<AutoLayoutConfig>, live?: boolean) => void
   reflowGroup: (groupId: string) => void
 
-  // Selection
+              
   selectLayer: (id: LayerId, additive?: boolean) => void
   deselectAll: () => void
 
-  // Format
+           
   setFormat: (format: AdFormat) => void
 
-  // Document
+             
   setDocumentName: (name: string) => void
   resetDocument: () => void
   loadFromFrame: (frame: { name: string; width: number; height: number; format: AdFormat; layers: Layer[]; autoLayouts?: Record<string, AutoLayoutConfig> }) => void
   syncToFrame: () => { layers: Layer[]; format: AdFormat }
 
-  // Canvas
+           
   setTool: (tool: ToolMode) => void
   setZoom: (zoom: number) => void
   setPanOffset: (offset: { x: number; y: number }) => void
 
-  // Text editing
+                 
   setEditingTextLayerId: (id: LayerId | null) => void
   setHoveredLayerId: (id: LayerId | null) => void
 
-  // History
+            
   undo: () => void
   redo: () => void
   pushSnapshot: () => void
 
-  // Versions
+             
   saveVersion: (name?: string) => void
   restoreVersion: (versionId: string) => void
   deleteVersion: (versionId: string) => void
 
-  // Helpers
+            
   getLayer: (id: LayerId) => Layer | undefined
   getSelectedLayers: () => Layer[]
   getMaxZIndex: () => number
 }
 
-// After ANY layer removal (single or batch), keep Auto Layout groups consistent:
-// reflow groups that still have members (container re-hugs, survivors repack) and
-// drop the config for any group that's now empty. Called by removeLayer AND
-// removeLayers so every delete path (layer row, context menu, command palette,
-// agent commands) stays in sync.
-function _syncAutoLayoutsAfterRemoval() {
+                                                                                 
+                                                                                  
+                                                                            
+                                                                               
+                                 
+const _syncAutoLayoutsAfterRemoval = () => {
   const cfgs = useDesignStore.getState().document.autoLayouts
   if (!cfgs) return
   for (const gid of Object.keys(cfgs)) {
@@ -254,23 +286,23 @@ function _syncAutoLayoutsAfterRemoval() {
       })
     }
   }
-}
+};
 
-// All groupIds in the Auto Layout subtree rooted at `gid` (itself + descendants).
-function _subtreeGroupIds(autoLayouts: Record<string, AutoLayoutConfig>, gid: string): string[] {
+                                                                                  
+const _subtreeGroupIds = (autoLayouts: Record<string, AutoLayoutConfig>, gid: string):string[] => {
   const out = [gid]
   for (const [g, c] of Object.entries(autoLayouts)) {
     if (c.parentGroupId === gid) out.push(..._subtreeGroupIds(autoLayouts, g))
   }
   return out
-}
+};
 
-// Recursively reflow an Auto Layout subtree: child groups FIRST (so their
-// container boxes are current), then this group — laying out its loose member
-// layers AND its child groups as composite units (a nested group is one child
-// sized by its container box), and moving each child group as one rigid block.
-// Runs under the _reflowing guard set by reflowGroup.
-function _reflowSubtree(groupId: string): void {
+                                                                          
+                                                                              
+                                                                              
+                                                                               
+                                                      
+const _reflowSubtree = (groupId: string):void => {
   const al0 = useDesignStore.getState().document.autoLayouts
   if (!al0?.[groupId]) return
   const childGids = Object.entries(al0)
@@ -293,7 +325,7 @@ function _reflowSubtree(groupId: string): void {
     if (c) units.push({ kind: 'group', id: g, w: c.width, h: c.height, x: c.x, y: c.y })
   }
   if (units.length === 0) return
-  // Spatial order along the primary axis (nested groups have no single zIndex).
+                                                                                
   units.sort((a, b) => (horiz ? a.x - b.x : a.y - b.y))
 
   const children: LayoutChild[] = units.map((u) => ({
@@ -314,7 +346,7 @@ function _reflowSubtree(groupId: string): void {
     if (u.kind === 'layer') {
       layerRect.set(u.id, { x: Math.round(r.x), y: Math.round(r.y), width: Math.round(r.width), height: Math.round(r.height) })
     } else {
-      // Move the child group's whole subtree (layers + config origins) as a block.
+                                                                                   
       const dx = Math.round(r.x) - u.x
       const dy = Math.round(r.y) - u.y
       if (dx || dy) {
@@ -344,7 +376,7 @@ function _reflowSubtree(groupId: string): void {
       },
     }
   })
-}
+};
 
 export const useDesignStore = create<DesignStore>()(
   persist(
@@ -364,15 +396,15 @@ export const useDesignStore = create<DesignStore>()(
   history: [],
   historyIndex: -1,
 
-  savedVersions: [],
+  savedVersions: [] as SavedVersion[],
 
-  // --- Layer CRUD ---
+                       
 
   addLayer: (layerWithoutId) => {
     const id = nanoid()
     const zIndex = get().getMaxZIndex() + 1
     let layer = { ...layerWithoutId, id, zIndex } as Layer
-    // Auto-width text hugs its content from birth so the box isn't a wide default.
+                                                                                   
     if (layer.type === 'text' && (layer as TextLayer).textSizing === 'auto-width') {
       layer = { ...layer, ...fitAutoWidthText(layer as TextLayer) } as Layer
     }
@@ -436,7 +468,7 @@ export const useDesignStore = create<DesignStore>()(
     _syncAutoLayoutsAfterRemoval()
   },
 
-  // Remove several layers in one snapshot (e.g. deleting a whole group).
+                                                                         
   removeLayers: (ids) => {
     if (ids.length === 0) return
     const idSet = new Set(ids)
@@ -457,7 +489,7 @@ export const useDesignStore = create<DesignStore>()(
   },
 
   updateLayer: (id, updates) => {
-    // Enforce whole-pixel positioning
+                                      
     const snapped = { ...updates } as Record<string, unknown>
     if (typeof snapped.x === 'number') snapped.x = Math.round(snapped.x)
     if (typeof snapped.y === 'number') snapped.y = Math.round(snapped.y)
@@ -470,10 +502,10 @@ export const useDesignStore = create<DesignStore>()(
         layers: s.document.layers.map((l) => {
           if (l.id !== id) return l
           let merged = { ...l, ...snapped } as Layer
-          // Auto-sized text re-hugs when its text/font changes — but not on an
-          // explicit resize of that axis (setting height means the user is sizing
-          // it). Auto-width hugs both axes; auto-height keeps the width the user
-          // set and only re-fits the height (also when the width is dragged).
+                                                                               
+                                                                                  
+                                                                                 
+                                                                              
           if (merged.type === 'text' && snapped.height === undefined) {
             const tl = merged as TextLayer
             const contentChanged =
@@ -498,12 +530,12 @@ export const useDesignStore = create<DesignStore>()(
       const cfg = gid ? get().document.autoLayouts?.[gid] : undefined
       if (gid && cfg) {
         if (snapped.width !== undefined || snapped.height !== undefined || snapped.layoutGrow !== undefined) {
-          // A resized member (or Fill toggle) re-flows the group.
+                                                                  
           get().reflowGroup(gid)
         } else if (snapped.x !== undefined || snapped.y !== undefined) {
-          // A pure move of a member (whole-group drag / arrow nudge) slides the
-          // container origin to follow, so the layout stays put relative to the
-          // moved children instead of snapping back on the next reflow.
+                                                                                
+                                                                                
+                                                                        
           const members = get().document.layers
             .filter((m) => m.groupId === gid && m.type !== 'background')
             .sort((a, b) => a.zIndex - b.zIndex)
@@ -916,7 +948,7 @@ export const useDesignStore = create<DesignStore>()(
       hoveredLayerId: null,
       history: [],
       historyIndex: -1,
-      savedVersions: [],
+      savedVersions: [] as SavedVersion[],
       zoom: 1,
       panOffset: { x: 0, y: 0 },
     })
@@ -1068,9 +1100,17 @@ export const useDesignStore = create<DesignStore>()(
         zoom: state.zoom,
         savedVersions: state.savedVersions,
       }),
-      migrate: (persisted: any) => {
+      migrate: (persisted: unknown): Partial<Pick<DesignStore, "document" | "zoom" | "savedVersions">> => {
+        if (!isRecord(persisted)) {
+          return {
+            document: createDefaultDocument(),
+            zoom: 1,
+            savedVersions: [],
+          }
+        }
+        const persistedDocument = persisted.document
         // If document is missing or corrupt, reset to defaults
-        if (!persisted?.document?.format?.width || !persisted?.document?.layers) {
+        if (!isPersistedDesignDocument(persistedDocument)) {
           return {
             document: createDefaultDocument(),
             zoom: 1,
@@ -1078,8 +1118,16 @@ export const useDesignStore = create<DesignStore>()(
           }
         }
         // v3: convert legacy GroupLayer containers into flat groupId tags.
-        persisted.document.layers = normalizeGroupContainers(persisted.document.layers)
-        return persisted
+        return {
+          document: {
+            ...persistedDocument,
+            layers: normalizeGroupContainers(persistedDocument.layers),
+          },
+          zoom: typeof persisted.zoom === "number" ? persisted.zoom : 1,
+          savedVersions: Array.isArray(persisted.savedVersions)
+            ? persisted.savedVersions as SavedVersion[]
+            : [],
+        }
       },
     },
   ),
@@ -1087,9 +1135,8 @@ export const useDesignStore = create<DesignStore>()(
 
 // --- Convenience factory functions ---
 
-export function createTextLayer(
-  overrides: Partial<TextLayer> = {}
-): Omit<TextLayer, 'id' | 'zIndex'> {
+export const createTextLayer = (
+  overrides: Partial<TextLayer> = {}):Omit<TextLayer, 'id' | 'zIndex'> => {
   return {
     type: 'text',
     name: 'Text',
@@ -1119,4 +1166,4 @@ export function createTextLayer(
     strikethrough: false,
     ...overrides,
   }
-}
+};

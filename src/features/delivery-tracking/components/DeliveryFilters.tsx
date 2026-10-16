@@ -1,35 +1,36 @@
 import React from "react"
-import { Search, Play, Pause, ArrowUpDown } from "lucide-react"
+import { Search, ArrowUpDown } from "lucide-react"
 import type { DeliveryFilterOptions, DeliveryStats } from "../types/deliveryTracking.types"
 
 interface DeliveryFiltersProps {
   filters: DeliveryFilterOptions
   onChangeFilters: (filters: DeliveryFilterOptions) => void
   stats: DeliveryStats
-  isSimulating: boolean
-  onToggleSimulation: () => void
 }
 
 export const DeliveryFilters: React.FC<DeliveryFiltersProps> = ({
   filters,
   onChangeFilters,
   stats,
-  isSimulating,
-  onToggleSimulation,
 }) => {
-  const tabs = [
+  const tabs: {
+    id: DeliveryFilterOptions["status"]
+    label: string
+    count: number
+    badgeColor?: "teal" | "amber" | "rose" | "emerald"
+  }[] = [
     { id: "all", label: "Toutes", count: stats.totalActive + stats.deliveredToday },
     { id: "in_transit", label: "En transit", count: stats.inTransit, badgeColor: "teal" },
     { id: "awaiting_dispatch", label: "En attente", count: stats.awaitingDispatch, badgeColor: "amber" },
     { id: "delayed", label: "Retardées", count: stats.delayed, badgeColor: "rose" },
     { id: "delivered", label: "Livrées", count: stats.deliveredToday, badgeColor: "emerald" },
-  ] as const
+  ]
 
   return (
     <div className="bg-card rounded-2xl border border-border/80 p-3.5 shadow-xs space-y-3">
-      {/* Top row: Search, Sort & Simulation Toggle */}
+      
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-        {/* Search Input */}
+        
         <div className="relative flex-1 max-w-md">
           <Search
             size={16}
@@ -46,9 +47,9 @@ export const DeliveryFilters: React.FC<DeliveryFiltersProps> = ({
           />
         </div>
 
-        {/* Right side controls: Sort & GPS simulation button */}
+        
         <div className="flex items-center gap-2.5 flex-wrap">
-          {/* Sorting */}
+          
           <div className="flex items-center gap-1.5 bg-muted/60 border border-border/60 px-2.5 py-1.5 rounded-xl text-xs">
             <ArrowUpDown size={13} className="text-muted-foreground shrink-0" />
             <select
@@ -67,42 +68,10 @@ export const DeliveryFilters: React.FC<DeliveryFiltersProps> = ({
             </select>
           </div>
 
-          {/* Movement Simulation Button */}
-          <button
-            type="button"
-            data-tour="deliveries-simulate"
-            onClick={onToggleSimulation}
-            title={
-              isSimulating
-                ? "Mettre en pause la simulation de mouvement GPS"
-                : "Activer la simulation de mouvement des livreurs"
-            }
-            className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-xl text-xs font-semibold border transition-all cursor-pointer ${
-              isSimulating
-                ? "bg-teal-500/15 border-teal-500/40 text-teal-700 dark:text-teal-300 shadow-xs"
-                : "bg-muted/60 hover:bg-muted border-border/60 text-muted-foreground hover:text-foreground"
-            }`}
-          >
-            {isSimulating ? (
-              <>
-                <Pause size={13} className="text-teal-600 dark:text-teal-400" />
-                <span className="relative flex h-2 w-2">
-                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-teal-400 opacity-75"></span>
-                  <span className="relative inline-flex rounded-full h-2 w-2 bg-teal-500"></span>
-                </span>
-                <span>Télémétrie GPS active</span>
-              </>
-            ) : (
-              <>
-                <Play size={13} className="fill-current text-muted-foreground" />
-                <span>Simuler mouvement</span>
-              </>
-            )}
-          </button>
         </div>
       </div>
 
-      {/* Bottom row: Status Filter Tabs */}
+      
       <div className="flex items-center gap-1.5 overflow-x-auto pb-1 sm:pb-0 pt-1 border-t border-border/40">
         {tabs.map((tab) => {
           const isActive = filters.status === tab.id

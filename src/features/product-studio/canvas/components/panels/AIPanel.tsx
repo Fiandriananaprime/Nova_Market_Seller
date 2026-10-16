@@ -9,11 +9,13 @@ import { MessageBubble, StreamingMessage, ThinkingIndicator } from '@/features/p
 import type { ChatMessage } from '@/features/product-studio/canvas/components/panels/ai/AIChatMessages'
 import { AIChatInput } from '@/features/product-studio/canvas/components/panels/ai/AIChatInput'
 import type { QuickAction } from '@/features/product-studio/canvas/components/panels/ai/AIChatInput'
+import type { AIImageAttachment } from '@/features/product-studio/canvas/components/panels/ai/types'
 import { AISettingsInline } from '@/features/product-studio/canvas/components/panels/ai/AISettingsInline'
+import { getCurrentUser } from '@/service/auth'
 
-// --- Build system prompt with canvas context ---
+                                                  
 
-function buildSystemPrompt(action?: QuickAction): string {
+const buildSystemPrompt = (action?: QuickAction):string => {
   const ai = useAIStore.getState()
   const design = useDesignStore.getState()
   const format = design.document.format
@@ -79,11 +81,11 @@ Rules:
 - When writing copy that could be applied to a layer, keep it clean (just the text)
 - When asked to design, output a JSON array in a \`\`\`json code block (same format as the design mode)
 - You can discuss strategy, give feedback on the current design, or brainstorm ideas`
-}
+};
 
-// --- Empty state ---
+                      
 
-function EmptyState({ onQuickAction }: { onQuickAction: (a: QuickAction) => void }) {
+const EmptyState = ({ onQuickAction }: { onQuickAction: (a: QuickAction) => void }) => {
   return (
     <div className="flex flex-col items-center justify-center h-full py-8 text-center space-y-4">
       <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
@@ -120,18 +122,99 @@ function EmptyState({ onQuickAction }: { onQuickAction: (a: QuickAction) => void
       </div>
     </div>
   )
-}
+};
 
-// --- Chat interface ---
+const isChatMessage = (value: unknown):value is ChatMessage => {
+  if (typeof value !== 'object' || value === null
+    || !('id' in value) || typeof value.id !== 'string'
+    || !('role' in value) || (value.role !== 'user' && value.role !== 'assistant')
+    || !('content' in value) || typeof value.content !== 'string'
+    || !('ts' in value) || typeof value.ts !== 'number') return false
 
-function ChatInterface({ onOpenSettings }: { onOpenSettings: () => void }) {
+  if ('attachments' in value && value.attachments !== undefined) {
+    if (!Array.isArray(value.attachments) || !value.attachments.every((attachment) =>
+      typeof attachment === 'object' && attachment !== null
+      && 'name' in attachment && typeof attachment.name === 'string'
+      && 'mimeType' in attachment && typeof attachment.mimeType === 'string'
+      && 'dataUrl' in attachment && typeof attachment.dataUrl === 'string')) return false
+  }
+  return true
+};
+
+const readChatHistory = (storageKey: string):ChatMessage[] => {
+  const serialized = localStorage.getItem(storageKey)
+  if (!serialized) return []
+
+  const messages: unknown = JSON.parse(serialized)
+  if (!Array.isArray(messages) || !messages.every(isChatMessage)) {
+    throw new Error('Saved AI chat history is invalid.')
+  }
+  return messages
+};
+
+                         
+
+const ChatInterface = ({ onOpenSettings }: { onOpenSettings: () => void }) => {
   const [messages, setMessages] = useState<ChatMessage[]>([])
+  const [chatUserId, setChatUserId] = useState<string | null>(null)
+  const [historyReady, setHistoryReady] = useState(false)
+  const [historyError, setHistoryError] = useState<string | null>(null)
   const [input, setInput] = useState('')
   const [isStreaming, setIsStreaming] = useState(false)
   const [streamingContent, setStreamingContent] = useState('')
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const abortRef = useRef<AbortController | null>(null)
   const scrollContainerRef = useRef<HTMLDivElement>(null)
+  const historyStorageKey = chatUserId
+    ? `novamarket.product-studio.chat.${chatUserId}`
+    : null
+
+  useEffect(() => {
+    let active = true
+    getCurrentUser().then(({ userId }) => {
+      if (!active) return
+      const storageKey = `novamarket.product-studio.chat.${userId}`
+      setChatUserId(userId)
+      try {
+        const storedMessages = readChatHistory(storageKey)
+        setMessages(storedMessages)
+        setHistoryReady(true)
+      } catch (error: unknown) {
+        console.error('[AIPanel] Failed to load account chat history:', error)
+        setHistoryError('Your saved AI chat could not be loaded. Clear its saved history to continue.')
+      }
+    }).catch((error: unknown) => {
+      if (!active) return
+      console.error('[AIPanel] Failed to identify the current seller:', error)
+      setHistoryError('Your seller account could not be verified. The AI chat is unavailable.')
+    })
+    return () => { active = false }
+  }, [])
+
+  useEffect(() => {
+    if (!historyStorageKey || !historyReady) return
+    try {
+      localStorage.setItem(historyStorageKey, JSON.stringify(messages))
+    } catch (error: unknown) {
+      console.error('[AIPanel] Failed to save account chat history:', error)
+      setHistoryError('Your AI chat history could not be saved. Check available browser storage.')
+    }
+  }, [historyReady, historyStorageKey, messages])
+
+  const clearSavedHistory = () => {
+    if (!historyStorageKey) return
+    try {
+      const messagesToKeep = historyReady ? messages : []
+      localStorage.removeItem(historyStorageKey)
+      localStorage.setItem(historyStorageKey, JSON.stringify(messagesToKeep))
+      setMessages(messagesToKeep)
+      setHistoryError(null)
+      setHistoryReady(true)
+    } catch (error: unknown) {
+      console.error('[AIPanel] Failed to clear account chat history:', error)
+      setHistoryError('The saved AI chat history could not be cleared.')
+    }
+  }
 
   const scrollToBottom = useCallback(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
@@ -141,14 +224,19 @@ function ChatInterface({ onOpenSettings }: { onOpenSettings: () => void }) {
     scrollToBottom()
   }, [messages, streamingContent, scrollToBottom])
 
-  const sendMessage = useCallback(async (text: string, action?: QuickAction) => {
-    if (!text.trim() || isStreaming) return
+  const sendMessage = useCallback(async (
+    text: string,
+    action?: QuickAction,
+    attachments: AIImageAttachment[] = [],
+  ) => {
+    if ((!text.trim() && attachments.length === 0) || isStreaming || !historyReady || !chatUserId) return
 
     const ai = useAIStore.getState()
     const userMsg: ChatMessage = {
       id: crypto.randomUUID(),
       role: 'user',
       content: text.trim(),
+      attachments,
       ts: Date.now(),
     }
 
@@ -158,9 +246,18 @@ function ChatInterface({ onOpenSettings }: { onOpenSettings: () => void }) {
     setStreamingContent('')
 
     // Build conversation history (last 20 messages for context window)
-    const history = [...messages, userMsg].slice(-20).map((m) => ({
-      role: m.role as 'user' | 'assistant',
-      content: m.content,
+    const history = [...messages, userMsg].slice(-20).map((message) => ({
+      role: message.role,
+      content: message.content,
+      ...(message.id === userMsg.id && attachments.length > 0
+        ? {
+            attachments: attachments.map(({ name, mimeType, dataUrl }) => ({
+              name,
+              mimeType,
+              dataUrl,
+            })),
+          }
+        : {}),
     }))
 
     const controller = new AbortController()
@@ -215,7 +312,7 @@ function ChatInterface({ onOpenSettings }: { onOpenSettings: () => void }) {
       setStreamingContent('')
       abortRef.current = null
     }
-  }, [isStreaming, messages, streamingContent])
+  }, [chatUserId, historyReady, isStreaming, messages, streamingContent])
 
   const handleQuickAction = useCallback((action: QuickAction) => {
     const prompts: Record<QuickAction, string> = {
@@ -232,11 +329,12 @@ function ChatInterface({ onOpenSettings }: { onOpenSettings: () => void }) {
 
   return (
     <div className="flex flex-col h-full -m-3">
-      {/* Header */}
+      
       <div className="flex items-center justify-between px-3 py-2 border-b border-border shrink-0">
         <div className="flex items-center gap-2">
           <Sparkles className="w-3.5 h-3.5 text-primary" />
           <span className="text-[12px] font-medium text-foreground">AI Assistant</span>
+          {historyReady && <span className="text-[10px] text-muted-foreground">Saved to this account</span>}
         </div>
         <button
           className="p-1.5 rounded-[5px] text-muted-foreground hover:bg-muted transition-[color,background-color,transform] active:scale-[0.96] cursor-pointer"
@@ -248,44 +346,64 @@ function ChatInterface({ onOpenSettings }: { onOpenSettings: () => void }) {
         </button>
       </div>
 
-      {/* Messages */}
+      
       <div ref={scrollContainerRef} className="flex-1 overflow-y-auto px-3 py-2 space-y-3 min-h-0">
-        {messages.length === 0 && !isStreaming && (
+        {!historyReady && (
+          <div role={historyError ? "alert" : "status"} className="py-4 text-center text-xs text-muted-foreground space-y-2">
+            <p>{historyError ?? "Loading your account chat…"}</p>
+            {historyError && historyStorageKey && (
+              <button type="button" className="text-primary underline" onClick={clearSavedHistory}>
+                Clear saved history and retry
+              </button>
+            )}
+          </div>
+        )}
+        {historyReady && historyError && (
+          <div role="alert" className="py-2 text-center text-xs text-rose-600 space-y-2">
+            <p>{historyError}</p>
+            <button type="button" className="text-primary underline" onClick={clearSavedHistory}>
+              Clear saved history and retry
+            </button>
+          </div>
+        )}
+        {historyReady && !historyError && messages.length === 0 && !isStreaming && (
           <EmptyState onQuickAction={handleQuickAction} />
         )}
 
-        {messages.map((msg) => (
+        {historyReady && messages.map((msg) => (
           <MessageBubble key={msg.id} message={msg} />
         ))}
 
-        {/* Streaming message */}
-        {isStreaming && streamingContent && (
+        
+        {historyReady && isStreaming && streamingContent && (
           <StreamingMessage content={streamingContent} />
         )}
 
-        {isStreaming && !streamingContent && (
+        {historyReady && isStreaming && !streamingContent && (
           <ThinkingIndicator />
         )}
 
         <div ref={messagesEndRef} />
       </div>
 
-      {/* Quick actions + Input */}
-      <AIChatInput
-        input={input}
-        setInput={setInput}
-        isStreaming={isStreaming}
-        onSend={(text) => sendMessage(text)}
-        onQuickAction={handleQuickAction}
-        onStop={stopStreaming}
-      />
+      
+      {historyReady && !historyError && (
+        <AIChatInput
+          input={input}
+          setInput={setInput}
+          isStreaming={isStreaming}
+          onSend={(text, attachments) => sendMessage(text, undefined, attachments)}
+          onQuickAction={handleQuickAction}
+          onStop={stopStreaming}
+        />
+      )}
     </div>
   )
-}
+};
 
 // --- Main AIPanel component ---
 
-export function AIPanel() {
+export const AIPanel = () => {
   const [showSettings, setShowSettings] = useState(false)
 
   if (showSettings) {
@@ -293,4 +411,4 @@ export function AIPanel() {
   }
 
   return <ChatInterface onOpenSettings={() => setShowSettings(true)} />
-}
+};

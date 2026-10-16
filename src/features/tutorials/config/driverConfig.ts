@@ -3,21 +3,20 @@ import "@/features/tutorials/styles/tutorials.css"
 import type { TourDefinition } from "../types"
 
 export interface DriverConfigOptions {
-  t: (key: string, options?: any) => string
+  t: (key: string, options?: Record<string, unknown>) => string
   onDestroyed?: () => void
   onHighlightStarted?: (element?: Element, step?: DriveStep) => void
 }
 
-/**
- * Creates a configured Driver.js instance with Nova Market's design system and i18n support.
- */
-export function createNovaDriver(
+   
+                                                                                             
+   
+export const createNovaDriver = (
   tour: TourDefinition,
-  options: DriverConfigOptions
-): Driver {
+  options: DriverConfigOptions):Driver => {
   const { t, onDestroyed, onHighlightStarted } = options
 
-  // Transform tour step definitions into Driver.js DriveStep objects
+                                                                     
   const steps: DriveStep[] = tour.steps.map((step) => {
     const titleText = t(step.titleKey)
     const descText = t(step.descriptionKey)
@@ -42,7 +41,7 @@ export function createNovaDriver(
         closeBtnLabel: t("tutorials.buttons.skip"),
         progressText: t("tutorials.buttons.progressText"),
         onPopoverRender: (popover: PopoverDOM) => {
-          // If a badge or icon is attached to step, inject it cleanly into the popover title
+                                                                                             
           if (step.badgeKey && badgeText && !popover.title.querySelector(".nova-popover-badge")) {
             const badgeEl = document.createElement("span")
             badgeEl.className = "nova-popover-badge"
@@ -86,4 +85,4 @@ export function createNovaDriver(
   }
 
   return driver(config)
-}
+};

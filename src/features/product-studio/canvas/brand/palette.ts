@@ -1,7 +1,7 @@
 import type { BrandToken } from '@/features/product-studio/canvas/types/brand'
 
 export const BRAND_PALETTE: Record<string, BrandToken> = {
-  // --- Neutrals ---
+                     
   'charcoal':     { label: 'Charcoal',     hex: '#100f0f', group: 'neutrals' },
   'charcoal-60':  { label: 'Charcoal 60',  hex: '#100f0f99', group: 'neutrals' },
   'white':        { label: 'White',         hex: '#ffffff', group: 'neutrals' },
@@ -9,38 +9,38 @@ export const BRAND_PALETTE: Record<string, BrandToken> = {
   'paper':        { label: 'Paper',         hex: '#f2f2eb', group: 'neutrals' },
   'stone':        { label: 'Stone',         hex: '#ebe9e1', group: 'neutrals' },
 
-  // --- Brand ---
+                  
   'brand-dark':    { label: 'Brand Dark',    hex: '#0f172a', group: 'brand' },
   'brand-primary': { label: 'Brand Primary', hex: '#2563eb', group: 'brand' },
   'brand-accent':  { label: 'Brand Accent',  hex: '#dbeafe', group: 'brand' },
 
-  // --- Accent --- (swap these for your own brand accents)
+                                                           
   'accent-1':      { label: 'Accent 1', hex: '#dddde2', group: 'accent' },
   'accent-2':      { label: 'Accent 2', hex: '#4c5ce0', group: 'accent' },
   'accent-3':      { label: 'Accent 3', hex: '#e9e0c0', group: 'accent' },
   'accent-4':      { label: 'Accent 4', hex: '#e75901', group: 'accent' },
 
-  // --- Traffic ---
+                    
   'green':   { label: 'Green',   hex: '#78d55c', group: 'traffic' },
   'orange':  { label: 'Orange',  hex: '#ffb051', group: 'traffic' },
   'red':     { label: 'Red',     hex: '#ef3737', group: 'traffic' },
 
-  // --- Earths ---
+                   
   'olive':      { label: 'Olive',      hex: '#a3b0a0', group: 'earths' },
   'terracotta': { label: 'Terracotta', hex: '#a38a80', group: 'earths' },
   'clay':       { label: 'Clay',       hex: '#c2bcae', group: 'earths' },
 
-  // --- Waters ---
+                   
   'sea':    { label: 'Sea',    hex: '#80a1a6', group: 'waters' },
   'straw':  { label: 'Straw',  hex: '#d5d3ae', group: 'waters' },
   'squash': { label: 'Squash', hex: '#d9c59b', group: 'waters' },
 
-  // --- Pastels ---
+                    
   'sky':     { label: 'Sky',     hex: '#c5e4e9', group: 'pastels' },
   'lime':    { label: 'Lime',    hex: '#eaffd6', group: 'pastels' },
   'sherbet': { label: 'Sherbet', hex: '#f3f0b5', group: 'pastels' },
 
-  // --- Ember scale ---
+                        
   'ember-50':  { label: 'Ember 50',  hex: '#FFF2EE', group: 'ember' },
   'ember-100': { label: 'Ember 100', hex: '#FFDFD5', group: 'ember' },
   'ember-200': { label: 'Ember 200', hex: '#FFC2AF', group: 'ember' },
@@ -53,7 +53,7 @@ export const BRAND_PALETTE: Record<string, BrandToken> = {
   'ember-900': { label: 'Ember 900', hex: '#5E2218', group: 'ember' },
   'ember-950': { label: 'Ember 950', hex: '#37120D', group: 'ember' },
 
-  // --- Gold scale ---
+                       
   'gold-50':  { label: 'Gold 50',  hex: '#FBF7EC', group: 'gold' },
   'gold-100': { label: 'Gold 100', hex: '#F6EDD3', group: 'gold' },
   'gold-200': { label: 'Gold 200', hex: '#EFDFB3', group: 'gold' },
@@ -66,7 +66,7 @@ export const BRAND_PALETTE: Record<string, BrandToken> = {
   'gold-900': { label: 'Gold 900', hex: '#4C3F1A', group: 'gold' },
   'gold-950': { label: 'Gold 950', hex: '#2E260F', group: 'gold' },
 
-  // --- Teal scale ---
+                       
   'teal-50':  { label: 'Teal 50',  hex: '#EFF8F9', group: 'teal' },
   'teal-100': { label: 'Teal 100', hex: '#D5EEF0', group: 'teal' },
   'teal-200': { label: 'Teal 200', hex: '#AADCE1', group: 'teal' },
@@ -93,14 +93,14 @@ export const BRAND_GROUPS = [
   { id: 'teal',     label: 'Teal' },
 ] as const
 
-export function getBrandColor(token: string): { token: string; hex: string } {
+export const getBrandColor = (token: string):{ token: string; hex: string } => {
   const t = BRAND_PALETTE[token]
   if (!t) throw new Error(`Unknown brand token: ${token}`)
   return { token, hex: t.hex }
-}
+};
 
-export function getTokensByGroup(group: string) {
+export const getTokensByGroup = (group: string) => {
   return Object.entries(BRAND_PALETTE)
     .filter(([, t]) => t.group === group)
     .map(([key, t]) => ({ token: key, ...t }))
-}
+};

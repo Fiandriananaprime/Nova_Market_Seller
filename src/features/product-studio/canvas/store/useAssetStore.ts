@@ -52,7 +52,7 @@ export const useAssetStore = create<AssetStore>()(
           reader.onload = (e) => {
             const dataUrl = e.target?.result as string
 
-            // Get image dimensions
+                                   
             if (!isSvg) {
               const img = new Image()
               img.onload = () => {

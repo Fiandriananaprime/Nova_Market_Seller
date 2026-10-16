@@ -14,16 +14,16 @@ import { Layout, X } from 'lucide-react'
 interface Props {
   projectId?: string
   onClose: () => void
-  // When provided (e.g. from the library), take over what "pick a template" does
-  // — create a real file from the document instead of the default open-in-editor.
+                                                                                 
+                                                                                  
   onPick?: (doc: DesignDocument) => void
 }
 
-export function TemplateBrowser({ projectId, onClose, onPick }: Props) {
+export const TemplateBrowser = ({ projectId, onClose, onPick }: Props) => {
   const [category, setCategory] = useState<string>('all')
   const navigate = useRouterStore((s) => s.navigate)
   const isMobile = useIsMobile()
-  // Animate the mobile sheet in on mount, and out before unmounting.
+                                                                     
   const [sheetOpen, setSheetOpen] = useState(false)
   useEffect(() => { setSheetOpen(true) }, [])
 
@@ -89,7 +89,7 @@ export function TemplateBrowser({ projectId, onClose, onPick }: Props) {
     </div>
   )
 
-  // Mobile: bottom sheet with category pills + a grid, and a blank-canvas action.
+                                                                                  
   if (isMobile) {
     return (
       <Drawer open={sheetOpen} onOpenChange={(o) => { setSheetOpen(o); if (!o) window.setTimeout(onClose, 250) }}>
@@ -138,7 +138,7 @@ export function TemplateBrowser({ projectId, onClose, onPick }: Props) {
         className="relative bg-white rounded-[12px] shadow-xl w-[760px] max-h-[80vh] overflow-hidden flex flex-col"
         onClick={(e) => e.stopPropagation()}
       >
-        {/* Header */}
+        
         <div className="flex items-center justify-between px-6 py-4 border-b border-border">
           <div className="flex items-center gap-2">
             <Layout className="w-5 h-5 text-primary" />
@@ -149,7 +149,7 @@ export function TemplateBrowser({ projectId, onClose, onPick }: Props) {
           </button>
         </div>
 
-        {/* Category tabs */}
+        
         <div className="flex gap-1 px-6 py-3 border-b border-border">
           <FilterTab label="All" active={category === 'all'} onClick={() => setCategory('all')} />
           {TEMPLATE_CATEGORIES.map((cat) => (
@@ -162,7 +162,7 @@ export function TemplateBrowser({ projectId, onClose, onPick }: Props) {
           ))}
         </div>
 
-        {/* Template grid */}
+        
         <div className="flex-1 overflow-y-auto p-6">
           <div className="grid grid-cols-2 gap-4">
             {filtered.map((template) => (
@@ -171,7 +171,7 @@ export function TemplateBrowser({ projectId, onClose, onPick }: Props) {
                 className="group text-left bg-white border border-border rounded-[7px] overflow-hidden hover:shadow-[0_8px_30px_-4px_rgba(17,17,17,0.12)] transition-shadow cursor-pointer"
                 onClick={() => handleSelect(template.id)}
               >
-                {/* Preview placeholder */}
+                
                 <div className="aspect-[1.6/1] bg-muted/50 flex items-center justify-center">
                   <span className="text-[12px] text-muted-foreground/40 group-hover:text-muted-foreground/60 transition-colors">
                     {template.formatId.replace('-', ' ')}
@@ -192,7 +192,7 @@ export function TemplateBrowser({ projectId, onClose, onPick }: Props) {
           )}
         </div>
 
-        {/* Footer */}
+        
         <div className="px-6 py-3 border-t border-border flex justify-between items-center">
           <button
             className="text-[13px] text-primary hover:underline cursor-pointer"
@@ -207,9 +207,9 @@ export function TemplateBrowser({ projectId, onClose, onPick }: Props) {
       </div>
     </div>
   )
-}
+};
 
-function FilterTab({ label, active, onClick }: { label: string; active: boolean; onClick: () => void }) {
+const FilterTab = ({ label, active, onClick }: { label: string; active: boolean; onClick: () => void }) => {
   return (
     <button
       className={`
@@ -221,4 +221,4 @@ function FilterTab({ label, active, onClick }: { label: string; active: boolean;
       {label}
     </button>
   )
-}
+};

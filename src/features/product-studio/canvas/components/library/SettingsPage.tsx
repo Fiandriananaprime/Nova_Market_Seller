@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useRouterStore } from '@/features/product-studio/canvas/store/useRouterStore'
-import { useUIStore, type AppMode } from '@/features/product-studio/canvas/store/useUIStore'
+import { useUIStore } from '@/features/product-studio/canvas/store/useUIStore'
 import { useAIStore } from '@/features/product-studio/canvas/store/useAIStore'
 import { AI_ENABLED } from '@/features/product-studio/canvas/lib/aiApi'
 import { AI_MODELS, normalizeAIModel } from '@/features/product-studio/canvas/lib/aiModels'
@@ -18,13 +18,13 @@ import {
 
 type Tab = 'general' | 'ai' | 'canvas' | 'appearance'
 
-export function SettingsPage() {
+export const SettingsPage = () => {
   const navigate = useRouterStore((s) => s.navigate)
   const [tab, setTab] = useState<Tab>('general')
 
   return (
     <div className="h-dvh flex bg-background">
-      {/* Sidebar */}
+      
       <aside className="w-[240px] bg-card border-r border-border flex flex-col shrink-0">
         <div className="px-4 py-4 border-b border-border">
           <button
@@ -59,7 +59,7 @@ export function SettingsPage() {
         </nav>
       </aside>
 
-      {/* Content */}
+      
       <main className="flex-1 overflow-y-auto">
         <div className="max-w-[640px] mx-auto px-8 py-8">
           {tab === 'general' && <GeneralSettings />}
@@ -70,9 +70,9 @@ export function SettingsPage() {
       </main>
     </div>
   )
-}
+};
 
-function GeneralSettings() {
+const GeneralSettings = () => {
   const appMode = useUIStore((s) => s.appMode)
   const setAppMode = useUIStore((s) => s.setAppMode)
 
@@ -129,9 +129,9 @@ function GeneralSettings() {
       </div>
     </div>
   )
-}
+};
 
-function AISettings() {
+const AISettings = () => {
   const store = useAIStore()
   return (
     <div className="space-y-8">
@@ -160,9 +160,9 @@ function AISettings() {
       </div>
     </div>
   )
-}
+};
 
-function CanvasSettings() {
+const CanvasSettings = () => {
   const snap = useUIStore((s) => s.snapToGrid)
   const padding = useUIStore((s) => s.smartPadding)
   const toggleSnap = useUIStore((s) => s.toggleSnap)
@@ -181,9 +181,9 @@ function CanvasSettings() {
       </div>
     </div>
   )
-}
+};
 
-function AppearanceSettings() {
+const AppearanceSettings = () => {
   return (
     <div className="space-y-8">
       <div>
@@ -199,11 +199,11 @@ function AppearanceSettings() {
       </div>
     </div>
   )
-}
+};
 
 // Shared components
 
-function ModeCard({ icon: Icon, title, description, features, active, onClick }: { icon: React.ElementType; title: string; description: string; features: string[]; active: boolean; onClick: () => void }) {
+const ModeCard = ({ icon: Icon, title, description, features, active, onClick }: { icon: React.ElementType; title: string; description: string; features: string[]; active: boolean; onClick: () => void }) => {
   return (
     <button className={`p-5 rounded-[7px] border-2 text-left transition-[border-color,background-color] cursor-pointer ${active ? 'border-primary bg-primary/5' : 'border-border hover:border-border/80'}`} onClick={onClick}>
       <div className="flex items-center gap-2 mb-2"><Icon className="w-5 h-5 text-primary" /><span className="text-[15px] font-semibold">{title}</span></div>
@@ -211,17 +211,17 @@ function ModeCard({ icon: Icon, title, description, features, active, onClick }:
       <ul className="space-y-1">{features.map((f) => <li key={f} className="text-[12px] text-muted-foreground/70">• {f}</li>)}</ul>
     </button>
   )
-}
+};
 
-function SettingsField({ label, value, onChange }: { label: string; value: string; onChange: (v: string) => void }) {
+const SettingsField = ({ label, value, onChange }: { label: string; value: string; onChange: (v: string) => void }) => {
   return <div className="space-y-1.5"><label className="text-[14px] text-muted-foreground">{label}</label><Input className="rounded-[5px]" value={value} onChange={(e) => onChange(e.target.value)} /></div>
-}
+};
 
-function SettingsTextarea({ label, value, onChange }: { label: string; value: string; onChange: (v: string) => void }) {
+const SettingsTextarea = ({ label, value, onChange }: { label: string; value: string; onChange: (v: string) => void }) => {
   return <div className="space-y-1.5"><label className="text-[14px] text-muted-foreground">{label}</label><textarea className="w-full min-h-[60px] px-3 py-2 text-[14px] bg-white border border-border rounded-[5px] resize-none outline-none focus:ring-1 focus:ring-ring" value={value} onChange={(e) => onChange(e.target.value)} /></div>
-}
+};
 
-function Toggle({ label, desc, value, onChange }: { label: string; desc: string; value: boolean; onChange: () => void }) {
+const Toggle = ({ label, desc, value, onChange }: { label: string; desc: string; value: boolean; onChange: () => void }) => {
   return (
     <div className="flex items-start justify-between gap-4">
       <div><span className="text-[14px] font-medium text-foreground">{label}</span><p className="text-[13px] text-muted-foreground mt-0.5">{desc}</p></div>
@@ -230,4 +230,4 @@ function Toggle({ label, desc, value, onChange }: { label: string; desc: string;
       </button>
     </div>
   )
-}
+};

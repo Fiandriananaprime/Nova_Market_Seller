@@ -5,15 +5,15 @@ import { MousePointer2, Type, Square, ImageIcon, Pencil, Copy, Trash2 } from 'lu
 import { haptic } from '@/features/product-studio/canvas/lib/haptics'
 import type { ComponentType } from 'react'
 
-/**
- * Floating quick-actions bar, bottom-centre of the canvas (tldraw / Figma
- * style). Lives alongside the top ToolBar: the left group switches the primary
- * tools/creates, and a contextual right group (duplicate / delete) springs in
- * only when something is selected. Reflects and drives the same tool state as
- * the top bar, so they stay in lockstep.
- */
+   
+                                                                          
+                                                                               
+                                                                              
+                                                                              
+                                         
+   
 
-function addImageViaPicker() {
+const addImageViaPicker = () => {
   const input = document.createElement('input')
   input.type = 'file'
   input.accept = 'image/*'
@@ -31,23 +31,23 @@ function addImageViaPicker() {
     reader.readAsDataURL(file)
   }
   input.click()
-}
+};
 
-function IconButton({ icon: Icon, label, active, onClick, danger }: {
+const IconButton = ({ icon: Icon, label, active, onClick, danger }: {
   icon: ComponentType<{ className?: string }>
   label: string
   active?: boolean
   onClick: () => void
   danger?: boolean
-}) {
+}) => {
   return (
     <button
       type="button"
       title={label}
       aria-label={label}
       onPointerDown={() => haptic(danger ? 'medium' : 'light')}
-      // Blur after click so the button doesn't retain focus and swallow / confuse
-      // canvas keyboard shortcuts (e.g. Backspace to delete a selection).
+                                                                                  
+                                                                          
       onClick={(e) => { e.currentTarget.blur(); onClick() }}
       className={`flex h-9 w-9 max-md:h-11 max-md:w-11 items-center justify-center rounded-[10px] transition-[color,background-color,transform] duration-150 active:scale-[0.96] cursor-pointer ${
         active
@@ -60,9 +60,9 @@ function IconButton({ icon: Icon, label, active, onClick, danger }: {
       <Icon className="h-[18px] w-[18px]" />
     </button>
   )
-}
+};
 
-export function FloatingToolbar() {
+export const FloatingToolbar = () => {
   const tool = useDesignStore((s) => s.tool)
   const setTool = useDesignStore((s) => s.setTool)
   const addLayer = useDesignStore((s) => s.addLayer)
@@ -95,9 +95,7 @@ export function FloatingToolbar() {
       />
       <IconButton icon={ImageIcon} label="Image" onClick={addImageViaPicker} />
 
-      {/* Contextual actions — spring in only when there's a selection. On mobile
-          these live in the bottom-left selection cluster (MobileControlSheet)
-          instead, so the toolbar stays add-tools only and never overflows. */}
+      
       <AnimatePresence initial={false}>
         {selectedCount > 0 && (
           <motion.div
@@ -115,4 +113,4 @@ export function FloatingToolbar() {
       </AnimatePresence>
     </motion.div>
   )
-}
+};

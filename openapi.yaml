@@ -61,6 +61,8 @@ tags:
   description: Seller balances, payout methods and payout history
 - name: Seller - Shipping
   description: Seller shipping settings
+- name: Seller - Deliveries
+  description: Seller delivery tracking
 - name: Admin - Dashboard
   description: Platform dashboard
 - name: Admin - Users
@@ -182,6 +184,136 @@ components:
         total: {type: integer, example: 96}
         totalPages: {type: integer, example: 5}
 
+    SellerDeliveryStatus:
+      type: string
+      enum: [awaiting_dispatch, in_transit, delayed, delivered]
+
+    SellerCoordinates:
+      type: object
+      required: [lat, lng]
+      properties:
+        lat: {type: number, format: double, minimum: -90, maximum: 90}
+        lng: {type: number, format: double, minimum: -180, maximum: 180}
+
+    SellerDeliveryEvent:
+      type: object
+      required: [id, type, description, createdAt]
+      properties:
+        id: {type: string}
+        type: {type: string, enum: [dispatch, location, delay, arrival, delivered]}
+        description: {type: string}
+        createdAt: {type: string, format: date-time}
+
+    SellerDelivery:
+      type: object
+      required:
+      - id
+      - orderId
+      - orderReference
+      - status
+      - coordinates
+      - initialCoordinates
+      - targetCoordinates
+      - destination
+      - items
+      - totalAmount
+      - paymentMethod
+      - deliveryMethod
+      - lastUpdate
+      - timeline
+      - isDelayed
+      properties:
+        id: {type: string}
+        orderId: {type: string}
+        orderReference: {type: string}
+        status: {$ref: '#/components/schemas/SellerDeliveryStatus'}
+        coordinates: {$ref: '#/components/schemas/SellerCoordinates'}
+        initialCoordinates: {$ref: '#/components/schemas/SellerCoordinates'}
+        targetCoordinates: {$ref: '#/components/schemas/SellerCoordinates'}
+        heading: {type: number, minimum: 0, maximum: 360}
+        destination:
+          type: object
+          required: [recipientName, phone, street, district, city]
+          properties:
+            recipientName: {type: string}
+            phone: {type: string}
+            street: {type: string}
+            district: {type: string}
+            city: {type: string}
+            postalCode: {type: string}
+            instructions: {type: string}
+        driver:
+          type: object
+          nullable: true
+          required: [id, name, phone, vehicleType, rating]
+          properties:
+            id: {type: string}
+            name: {type: string}
+            phone: {type: string}
+            vehicleType: {type: string, enum: [motorcycle, van, truck, bicycle]}
+            vehiclePlate: {type: string}
+            rating: {type: number, minimum: 0, maximum: 5}
+            avatarUrl: {type: string, format: uri}
+        items:
+          type: array
+          items:
+            type: object
+            required: [id, name, qty, price]
+            properties:
+              id: {type: string}
+              name: {type: string}
+              qty: {type: integer, minimum: 1}
+              price: {type: number, minimum: 0}
+              image: {type: string, format: uri}
+        totalAmount: {type: number, minimum: 0}
+        paymentMethod: {type: string, enum: [mvola, orange_money, card, cod]}
+        deliveryMethod: {type: string, enum: [express, standard]}
+        dispatchedAt: {type: string, format: date-time}
+        eta: {type: string, format: date-time, nullable: true}
+        estimatedArrival: {type: string, format: date-time, nullable: true}
+        deliveredAt: {type: string, format: date-time}
+        lastUpdate: {type: string, format: date-time}
+        timeline:
+          type: array
+          items:
+            type: object
+            required: [status, timestamp, label]
+            properties:
+              status:
+                oneOf:
+                - {$ref: '#/components/schemas/SellerDeliveryStatus'}
+                - type: string
+                  enum: [order_created]
+              timestamp: {type: string, format: date-time}
+              label: {type: string}
+              description: {type: string}
+              location: {type: string}
+        isDelayed: {type: boolean}
+        delayReason: {type: string}
+        events:
+          type: array
+          items: {$ref: '#/components/schemas/SellerDeliveryEvent'}
+
+    SellerDeliverySummary:
+      type: object
+      required: [totalActive, awaitingDispatch, inTransit, deliveredToday, delayed]
+      properties:
+        totalActive: {type: integer, minimum: 0}
+        awaitingDispatch: {type: integer, minimum: 0}
+        inTransit: {type: integer, minimum: 0}
+        deliveredToday: {type: integer, minimum: 0}
+        delayed: {type: integer, minimum: 0}
+
+    SellerDeliveryList:
+      type: object
+      required: [data, meta, summary]
+      properties:
+        data:
+          type: array
+          items: {$ref: '#/components/schemas/SellerDelivery'}
+        meta: {$ref: '#/components/schemas/PaginationMeta'}
+        summary: {$ref: '#/components/schemas/SellerDeliverySummary'}
+
     Lang:
       type: string
       enum: [mg, fr, en]
@@ -221,6 +353,24 @@ components:
         longitude: {type: number, nullable: true}
         instructions: {type: string, nullable: true}
         isDefault: {type: boolean, default: false}
+
+    AddressUpdateRequest:
+      type: object
+      minProperties: 1
+      additionalProperties: false
+      properties:
+        label: {type: string, minLength: 1, maxLength: 100}
+        recipientName: {type: string, minLength: 1, maxLength: 200}
+        phone: {type: string, minLength: 1, maxLength: 30}
+        street: {type: string, minLength: 1}
+        district: {type: string, minLength: 1, maxLength: 150}
+        city: {type: string, minLength: 1, maxLength: 150}
+        region: {type: string, minLength: 1, maxLength: 150}
+        postalCode: {type: string, minLength: 1, maxLength: 20, nullable: true}
+        latitude: {type: number, minimum: -90, maximum: 90, nullable: true}
+        longitude: {type: number, minimum: -180, maximum: 180, nullable: true}
+        instructions: {type: string}
+        isDefault: {type: boolean}
 
     User:
       type: object
@@ -336,6 +486,14 @@ components:
         otpauthUrl: {type: string}
         qrCodeUrl: {type: string}
 
+    TwoFactorUpdateRequest:
+      type: object
+      required: [enabled, code]
+      additionalProperties: false
+      properties:
+        enabled: {type: boolean, enum: [false]}
+        code: {type: string, pattern: '^[0-9]{6}$'}
+
     RecoveryCodes:
       type: object
       properties:
@@ -406,9 +564,34 @@ components:
           type: array
           items: {$ref: '#/components/schemas/Category'}
 
+    CategoryAttribute:
+      type: object
+      required: [key, label, required]
+      properties:
+        key: {type: string, description: Exact key sent in Product.specs}
+        label: {type: string}
+        required: {type: boolean}
+
+    CategoryDetails:
+      allOf:
+      - $ref: '#/components/schemas/Category'
+      - type: object
+        required: [attributes]
+        properties:
+          attributes:
+            type: array
+            items: {$ref: '#/components/schemas/CategoryAttribute'}
+
     ProductSpecs:
       type: object
+      description: String values keyed by the exact keys returned in the selected category's CategoryDetails.attributes.
       additionalProperties: {type: string}
+
+    ProductImageUploadResponse:
+      type: object
+      required: [url]
+      properties:
+        url: {type: string, format: uri, description: CDN or persistent storage URL for the uploaded image}
 
     ProductVariant:
       type: object
@@ -454,17 +637,27 @@ components:
           type: array
           items: {$ref: '#/components/schemas/ProductVariant'}
         status:
-          type: string
-          enum: [draft, pending, approved, rejected]
+          $ref: '#/components/schemas/ProductStatus'
+        moderationStatus:
+          $ref: '#/components/schemas/ProductModerationStatus'
         createdAt: {type: string, format: date-time}
         updatedAt: {type: string, format: date-time}
         views: {type: integer, default: 0}
         soldCount: {type: integer, default: 0}
         wishlistCount: {type: integer, default: 0}
 
+    ProductModerationStatus:
+      type: string
+      enum: [draft, pending, approved, rejected]
+
+    ProductStatus:
+      type: string
+      enum: [active, inactive]
+
     ProductInput:
       type: object
       required: [name, price, categoryId, stock]
+      description: Seller products are created as moderation drafts. Submit a draft through the dedicated review action.
       properties:
         name: {type: string}
         description: {type: string}
@@ -475,7 +668,12 @@ components:
           items: {type: string}
         images:
           type: array
-          items: {type: string, format: binary}
+          items:
+            type: object
+            required: [url]
+            properties:
+              url: {type: string, format: uri}
+              isDefault: {type: boolean, default: false}
         price: {type: number, minimum: 0}
         stock: {type: integer, minimum: 0}
         specs:
@@ -484,9 +682,8 @@ components:
           type: array
           items: {$ref: '#/components/schemas/ProductVariant'}
         status:
-          type: string
-          enum: [active, draft, inactive]
-          default: draft
+          $ref: '#/components/schemas/ProductStatus'
+          default: inactive
 
     SellerProfile:
       allOf:
@@ -535,6 +732,27 @@ components:
         refundPolicy: {type: string}
         cancellationPolicy: {type: string}
         privacyPolicy: {type: string}
+
+    SellerShippingSettings:
+      type: object
+      required:
+      - zone1
+      - zone2
+      - zone3
+      - freeShippingThreshold
+      - handlingTimeHours
+      - returnWindowDays
+      - returnShippingPayer
+      properties:
+        zone1: {type: number, minimum: 0, description: Shipping fee for zone 1, in MGA}
+        zone2: {type: number, minimum: 0, description: Shipping fee for zone 2, in MGA}
+        zone3: {type: number, minimum: 0, description: Shipping fee for zone 3, in MGA}
+        freeShippingThreshold: {type: number, minimum: 0, description: Order subtotal threshold for free shipping, in MGA}
+        handlingTimeHours: {type: integer, enum: [12, 24, 48, 72]}
+        returnWindowDays: {type: integer, enum: [7, 14, 30]}
+        returnShippingPayer:
+          type: string
+          enum: [seller_if_defective, always_seller, always_buyer]
 
     StoreSettings:
       type: object
@@ -630,6 +848,15 @@ components:
             Market.}
         phone: {type: string, nullable: true}
         isDefault: {type: boolean, default: false}
+
+    PatchPaymentMethodRequest:
+      type: object
+      minProperties: 1
+      additionalProperties: false
+      properties:
+        label: {type: string, nullable: true}
+        phone: {type: string, nullable: true}
+        isDefault: {type: boolean}
 
     CartItem:
       type: object
@@ -1151,6 +1378,17 @@ components:
       properties:
         productId: {type: string, format: uuid}
         isFavorite: {type: boolean}
+    FavoriteProduct:
+      type: object
+      required: [id, name, rating, reviewCount, storeName, storeId, image]
+      properties:
+        id: {type: string, format: uuid}
+        name: {type: string}
+        rating: {type: number, minimum: 0, maximum: 5}
+        reviewCount: {type: integer, minimum: 0}
+        storeName: {type: string}
+        storeId: {type: string, format: uuid}
+        image: {type: string, description: URL of the product image marked as default}
     TrackingPoint:
       type: object
       required:
@@ -1943,15 +2181,15 @@ paths:
       parameters:
       - $ref: '#/components/parameters/CsrfHeader'
 
-  /account/2fa/disable:
-    post:
+  /account/2fa:
+    patch:
       tags: [Account]
       summary: Disable 2FA
       requestBody:
         required: true
         content:
           application/json:
-            schema: {$ref: '#/components/schemas/VerificationCodeRequest'}
+            schema: {$ref: '#/components/schemas/TwoFactorUpdateRequest'}
       responses:
         '204': {description: 2FA disabled}
       x-csrf-required: true
@@ -2080,29 +2318,45 @@ paths:
                     type: array
                     items: {$ref: '#/components/schemas/Notification'}
                   meta: {$ref: '#/components/schemas/PaginationMeta'}
-
-  /account/notifications/{id}/read:
     patch:
       tags: [Account]
-      summary: Mark notification as read
+      summary: Mark all current account notifications as read
       parameters:
-      - {$ref: '#/components/parameters/IdParam'}
       - $ref: '#/components/parameters/CsrfHeader'
-      responses:
-        '204': {description: Notification marked as read}
-      x-csrf-required: true
-
-  /account/notifications/read-all:
-    post:
-      tags: [Account]
-      summary: Mark all notifications as read
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [read]
+              additionalProperties: false
+              properties:
+                read: {type: boolean, enum: [true]}
       responses:
         '204': {description: Notifications marked as read}
       x-csrf-required: true
-      parameters:
-      - $ref: '#/components/parameters/CsrfHeader'
-
+  
   /account/notifications/{id}:
+    patch:
+      tags: [Account]
+      summary: Mark a notification as read
+      parameters:
+      - {$ref: '#/components/parameters/IdParam'}
+      - $ref: '#/components/parameters/CsrfHeader'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [read]
+              additionalProperties: false
+              properties:
+                read: {type: boolean, enum: [true]}
+      responses:
+        '204': {description: Notification marked as read}
+      x-csrf-required: true
     delete:
       tags: [Account]
       summary: Delete notification
@@ -2217,7 +2471,7 @@ paths:
           description: Category
           content:
             application/json:
-              schema: {$ref: '#/components/schemas/Category'}
+              schema: {$ref: '#/components/schemas/CategoryDetails'}
         '404': {$ref: '#/components/responses/NotFound'}
 
   /products:
@@ -2236,6 +2490,9 @@ paths:
         in: query
         schema: {type: string, format: uuid}
       - name: storeId
+        in: query
+        schema: {type: string, format: uuid}
+      - name: categoryId
         in: query
         schema: {type: string, format: uuid}
       - name: minPrice
@@ -2485,26 +2742,6 @@ paths:
                     type: object
                     additionalProperties: {type: integer}
 
-  /stores/{id}/follow:
-    post:
-      tags: [Buyer - Favorites]
-      summary: Follow a store
-      parameters:
-      - {$ref: '#/components/parameters/IdParam'}
-      - $ref: '#/components/parameters/CsrfHeader'
-      responses:
-        '204': {description: Store followed}
-      x-csrf-required: true
-    delete:
-      tags: [Buyer - Favorites]
-      summary: Unfollow a store
-      parameters:
-      - {$ref: '#/components/parameters/IdParam'}
-      - $ref: '#/components/parameters/CsrfHeader'
-      responses:
-        '204': {description: Store unfollowed}
-      x-csrf-required: true
-
 ### BUYER
   /buyer/profile:
     get:
@@ -2550,7 +2787,7 @@ paths:
   /buyer/addresses/{id}:
     patch:
       tags: [Buyer - Profile & Settings]
-      summary: Update delivery address
+      summary: Partially update delivery address, including default selection
       parameters:
       - {$ref: '#/components/parameters/IdParam'}
       - $ref: '#/components/parameters/CsrfHeader'
@@ -2558,7 +2795,7 @@ paths:
         required: true
         content:
           application/json:
-            schema: {$ref: '#/components/schemas/Address'}
+            schema: {$ref: '#/components/schemas/AddressUpdateRequest'}
       responses:
         '200':
           description: Updated address
@@ -2574,17 +2811,6 @@ paths:
       - $ref: '#/components/parameters/CsrfHeader'
       responses:
         '204': {description: Address deleted}
-      x-csrf-required: true
-
-  /buyer/addresses/{id}/default:
-    patch:
-      tags: [Buyer - Profile & Settings]
-      summary: Set default delivery address
-      parameters:
-      - {$ref: '#/components/parameters/IdParam'}
-      - $ref: '#/components/parameters/CsrfHeader'
-      responses:
-        '204': {description: Default address updated}
       x-csrf-required: true
 
   /buyer/payment-methods:
@@ -2628,7 +2854,7 @@ paths:
         required: true
         content:
           application/json:
-            schema: {$ref: '#/components/schemas/AddPaymentMethodRequest'}
+            schema: {$ref: '#/components/schemas/PatchPaymentMethodRequest'}
       responses:
         '200':
           description: Payment method updated
@@ -2644,17 +2870,6 @@ paths:
       - $ref: '#/components/parameters/CsrfHeader'
       responses:
         '204': {description: Payment method removed}
-      x-csrf-required: true
-
-  /buyer/payment-methods/{id}/default:
-    patch:
-      tags: [Buyer - Profile & Settings]
-      summary: Set default payment method
-      parameters:
-      - {$ref: '#/components/parameters/IdParam'}
-      - $ref: '#/components/parameters/CsrfHeader'
-      responses:
-        '204': {description: Default payment method updated}
       x-csrf-required: true
 
   /buyer/preferences:
@@ -2852,39 +3067,50 @@ paths:
               schema: {$ref: '#/components/schemas/Order'}
         '404': {$ref: '#/components/responses/NotFound'}
 
-  /orders/{id}/cancel:
-    post:
+    patch:
       tags: [Buyer - Checkout & Orders]
-      summary: Cancel eligible order
+      summary: Cancel an eligible order by updating its state
       parameters:
       - {$ref: '#/components/parameters/IdParam'}
       - $ref: '#/components/parameters/CsrfHeader'
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+              properties:
+                status: {type: string, enum: [cancelled]}
+                cancelReason: {type: string, nullable: true}
       responses:
         '200':
-          description: Cancelled order
+          description: Order cancelled
           content:
             application/json:
               schema: {$ref: '#/components/schemas/Order'}
         '409': {description: Order is no longer cancellable}
       x-csrf-required: true
 
-  /favorites/products:
+  /buyer/favorites/products:
     get:
       tags: [Buyer - Favorites]
       summary: List favorite products
+      x-required-roles: [buyer]
       responses:
         '200':
-          description: Favorite products
+          description: Favorite products with display details from the product service
           content:
             application/json:
               schema:
                 type: array
-                items: {$ref: '#/components/schemas/Product'}
+                items: {$ref: '#/components/schemas/FavoriteProduct'}
 
-  /favorites/products/{productId}:
+  /buyer/favorites/products/{productId}:
     post:
       tags: [Buyer - Favorites]
       summary: Add product to favorites
+      x-required-roles: [buyer]
       parameters:
       - name: productId
         in: path
@@ -2901,6 +3127,7 @@ paths:
     delete:
       tags: [Buyer - Favorites]
       summary: Remove product from favorites
+      x-required-roles: [buyer]
       parameters:
       - name: productId
         in: path
@@ -2915,10 +3142,11 @@ paths:
               schema: {$ref: '#/components/schemas/FavoriteToggleResponse'}
       x-csrf-required: true
 
-  /favorites/stores:
+  /buyer/favorites/stores:
     get:
       tags: [Buyer - Favorites]
       summary: List followed stores
+      x-required-roles: [buyer]
       responses:
         '200':
           description: Followed stores
@@ -2927,6 +3155,28 @@ paths:
               schema:
                 type: array
                 items: {$ref: '#/components/schemas/Store'}
+
+  /buyer/favorites/stores/{storeId}:
+    parameters:
+    - name: storeId
+      in: path
+      required: true
+      schema: {type: string, format: uuid}
+    - $ref: '#/components/parameters/CsrfHeader'
+    post:
+      tags: [Buyer - Favorites]
+      summary: Follow a store
+      x-required-roles: [buyer]
+      responses:
+        '204': {description: Store followed}
+      x-csrf-required: true
+    delete:
+      tags: [Buyer - Favorites]
+      summary: Unfollow a store
+      x-required-roles: [buyer]
+      responses:
+        '204': {description: Store unfollowed}
+      x-csrf-required: true
 
 
 ### SELLER
@@ -3104,6 +3354,34 @@ paths:
               schema: {$ref: '#/components/schemas/StorePolicies'}
       x-csrf-required: true
 
+  /seller/shipping/settings:
+    get:
+      tags: [Seller - Store]
+      summary: Get seller shipping settings
+      responses:
+        '200':
+          description: Seller shipping settings
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/SellerShippingSettings'}
+    patch:
+      tags: [Seller - Store]
+      summary: Update seller shipping settings
+      parameters:
+      - $ref: '#/components/parameters/CsrfHeader'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: {$ref: '#/components/schemas/SellerShippingSettings'}
+      responses:
+        '200':
+          description: Updated seller shipping settings
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/SellerShippingSettings'}
+      x-csrf-required: true
+
   /seller/balance:
     get:
       tags: [Seller - Payments & Payouts]
@@ -3232,6 +3510,9 @@ paths:
       - name: storeId
         in: query
         schema: {type: string, format: uuid}
+      - name: categoryId
+        in: query
+        schema: {type: string, format: uuid}
       - name: status
         in: query
         schema: {type: string, enum: [draft, active, inactive, pending, approved, rejected]}
@@ -3258,24 +3539,42 @@ paths:
 
     post:
       tags: [Seller - Products]
-      summary: Create product
+      summary: Create one product as a moderation draft
       requestBody:
         required: true
         content:
           application/json:
-            schema:
-              type: array
-              items: {$ref: '#/components/schemas/ProductInput'}
-          multipart/form-data:
             schema: {$ref: '#/components/schemas/ProductInput'}
       responses:
         '201':
-          description: Product created
+          description: Product created with moderationStatus draft
           content:
             application/json:
-              schema:
-                type: array
-                items: {$ref: '#/components/schemas/Product'}
+              schema: {$ref: '#/components/schemas/Product'}
+        '422': {$ref: '#/components/responses/ValidationError'}
+      x-csrf-required: true
+      parameters:
+      - $ref: '#/components/parameters/CsrfHeader'
+
+  /seller/products/images:
+    post:
+      tags: [Seller - Products]
+      summary: Upload a seller product image to persistent media storage
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required: [file]
+              properties:
+                file: {type: string, format: binary}
+      responses:
+        '201':
+          description: Image uploaded
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/ProductImageUploadResponse'}
         '422': {$ref: '#/components/responses/ValidationError'}
       x-csrf-required: true
       parameters:
@@ -3320,6 +3619,33 @@ paths:
       - $ref: '#/components/parameters/CsrfHeader'
       responses:
         '204': {description: Product deleted}
+      x-csrf-required: true
+
+    patch:
+      tags: [Seller - Products]
+      summary: Submit a seller product for moderation by updating its state
+      parameters:
+      - {$ref: '#/components/parameters/IdParam'}
+      - $ref: '#/components/parameters/CsrfHeader'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [moderationStatus]
+              additionalProperties: false
+              properties:
+                moderationStatus: {type: string, enum: [pending]}
+      responses:
+        '200':
+          description: Product submitted with moderationStatus pending
+          content:
+            application/json:
+              schema: {$ref: '#/components/schemas/Product'}
+        '404': {$ref: '#/components/responses/NotFound'}
+        '409': {description: Product is not in draft or rejected state}
+        '422': {$ref: '#/components/responses/ValidationError'}
       x-csrf-required: true
 
   /seller/products/{id}/duplicate:
@@ -3392,6 +3718,7 @@ paths:
       tags: [Seller - Orders]
       summary: List seller orders
       parameters:
+      - {$ref: '#/components/parameters/SearchParam'}
       - {$ref: '#/components/parameters/PageParam'}
       - {$ref: '#/components/parameters/LimitParam'}
       - name: storeId
@@ -3611,6 +3938,10 @@ paths:
       - name: storeId
         in: query
         schema: {type: string, format: uuid}
+      - name: segment
+        in: query
+        description: Filter customers by seller-defined purchase segment.
+        schema: {type: string, enum: [vip, frequent, new]}
       - name: sort
         in: query
         schema: {type: string, enum: [totalSpent, orders, lastOrder], default: totalSpent}
@@ -3628,8 +3959,11 @@ paths:
                   meta: {$ref: '#/components/schemas/PaginationMeta'}
                   summary:
                     type: object
+                    required: [totalCustomers, activeCustomers, totalSpent, repeatBuyersPct, avgOrderValue]
                     properties:
                       totalCustomers: {type: integer}
+                      activeCustomers: {type: integer}
+                      totalSpent: {type: number}
                       repeatBuyersPct: {type: number}
                       avgOrderValue: {type: number}
 
@@ -3800,7 +4134,6 @@ paths:
             application/json:
               schema: {$ref: '#/components/schemas/User'}
 
-  /admin/users/{id}/status:
     patch:
       tags: [Admin - Users]
       summary: Suspend or reactivate user
@@ -4008,7 +4341,6 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Order'
-  /delivery/orders/{id}/status:
     patch:
       tags:
       - Delivery
@@ -4110,7 +4442,6 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/DeliveryAgent'
-  /delivery/agents/me/status:
     patch:
       tags:
       - Delivery
@@ -4225,7 +4556,6 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Product'
-  /moderator/products/{id}/moderation:
     patch:
       tags:
       - Moderator - Products
@@ -4533,7 +4863,6 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Order'
-  /admin/orders/{id}/status:
     patch:
       tags:
       - Admin - Orders
@@ -4766,7 +5095,6 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Product'
-  /admin/products/{id}/moderation:
     patch:
       tags:
       - Admin - Products
@@ -4932,7 +5260,6 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Promotion'
-  /admin/promotions/{id}/status:
     patch:
       tags:
       - Admin - Promotions
@@ -5002,7 +5329,7 @@ paths:
                       $ref: '#/components/schemas/Review'
                   meta:
                     $ref: '#/components/schemas/PaginationMeta'
-  /admin/reviews/{id}/status:
+  /admin/reviews/{id}:
     patch:
       tags:
       - Admin - Reviews
@@ -5202,7 +5529,6 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/AdminAccount'
-  /admin/admins/{id}/status:
     patch:
       tags:
       - Admin - Admin Accounts

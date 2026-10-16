@@ -2,7 +2,7 @@ import { useEffect, useRef } from 'react'
 import { useDesignStore } from '@/features/product-studio/canvas/store/useDesignStore'
 import { useWorkspaceStore } from '@/features/product-studio/canvas/store/useWorkspaceStore'
 import { useUIStore } from '@/features/product-studio/canvas/store/useUIStore'
-import { useIsProMode } from '@/features/product-studio/canvas/hooks/useIsProMode'
+
 import { FramePropertiesPanel } from '@/features/product-studio/canvas/components/panels/FramePropertiesPanel'
 import { FrameAlignmentPanel } from '@/features/product-studio/canvas/components/panels/FrameAlignmentPanel'
 import { ExportPanel } from '@/features/product-studio/canvas/components/panels/ExportPanel'
@@ -11,7 +11,7 @@ import { AIPanel } from '@/features/product-studio/canvas/components/panels/AIPa
 import { DrawToolPanel } from '@/features/product-studio/canvas/components/panels/DrawToolPanel'
 import { LayerInspector } from '@/features/product-studio/canvas/components/panels/LayerInspector'
 
-export function RightSidebar() {
+export const RightSidebar = () => {
   const activeLayerId = useDesignStore((s) => s.activeLayerId)
   const tool = useDesignStore((s) => s.tool)
   const layers = useDesignStore((s) => s.document.layers)
@@ -29,17 +29,17 @@ export function RightSidebar() {
   })
   const multiFrameSelection = useWorkspaceStore((s) => s.selectedFrameIds.size >= 2)
 
-  // Selecting a layer or frame should leave the Export / Auto-resize panel and
-  // show that selection's inspector — otherwise Export stays pinned once opened.
-  // (selectLayer replaces the Set on every click, so re-selecting the same layer
-  // still fires this.) The AI panel is a deliberate mode and is left alone.
+                                                                               
+                                                                                 
+                                                                                 
+                                                                            
   const firstRender = useRef(true)
   useEffect(() => {
     if (firstRender.current) { firstRender.current = false; return }
     if (exportPanelOpen) setExportPanelOpen(false)
     if (rightPanel === 'export' || rightPanel === 'auto-resize') setRightPanel('inspector')
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selectedLayerIds, activeFrameId, selectedFrameIds])
+                                                           
+  }, [selectedLayerIds, activeFrameId, selectedFrameIds, exportPanelOpen, rightPanel, setExportPanelOpen, setRightPanel])
 
   const activeLayer = activeLayerId
     ? layers.find((l) => l.id === activeLayerId)
@@ -72,9 +72,9 @@ export function RightSidebar() {
       )}
     </aside>
   )
-}
+};
 
-function NoSelectionPanel() {
+const NoSelectionPanel = () => {
   const format = useDesignStore((s) => s.document.format)
 
   return (
@@ -90,4 +90,4 @@ function NoSelectionPanel() {
       </div>
     </div>
   )
-}
+};

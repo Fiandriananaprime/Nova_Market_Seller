@@ -4,35 +4,35 @@ import { useUIStore } from '@/features/product-studio/canvas/store/useUIStore'
 import { distToPolyline } from '@/features/product-studio/canvas/lib/geometry'
 import type { DrawLayer, DrawMode } from '@/features/product-studio/canvas/types/design'
 
-/**
- * Freehand pen / highlighter tool. Active only when the current tool is 'draw'.
- * Captures pointer samples (with pressure) in frame-local design coords, shows a
- * live preview, and on pointer-up commits a DrawLayer (bounding-box positioned,
- * points relative to its origin) so the stroke behaves like any other
- * selectable/movable layer.
- *
- * The mode ('pen' vs 'highlighter'), colour, and width come from the UI store;
- * pen and highlighter keep independent colour/width so switching doesn't clobber
- * either. The outline itself is regenerated from the stored points at render
- * time via `getDrawPath`, so nothing about the geometry is baked in here.
- *
- * The handlers return `true` when they consumed the event, so PreviewPanel can
- * fall through to the normal selection/marquee handlers when not drawing.
- */
-export function useDrawTool(wrapRef: React.RefObject<HTMLDivElement | null>, zoom: number) {
+   
+                                                                                
+                                                                                 
+                                                                                
+                                                                      
+                            
+  
+                                                                               
+                                                                                 
+                                                                             
+                                                                          
+  
+                                                                               
+                                                                          
+   
+export const useDrawTool = (wrapRef: React.RefObject<HTMLDivElement | null>, zoom: number) => {
   const drawingRef = useRef(false)
   const erasingRef = useRef(false)
   const ptsRef = useRef<[number, number][]>([])
   const pressRef = useRef<number[]>([])
-  const straightRef = useRef(false) // Shift held → straighten to a single segment
+  const straightRef = useRef(false)                                               
   const [preview, setPreview] = useState<[number, number][]>([])
   const [previewPress, setPreviewPress] = useState<number[]>([])
 
-  // Reactive for the live preview; the committed stroke reads fresh at pointer-up.
+                                                                                   
   const mode = useUIStore((s) => s.drawMode)
   const strokeWidth = useUIStore((s) => (s.drawMode === 'highlighter' ? s.highlighterWidth : s.drawWidth))
   const color = useUIStore((s) => (s.drawMode === 'highlighter' ? s.highlighterColor : s.drawColor))
-  // Pen shape controls (ignored for the highlighter, which is a round marker).
+                                                                               
   const thinning = useUIStore((s) => s.drawThinning)
   const taper = useUIStore((s) => s.drawTaper)
   const streamline = useUIStore((s) => s.drawSmoothing)
@@ -43,12 +43,12 @@ export function useDrawTool(wrapRef: React.RefObject<HTMLDivElement | null>, zoo
     return [(e.clientX - rect.left) / zoom, (e.clientY - rect.top) / zoom]
   }, [wrapRef, zoom])
 
-  // Mouse reports pressure 0 (or a flat 0.5); pens/touch report real values.
+                                                                             
   const pressureOf = (e: React.PointerEvent): number =>
     e.pointerType === 'mouse' ? 0.5 : (e.pressure > 0 ? e.pressure : 0.5)
 
-  // With Shift held, straighten the stroke to its first + latest point so it
-  // reads as a clean straight segment (underlines, arrows, borders).
+                                                                             
+                                                                     
   const strokeFor = useCallback((): { pts: [number, number][]; press: number[] } => {
     const p = ptsRef.current
     const pr = pressRef.current
@@ -58,7 +58,7 @@ export function useDrawTool(wrapRef: React.RefObject<HTMLDivElement | null>, zoo
     return { pts: p, press: pr }
   }, [])
 
-  // Object eraser: remove any freehand stroke whose ink is under the cursor.
+                                                                             
   const eraseAt = useCallback((x: number, y: number) => {
     const d = useDesignStore.getState()
     const coarse = typeof window !== 'undefined' && window.matchMedia?.('(pointer: coarse)').matches
@@ -80,16 +80,24 @@ export function useDrawTool(wrapRef: React.RefObject<HTMLDivElement | null>, zoo
     const tool = useDesignStore.getState().tool
     if (tool === 'eraser') {
       e.preventDefault()
-      try { (e.target as Element).setPointerCapture?.(e.pointerId) } catch { /* ignore */ }
+      try {
+        (e.target as Element).setPointerCapture?.(e.pointerId)
+      } catch (error) {
+        console.error('Unable to capture pointer for erasing:', error)
+      }
       erasingRef.current = true
-      useDesignStore.getState().pushSnapshot() // one undo for the whole erase gesture
+      useDesignStore.getState().pushSnapshot()                                        
       const [x, y] = localPoint(e)
       eraseAt(x, y)
       return true
     }
     if (tool !== 'draw') return false
     e.preventDefault()
-    try { (e.target as Element).setPointerCapture?.(e.pointerId) } catch { /* ignore */ }
+    try {
+      (e.target as Element).setPointerCapture?.(e.pointerId)
+    } catch (error) {
+      console.error('Unable to capture pointer for drawing:', error)
+    }
     drawingRef.current = true
     straightRef.current = e.shiftKey
     ptsRef.current = [localPoint(e)]
@@ -102,7 +110,7 @@ export function useDrawTool(wrapRef: React.RefObject<HTMLDivElement | null>, zoo
   const onPointerMove = useCallback((e: React.PointerEvent): boolean => {
     if (erasingRef.current) { const [x, y] = localPoint(e); eraseAt(x, y); return true }
     if (!drawingRef.current) return false
-    // Coalesced events give a denser, smoother sample stream on capable devices.
+                                                                                 
     const events = typeof e.nativeEvent.getCoalescedEvents === 'function'
       ? e.nativeEvent.getCoalescedEvents()
       : [e.nativeEvent]
@@ -129,7 +137,7 @@ export function useDrawTool(wrapRef: React.RefObject<HTMLDivElement | null>, zoo
     pressRef.current = []
     setPreview([])
     setPreviewPress([])
-    if (pts.length < 2) return true // ignore stray taps
+    if (pts.length < 2) return true                     
 
     const ui = useUIStore.getState()
     const drawMode: DrawMode = ui.drawMode
@@ -142,7 +150,7 @@ export function useDrawTool(wrapRef: React.RefObject<HTMLDivElement | null>, zoo
     const minY = Math.min(...ys)
     const maxX = Math.max(...xs)
     const maxY = Math.max(...ys)
-    const pad = drawWidth / 2 // half the stroke extends past the centreline
+    const pad = drawWidth / 2                                               
     const rel = pts.map(([x, y]) => [x - minX + pad, y - minY + pad] as [number, number])
 
     const w = maxX - minX + drawWidth
@@ -165,8 +173,8 @@ export function useDrawTool(wrapRef: React.RefObject<HTMLDivElement | null>, zoo
       color: drawColor,
       strokeWidth: drawWidth,
       mode: drawMode,
-      // Persist the pen shape so a committed stroke re-renders identically and
-      // can be restyled later. Highlighter keeps its constant-width round default.
+                                                                               
+                                                                                   
       ...(drawMode === 'pen'
         ? { thinning: ui.drawThinning, taper: ui.drawTaper, streamline: ui.drawSmoothing }
         : {}),
@@ -191,4 +199,4 @@ export function useDrawTool(wrapRef: React.RefObject<HTMLDivElement | null>, zoo
     opacity,
     drawing: preview.length > 0,
   }
-}
+};

@@ -1,4 +1,4 @@
-import { useState, useRef } from 'react'
+import { useState } from 'react'
 import { useDesignStore } from '@/features/product-studio/canvas/store/useDesignStore'
 import { useWorkspaceStore } from '@/features/product-studio/canvas/store/useWorkspaceStore'
 import { useContextMenuStore } from '@/features/product-studio/canvas/store/useContextMenuStore'
@@ -24,8 +24,8 @@ import {
   ArrowUp,
   ArrowDown,
 } from 'lucide-react'
-import type { LayerType } from '@/features/product-studio/canvas/types/design'
-import type { Page } from '@/features/product-studio/canvas/types/workspace'
+import type { Layer, LayerType } from '@/features/product-studio/canvas/types/design'
+
 
 const LAYER_ICONS: Record<LayerType, React.ElementType> = {
   background: Paintbrush,
@@ -38,7 +38,7 @@ const LAYER_ICONS: Record<LayerType, React.ElementType> = {
   draw: Pencil,
 }
 
-export function LayerListPanel() {
+export const LayerListPanel = () => {
   const workspace = useWorkspaceStore((s) => s.workspace)
   const activeFrameId = useWorkspaceStore((s) => s.activeFrameId)
   const setActiveFrame = useWorkspaceStore((s) => s.setActiveFrame)
@@ -51,7 +51,7 @@ export function LayerListPanel() {
   const renamePage = useWorkspaceStore((s) => s.renamePage)
   const setActivePage = useWorkspaceStore((s) => s.setActivePage)
 
-  // Design store for current editing (backwards compat)
+                                                        
   const designLayers = useDesignStore((s) => s.document.layers)
   const selectedLayerIds = useDesignStore((s) => s.selectedLayerIds)
   const activeLayerId = useDesignStore((s) => s.activeLayerId)
@@ -65,11 +65,10 @@ export function LayerListPanel() {
   const reorderLayer = useDesignStore((s) => s.reorderLayer)
 
   const [collapsedFrames, setCollapsedFrames] = useState<Set<string>>(new Set())
-  const [collapsedPages, setCollapsedPages] = useState<Set<string>>(new Set())
   const [collapsedGroups, setCollapsedGroups] = useState<Set<string>>(new Set())
   const [editingId, setEditingId] = useState<string | null>(null)
   const [editValue, setEditValue] = useState('')
-  // Double-click a layer name to rename it (mirrors page/frame rename).
+                                                                        
   const layerRename = (layer: { id: string; name: string }) => ({
     editing: editingId === `layer-${layer.id}`,
     value: editValue,
@@ -122,7 +121,12 @@ export function LayerListPanel() {
   }
 
   const toggleGroup = (groupId: string) =>
-    setCollapsedGroups((p) => { const n = new Set(p); n.has(groupId) ? n.delete(groupId) : n.add(groupId); return n })
+    setCollapsedGroups((p) => {
+      const n = new Set(p)
+      if (n.has(groupId)) n.delete(groupId)
+      else n.add(groupId)
+      return n
+    })
 
   // Select every member of a group as one unit (Shift toggles the whole group).
   const selectGroup = (members: { id: string }[], additive: boolean) => {
@@ -238,7 +242,7 @@ export function LayerListPanel() {
 
   return (
     <div className="flex flex-col h-full">
-      {/* Pages — vertical list */}
+      
       <div className="border-b border-border shrink-0 px-3 py-2 space-y-0.5">
         <div className="flex items-center justify-between mb-1">
           <span className="text-[11px] uppercase tracking-[0.12em] text-muted-foreground/60 font-medium">Pages</span>
@@ -283,7 +287,7 @@ export function LayerListPanel() {
                 </span>
               )}
 
-              {/* Delete page (only if more than one page) */}
+              
               {workspace.pages.length > 1 && (
                 <button
                   className="p-0.5 opacity-0 group-hover:opacity-100 hover:bg-muted rounded-[3px] text-muted-foreground/50 hover:text-destructive cursor-pointer transition-opacity"
@@ -299,11 +303,11 @@ export function LayerListPanel() {
         })}
       </div>
 
-      {/* Layer content for active page */}
+      
       <div className="flex-1 overflow-y-auto">
         {activePage && (
           <>
-            {/* Frames within this page */}
+            
             {activePage.frames.length > 0 && (
               <div>
                 <div className="flex items-center justify-between px-4 py-2">
@@ -324,7 +328,7 @@ export function LayerListPanel() {
 
                   return (
                     <div key={frame.id}>
-                      {/* Frame header */}
+                      
                       <div
                         className={`
                           group flex items-center gap-2 px-3 py-2 cursor-pointer border-l-[3px] transition-colors
@@ -338,7 +342,15 @@ export function LayerListPanel() {
                       >
                         <button
                           className="p-0.5 text-muted-foreground/40 hover:text-muted-foreground cursor-pointer"
-                          onClick={(e) => { e.stopPropagation(); setCollapsedFrames((p) => { const n = new Set(p); n.has(frame.id) ? n.delete(frame.id) : n.add(frame.id); return n }) }}
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            setCollapsedFrames((p) => {
+                              const n = new Set(p)
+                              if (n.has(frame.id)) n.delete(frame.id)
+                              else n.add(frame.id)
+                              return n
+                            })
+                          }}
                           aria-label={isCollapsed ? 'Expand frame' : 'Collapse frame'}
                         >
                           {isCollapsed ? <ChevronRight className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
@@ -380,8 +392,7 @@ export function LayerListPanel() {
                         </div>
                       </div>
 
-                      {/* Frame's layers — grouped layers fold into expandable rows.
-                          Reorder only the active frame (its layers mirror the design store). */}
+                      
                       {!isCollapsed && renderTree(sortedLayers, 40, isActive)}
                     </div>
                   )
@@ -389,7 +400,7 @@ export function LayerListPanel() {
               </div>
             )}
 
-            {/* If no frames (scratchpad mode), show layers from design store */}
+            
             {activePage.frames.length === 0 && (
               <div>
                 <div className="flex items-center justify-between px-4 py-2">
@@ -411,11 +422,11 @@ export function LayerListPanel() {
       </div>
     </div>
   )
-}
+};
 
 // --- Layer row component ---
 
-function LayerRow({
+const LayerRow = ({
   layer,
   isSelected,
   isActive,
@@ -435,7 +446,7 @@ function LayerRow({
   onContextMenu,
   rename,
 }: {
-  layer: any
+  layer: Layer
   isSelected: boolean
   isActive: boolean
   indentPx: number
@@ -460,7 +471,7 @@ function LayerRow({
     onCommit: () => void
     onCancel: () => void
   }
-}) {
+}) => {
   const Icon = LAYER_ICONS[layer.type as LayerType] ?? Square
 
   return (
@@ -530,11 +541,11 @@ function LayerRow({
       </div>
     </div>
   )
-}
+};
 
 // --- Group header row ---
 
-function GroupHeaderRow({
+const GroupHeaderRow = ({
   indentPx,
   count,
   expanded,
@@ -558,7 +569,7 @@ function GroupHeaderRow({
   onVisibility: () => void
   onLock: () => void
   onDelete: () => void
-}) {
+}) => {
   return (
     <div
       style={{ paddingLeft: indentPx, paddingRight: 12 }}
@@ -595,4 +606,4 @@ function GroupHeaderRow({
       </div>
     </div>
   )
-}
+};

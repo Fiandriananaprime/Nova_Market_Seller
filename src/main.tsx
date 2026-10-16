@@ -5,7 +5,7 @@ import './index.css'
 import { I18nProvider } from "@/context/LangContext"
 import "./i18n"
 import { StoreProvider } from "@/context/storeContext"
-async function enableMocking() {
+const enableMocking = async () => {
   if (import.meta.env.DEV) {
     const { worker } = await import("./mock/browser");
 
@@ -13,7 +13,7 @@ async function enableMocking() {
       onUnhandledRequest: "bypass",
     });
   }
-}
+};
 
 enableMocking().then(() => {
   ReactDOM.createRoot(document.getElementById("root")!).render(

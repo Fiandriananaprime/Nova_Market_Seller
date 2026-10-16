@@ -32,16 +32,17 @@ import {
   Button,
   OrderStatusBadge,
 } from "@/components/ui"
+import SpotlightCard from "@/components/SpotlightCard"
 import { formatMGA } from "@/hook/format"
 import { SellerDashboard } from "@/type/dashboard"
 import { getDashboardData } from "@/service/dashboard"
 import { getAllOrders } from "@/service/order"
 import { Order } from "@/type/order"
-import { getAllProducts, getAllProductsResponse } from "@/service/product"
+import { getAllProducts } from "@/service/product"
+import type { GetSellerProductsResponse } from "@/type/product"
 import { getStoreReviews } from "@/service/review"
 import { Review } from "@/type/review"
-import { useStore } from "@/context/storeContext"
-import { entities } from "@/mock/entities"
+import { useStore } from "@/context/useStore"
 
 interface TooltipItem {
   name: string
@@ -64,7 +65,7 @@ const MONTH_MAP_FR: Record<string, string> = {
   Dec: "Déc",
 }
 
-function CustomTooltip({
+const CustomTooltip = ({
   active,
   payload,
   label,
@@ -72,7 +73,7 @@ function CustomTooltip({
   active?: boolean
   payload?: TooltipItem[]
   label?: string
-}) {
+}) => {
   if (!active || !payload?.length) return null
 
   return (
@@ -88,23 +89,29 @@ function CustomTooltip({
             {p.name === "revenue" ? "Chiffre d'affaires" : "Commandes"}
           </span>
           <span className="font-bold text-foreground tabular-nums">
-            {p.name === "revenue" ? formatMGA(p.value) : `${p.value} commandes`}
+            {typeof p.value !== "number"
+              ? "—"
+              : p.name === "revenue"
+                ? formatMGA(p.value)
+                : `${p.value} commandes`}
           </span>
         </div>
       ))}
     </div>
   )
-}
+};
 
-export default function Dashboard() {
+const Dashboard = () => {
   const navigate = useNavigate()
   const { t } = useTranslation()
   const [data, setData] = useState<SellerDashboard>()
   const [loading, setLoading] = useState(true)
   const [pendingOrders, setPendingOrders] = useState<Order[]>([])
-  const [productsData, setProductsData] = useState<getAllProductsResponse>()
+  const [productsData, setProductsData] = useState<GetSellerProductsResponse>()
   const [reviews, setReviews] = useState<Review[]>([])
   const [chartPeriod, setChartPeriod] = useState<"7d" | "30d" | "12m">("12m")
+  const [loadError, setLoadError] = useState<string | null>(null)
+  const [reloadKey, setReloadKey] = useState(0)
 
   const { selectedStore, loading: storeLoading } = useStore()
   const currentStoreId = selectedStore?.id
@@ -115,10 +122,14 @@ export default function Dashboard() {
 
     const fetchData = async () => {
       if (!currentStoreId) {
+        setData(undefined)
+        setLoadError(null)
         if (mounted) setLoading(false)
         return
       }
 
+      setLoading(true)
+      setLoadError(null)
       try {
         const [result, orders, allProducts, storeReviews] = await Promise.all([
           getDashboardData(),
@@ -138,22 +149,10 @@ export default function Dashboard() {
           setReviews(storeReviews.data)
         }
       } catch (error) {
-        console.warn("Dashboard API unavailable, loading offline mock entities:", error)
+        console.error("Failed to load seller dashboard:", error)
         if (mounted) {
-          setData(entities.dashboard)
-          setPendingOrders(entities.orders.filter((o) => o.status === "pending").slice(0, 6))
-          setProductsData({
-            data: entities.products.slice(0, 10),
-            meta: {
-              page: 1,
-              limit: 10,
-              total: entities.products.length,
-              totalPages: 1,
-            },
-            lowStock: entities.products.filter((p) => p.stock > 0 && p.stock < 10),
-            outOfStock: entities.products.filter((p) => p.stock === 0),
-          })
-          setReviews(entities.reviews.slice(0, 3))
+          setData(undefined)
+          setLoadError("Impossible de charger les données du tableau de bord.")
         }
       } finally {
         if (mounted) {
@@ -167,9 +166,9 @@ export default function Dashboard() {
     return () => {
       mounted = false
     }
-  }, [currentStoreId, storeLoading])
+  }, [currentStoreId, storeLoading, reloadKey])
 
-  if (loading || !data) {
+  if (loading) {
     return (
       <div className="p-8 space-y-6">
         <div className="h-28 rounded-2xl bg-muted/60 skeleton" />
@@ -183,9 +182,32 @@ export default function Dashboard() {
     )
   }
 
+  if (loadError || !data) {
+    return (
+      <div className="p-6 md:p-8">
+        <div role="alert" className="mx-auto max-w-2xl rounded-2xl border border-rose-500/20 bg-rose-500/10 p-6 text-center">
+          <p className="font-semibold text-foreground">
+            {loadError ?? "Aucune boutique n’est sélectionnée."}
+          </p>
+          {loadError && (
+            <Button
+              variant="outline"
+              size="sm"
+              className="mt-4"
+              onClick={() => setReloadKey((key) => key + 1)}
+            >
+              Réessayer
+            </Button>
+          )}
+        </div>
+      </div>
+    )
+  }
+
   const { metrics, revenueSeries, topProducts } = data
   const lowStockCount = productsData?.lowStock?.length ?? 0
   const unrepliedCount = reviews.filter((r) => !r.replied).length
+  const attentionCount = pendingOrders.length + lowStockCount + unrepliedCount
 
   // Filter chart series based on period
   const filteredSeries =
@@ -197,11 +219,20 @@ export default function Dashboard() {
 
   return (
     <div className="p-6 md:p-8 space-y-6 animate-fade-in max-w-7xl mx-auto">
-      {/* Executive Command Banner */}
-      <div
+      
+      <SpotlightCard
+        theme="dark"
+        spotlightColor="var(--primary)"
+        intensity={0.16}
+        spotlightSize={320}
+        borderGlow={0.2}
         data-tour="dashboard-overview"
-        className="relative overflow-hidden rounded-3xl bg-gradient-to-r from-primary/10 via-primary/5 to-card border border-primary/20 p-6 md:p-8 shadow-xs"
+        className="rounded-3xl bg-gradient-to-r from-primary/10 via-primary/5 to-card border border-primary/20 p-6 md:p-8 shadow-xs"
       >
+        <div
+          aria-hidden="true"
+          className="pointer-events-none absolute -right-16 -top-28 h-72 w-72 rounded-full bg-primary/10 blur-3xl"
+        />
         <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
           <div className="space-y-2">
             <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-primary/15 text-primary text-xs font-semibold">
@@ -243,9 +274,9 @@ export default function Dashboard() {
             </Button>
           </div>
         </div>
-      </div>
+      </SpotlightCard>
 
-      {/* 4 High-Impact KPI Cards */}
+      
       <div data-tour="dashboard-kpis" className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         <KpiCard
           label={t("dashboard.revenue")}
@@ -281,21 +312,38 @@ export default function Dashboard() {
         />
       </div>
 
-      {/* Urgent Operational Triage Bar */}
+      
       <div
         data-tour="dashboard-urgent-actions"
-        className="bg-card border border-border/80 rounded-2xl p-4 shadow-xs flex flex-col md:flex-row md:items-center justify-between gap-4"
+        className={`bg-card border rounded-2xl p-4 shadow-xs flex flex-col md:flex-row md:items-center justify-between gap-4 transition-colors ${
+          attentionCount > 0
+            ? "border-amber-500/20"
+            : "border-emerald-500/20"
+        }`}
       >
         <div className="flex items-center gap-3">
-          <div className="w-9 h-9 rounded-xl bg-amber-500/10 text-amber-600 dark:text-amber-400 flex items-center justify-center shrink-0">
-            <AlertTriangle size={18} />
+          <div
+            className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 ${
+              attentionCount > 0
+                ? "bg-amber-500/10 text-amber-600 dark:text-amber-400"
+                : "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400"
+            }`}
+          >
+            {attentionCount > 0 ? <AlertTriangle size={18} /> : <CheckCircle2 size={18} />}
           </div>
           <div>
-            <p className="text-xs font-bold text-foreground">
-              {t("dashboard.urgentActions")}
+            <p className="text-xs font-bold text-foreground flex items-center gap-2">
+              {attentionCount > 0 ? t("dashboard.urgentActions") : "Tout est en ordre"}
+              {attentionCount > 0 && (
+                <span className="text-[10px] font-bold text-amber-700 dark:text-amber-400 bg-amber-500/10 px-1.5 py-0.5 rounded-md tabular-nums">
+                  {attentionCount}
+                </span>
+              )}
             </p>
             <p className="text-xs text-muted-foreground">
-              Points nécessitant votre attention immédiate pour maintenir la cadence
+              {attentionCount > 0
+                ? "Les priorités de votre boutique, réunies au même endroit."
+                : "Aucune action urgente : votre boutique tourne bien."}
             </p>
           </div>
         </div>
@@ -342,10 +390,14 @@ export default function Dashboard() {
         </div>
       </div>
 
-      {/* Performance Analytics Chart & Quick Stats */}
+      
       <div className="grid lg:grid-cols-3 gap-6">
-        {/* Main Revenue Chart */}
-        <Card data-tour="dashboard-chart" className="lg:col-span-2 flex flex-col justify-between">
+        
+        <Card
+          data-tour="dashboard-chart"
+          spotlight
+          className="lg:col-span-2 flex flex-col justify-between"
+        >
           <CardHeader>
             <div>
               <CardTitle>{t("dashboard.revenueEvolution")}</CardTitle>
@@ -361,9 +413,10 @@ export default function Dashboard() {
                   onClick={() => setChartPeriod(period)}
                   className={`px-2.5 py-1 text-xs font-semibold rounded-lg transition-all cursor-pointer ${
                     chartPeriod === period
-                      ? "bg-card text-foreground shadow-xs"
+                      ? "bg-card text-primary shadow-xs ring-1 ring-border/70"
                       : "text-muted-foreground hover:text-foreground"
                   }`}
+                  aria-pressed={chartPeriod === period}
                 >
                   {period === "7d" ? "7J" : period === "30d" ? "30J" : "12M"}
                 </button>
@@ -424,7 +477,7 @@ export default function Dashboard() {
           </CardBody>
         </Card>
 
-        {/* Best Sellers Showcase */}
+        
         <Card className="flex flex-col">
           <CardHeader>
             <div>
@@ -482,7 +535,7 @@ export default function Dashboard() {
         </Card>
       </div>
 
-      {/* Operational Feed: Recent Orders To Dispatch */}
+      
       <Card>
         <CardHeader>
           <div className="flex items-center gap-3">
@@ -564,4 +617,5 @@ export default function Dashboard() {
       </Card>
     </div>
   )
-}
+};
+export default Dashboard;

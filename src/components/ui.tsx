@@ -5,15 +5,12 @@ import {
   Info,
   X,
   Search,
-  Clock,
   Package,
-  Truck,
-  Check,
-  ChevronRight,
   Loader2,
 } from "lucide-react";
+import SpotlightCard from "@/components/SpotlightCard";
 
-// ── Badge & Status Indicators ───────────────────────────────────────────────
+                                                                               
 export type BadgeVariant =
   | "default"
   | "primary"
@@ -35,7 +32,7 @@ const badgeStyles: Record<BadgeVariant, string> = {
   cyan: "bg-cyan-500/10 text-cyan-600 dark:text-cyan-400 border-cyan-500/20",
 };
 
-export function Badge({
+export const Badge = ({
   variant = "default",
   children,
   className = "",
@@ -47,7 +44,7 @@ export function Badge({
   className?: string;
   dot?: boolean;
   dotColor?: string;
-}) {
+}) => {
   return (
     <span
       className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold border ${badgeStyles[variant]} ${className}`}
@@ -62,7 +59,7 @@ export function Badge({
       {children}
     </span>
   );
-}
+};
 
 // ── Order Status Badges ────────────────────────────────────────────────────
 const orderStatusMap: Record<
@@ -78,7 +75,7 @@ const orderStatusMap: Record<
   cancelled: { label: "Annulée", variant: "danger", dotColor: "bg-rose-500" },
 };
 
-export function OrderStatusBadge({ status }: { status: string }) {
+export const OrderStatusBadge = ({ status }: { status: string }) => {
   const s = orderStatusMap[status] || {
     label: status,
     variant: "neutral" as BadgeVariant,
@@ -89,7 +86,7 @@ export function OrderStatusBadge({ status }: { status: string }) {
       {s.label}
     </Badge>
   );
-}
+};
 
 const paymentStatusMap: Record<string, { label: string; variant: BadgeVariant }> = {
   paid: { label: "Payé", variant: "success" },
@@ -98,10 +95,10 @@ const paymentStatusMap: Record<string, { label: string; variant: BadgeVariant }>
   refunded: { label: "Remboursé", variant: "neutral" },
 };
 
-export function PaymentBadge({ status }: { status: string }) {
+export const PaymentBadge = ({ status }: { status: string }) => {
   const s = paymentStatusMap[status] || { label: status, variant: "neutral" as BadgeVariant };
   return <Badge variant={s.variant}>{s.label}</Badge>;
-}
+};
 
 const productStatusMap: Record<string, { label: string; variant: BadgeVariant }> = {
   active: { label: "Actif", variant: "success" },
@@ -111,10 +108,10 @@ const productStatusMap: Record<string, { label: string; variant: BadgeVariant }>
   rejected: { label: "Rejeté", variant: "danger" },
 };
 
-export function ProductStatusBadge({ status }: { status: string }) {
+export const ProductStatusBadge = ({ status }: { status: string }) => {
   const s = productStatusMap[status] || { label: status, variant: "neutral" as BadgeVariant };
   return <Badge variant={s.variant} dot>{s.label}</Badge>;
-}
+};
 
 const inventoryStatusMap: Record<string, { label: string; variant: BadgeVariant }> = {
   in_stock: { label: "En stock", variant: "success" },
@@ -122,13 +119,13 @@ const inventoryStatusMap: Record<string, { label: string; variant: BadgeVariant 
   out_of_stock: { label: "Rupture", variant: "danger" },
 };
 
-export function InventoryBadge({ status }: { status: string }) {
+export const InventoryBadge = ({ status }: { status: string }) => {
   const s = inventoryStatusMap[status] || { label: status, variant: "neutral" as BadgeVariant };
   return <Badge variant={s.variant} dot>{s.label}</Badge>;
-}
+};
 
 // ── Metric KPI Card ────────────────────────────────────────────────────────
-export function KpiCard({
+export const KpiCard = ({
   label,
   value,
   change,
@@ -142,11 +139,16 @@ export function KpiCard({
   icon: ReactNode;
   accent?: boolean;
   subtitle?: string;
-}) {
+}) => {
   const positive = change !== undefined && change >= 0;
   return (
-    <div
-      className={`group relative overflow-hidden bg-card rounded-2xl border transition-all duration-200 p-5 flex flex-col justify-between hover:shadow-md ${
+    <SpotlightCard
+      theme="dark"
+      spotlightColor="var(--primary)"
+      intensity={0.14}
+      spotlightSize={190}
+      borderGlow={0.18}
+      className={`group bg-card rounded-2xl border transition-all duration-200 p-5 flex flex-col justify-between hover:shadow-md ${
         accent
           ? "border-primary/40 ring-1 ring-primary/20 bg-gradient-to-br from-card to-primary/5"
           : "border-border/80 hover:border-border"
@@ -191,12 +193,12 @@ export function KpiCard({
           )}
         </div>
       </div>
-    </div>
+    </SpotlightCard>
   );
-}
+};
 
 // ── Product Image with Graceful Fallback ──────────────────────────────────
-export function ProductImage({
+export const ProductImage = ({
   src,
   alt,
   className = "",
@@ -206,7 +208,7 @@ export function ProductImage({
   alt: string;
   className?: string;
   fallbackIcon?: ReactNode;
-}) {
+}) => {
   const [hasError, setHasError] = useState(false);
 
   if (!src || hasError) {
@@ -229,10 +231,10 @@ export function ProductImage({
       loading="lazy"
     />
   );
-}
+};
 
 // ── Page Header ───────────────────────────────────────────────────────────
-export function PageHeader({
+export const PageHeader = ({
   title,
   subtitle,
   actions,
@@ -242,7 +244,7 @@ export function PageHeader({
   subtitle?: string;
   actions?: ReactNode;
   badge?: ReactNode;
-}) {
+}) => {
   return (
     <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-2 border-b border-border/40">
       <div>
@@ -265,7 +267,7 @@ export function PageHeader({
       )}
     </div>
   );
-}
+};
 
 // ── Button ────────────────────────────────────────────────────────────────
 type ButtonVariant = "primary" | "secondary" | "outline" | "ghost" | "danger" | "success";
@@ -299,7 +301,7 @@ export interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
   loading?: boolean;
 }
 
-export function Button({
+export const Button = ({
   variant = "secondary",
   size = "md",
   children,
@@ -309,7 +311,7 @@ export function Button({
   className = "",
   type = "button",
   ...props
-}: ButtonProps) {
+}: ButtonProps) => {
   return (
     <button
       type={type}
@@ -324,23 +326,23 @@ export function Button({
       {children}
     </button>
   );
-}
+};
 
 // ── Search Input ──────────────────────────────────────────────────────────
-export interface SearchInputProps extends HTMLAttributes<HTMLDivElement> {
+export interface SearchInputProps extends Omit<HTMLAttributes<HTMLDivElement>, "onChange"> {
   value: string;
   onChange: (v: string) => void;
   placeholder?: string;
   className?: string;
 }
 
-export function SearchInput({
+export const SearchInput = ({
   value,
   onChange,
   placeholder = "Rechercher...",
   className = "",
   ...props
-}: SearchInputProps) {
+}: SearchInputProps) => {
   return (
     <div className={`relative flex items-center ${className}`} {...props}>
       <Search
@@ -364,22 +366,22 @@ export function SearchInput({
       )}
     </div>
   );
-}
+};
 
 // ── View Toggle (e.g., Cards vs Table, Pipeline vs List) ──────────────────
-export interface ViewToggleProps<T extends string> extends HTMLAttributes<HTMLDivElement> {
+export interface ViewToggleProps<T extends string> extends Omit<HTMLAttributes<HTMLDivElement>, "onChange"> {
   value: T;
   onChange: (v: T) => void;
   options: { value: T; label: string; icon: ReactNode }[];
 }
 
-export function ViewToggle<T extends string>({
+export const ViewToggle = <T extends string>({
   value,
   onChange,
   options,
   className = "",
   ...props
-}: ViewToggleProps<T>) {
+}: ViewToggleProps<T>) => {
   return (
     <div
       className={`inline-flex items-center p-1 rounded-xl bg-muted border border-border/50 text-xs ${className}`}
@@ -405,36 +407,56 @@ export function ViewToggle<T extends string>({
       })}
     </div>
   );
-}
+};
 
 // ── Card Primitives ───────────────────────────────────────────────────────
 export interface CardProps extends HTMLAttributes<HTMLDivElement> {
   children: ReactNode;
   className?: string;
+  spotlight?: boolean;
 }
 
-export function Card({
+export const Card = ({
   children,
   className = "",
+  spotlight = false,
   ...props
-}: CardProps) {
+}: CardProps) => {
+  const cardClassName = `bg-card rounded-2xl border border-border/80 shadow-xs overflow-hidden ${className}`;
+
+  if (spotlight) {
+    return (
+      <SpotlightCard
+        theme="dark"
+        spotlightColor="var(--primary)"
+        intensity={0.1}
+        spotlightSize={240}
+        borderGlow={0.12}
+        className={cardClassName}
+        {...props}
+      >
+        {children}
+      </SpotlightCard>
+    );
+  }
+
   return (
     <div
-      className={`bg-card rounded-2xl border border-border/80 shadow-xs overflow-hidden ${className}`}
+      className={cardClassName}
       {...props}
     >
       {children}
     </div>
   );
-}
+};
 
-export function CardHeader({
+export const CardHeader = ({
   children,
   className = "",
 }: {
   children: ReactNode;
   className?: string;
-}) {
+}) => {
   return (
     <div
       className={`px-5 py-4 border-b border-border/60 flex items-center justify-between gap-4 ${className}`}
@@ -442,28 +464,28 @@ export function CardHeader({
       {children}
     </div>
   );
-}
+};
 
-export function CardTitle({ children }: { children: ReactNode }) {
+export const CardTitle = ({ children, className = "" }: { children: ReactNode; className?: string }) => {
   return (
-    <h2 className="font-display font-semibold text-base text-foreground tracking-tight">
+    <h2 className={`font-display font-semibold text-base text-foreground tracking-tight ${className}`}>
       {children}
     </h2>
   );
-}
+};
 
-export function CardBody({
+export const CardBody = ({
   children,
   className = "",
 }: {
   children: ReactNode;
   className?: string;
-}) {
+}) => {
   return <div className={`p-5 ${className}`}>{children}</div>;
-}
+};
 
 // ── Empty State ───────────────────────────────────────────────────────────
-export function EmptyState({
+export const EmptyState = ({
   icon,
   title,
   description,
@@ -473,7 +495,7 @@ export function EmptyState({
   title: string;
   description: string;
   action?: ReactNode;
-}) {
+}) => {
   return (
     <div className="flex flex-col items-center justify-center py-16 px-6 text-center">
       <div className="w-14 h-14 rounded-2xl bg-muted/80 border border-border/60 flex items-center justify-center text-muted-foreground mb-4 shadow-xs">
@@ -488,10 +510,10 @@ export function EmptyState({
       {action}
     </div>
   );
-}
+};
 
 // ── Slide-Over Drawer ─────────────────────────────────────────────────────
-export function SlideOverDrawer({
+export const SlideOverDrawer = ({
   isOpen,
   onClose,
   title,
@@ -505,7 +527,7 @@ export function SlideOverDrawer({
   subtitle?: string;
   children: ReactNode;
   footer?: ReactNode;
-}) {
+}) => {
   if (!isOpen) return null;
 
   return (
@@ -542,10 +564,10 @@ export function SlideOverDrawer({
       </div>
     </div>
   );
-}
+};
 
 // ── Stars Rating ──────────────────────────────────────────────────────────
-export function Stars({ rating, max = 5 }: { rating: number; max?: number }) {
+export const Stars = ({ rating, max = 5 }: { rating: number; max?: number }) => {
   return (
     <span className="flex items-center gap-1">
       {Array.from({ length: max }).map((_, i) => (
@@ -566,10 +588,10 @@ export function Stars({ rating, max = 5 }: { rating: number; max?: number }) {
       </span>
     </span>
   );
-}
+};
 
 // ── Toast Alert ───────────────────────────────────────────────────────────
-export function Toast({
+export const Toast = ({
   message,
   type = "success",
   onDismiss,
@@ -577,7 +599,7 @@ export function Toast({
   message: string;
   type?: "success" | "error" | "info";
   onDismiss: () => void;
-}) {
+}) => {
   const styles = {
     success: "bg-emerald-600 text-white",
     error: "bg-rose-600 text-white",
@@ -600,10 +622,10 @@ export function Toast({
       </button>
     </div>
   );
-}
+};
 
 // ── Confirmation Modal ────────────────────────────────────────────────────
-export function ConfirmModal({
+export const ConfirmModal = ({
   title,
   message,
   onConfirm,
@@ -617,7 +639,7 @@ export function ConfirmModal({
   onCancel: () => void;
   danger?: boolean;
   confirmLabel?: string;
-}) {
+}) => {
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
       <div
@@ -661,10 +683,10 @@ export function ConfirmModal({
       </div>
     </div>
   );
-}
+};
 
 // ── Pagination ────────────────────────────────────────────────────────────
-export function Pagination({
+export const Pagination = ({
   page,
   total,
   pageSize,
@@ -674,9 +696,11 @@ export function Pagination({
   total: number;
   pageSize: number;
   onChange: (p: number) => void;
-}) {
+}) => {
   const totalPages = Math.ceil(total / pageSize);
   if (totalPages <= 1) return null;
+  const visiblePageCount = Math.min(totalPages, 5)
+  const firstVisiblePage = Math.max(1, Math.min(page - 2, totalPages - visiblePageCount + 1))
 
   return (
     <div className="flex items-center justify-between px-5 py-3.5 border-t border-border/60">
@@ -694,12 +718,13 @@ export function Pagination({
         >
           Précédent
         </Button>
-        {Array.from({ length: Math.min(totalPages, 5) }).map((_, i) => {
-          const p = i + 1;
+        {Array.from({ length: visiblePageCount }).map((_, i) => {
+          const p = firstVisiblePage + i;
           return (
             <button
               key={p}
               onClick={() => onChange(p)}
+              aria-current={p === page ? "page" : undefined}
               className={`w-8 h-8 rounded-lg text-xs font-semibold transition-colors cursor-pointer ${
                 p === page
                   ? "bg-primary text-white shadow-xs"
@@ -721,4 +746,4 @@ export function Pagination({
       </div>
     </div>
   );
-}
+};

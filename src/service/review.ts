@@ -1,21 +1,7 @@
 import { api } from "./axios";
-import { PaginationMeta } from "./order";
-import { Review } from "@/type/review";
+import type { Review, StoreReviewsResponse } from "@/type/review";
 
-type getStoreReviewsResponse = {
-  data: Review[];
-  meta: PaginationMeta;
-  averageRating: number;
-  ratingBreakdown: {
-    1: number;
-    2: number;
-    3: number;
-    4: number;
-    5: number;
-};
-}
-
-export const getStoreReviews = async (storeId: string, page: number, limit: number,rating?: number,replied?: boolean) : Promise<getStoreReviewsResponse> => {
+export const getStoreReviews = async (storeId: string, page: number, limit: number,rating?: number,replied?: boolean) : Promise<StoreReviewsResponse> => {
     const response = await api.get("/seller/reviews", {
         params: {
             page,
@@ -25,5 +11,10 @@ export const getStoreReviews = async (storeId: string, page: number, limit: numb
             replied
         }
     });
+    return response.data;
+}
+
+export const replyToReview = async (reviewId: string, reply: string): Promise<Review> => {
+    const response = await api.post<Review>(`/seller/reviews/${encodeURIComponent(reviewId)}/reply`, { reply });
     return response.data;
 }

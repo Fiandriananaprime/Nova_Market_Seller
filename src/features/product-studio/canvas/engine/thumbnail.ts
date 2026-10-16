@@ -1,16 +1,15 @@
 import type { DesignDocument } from '@/features/product-studio/canvas/types/design'
 import { renderLayer } from '@/features/product-studio/canvas/engine/layerRenderer'
 
-/**
- * Render a design document to a high-quality thumbnail.
- * Uses the actual design dimensions for full-res output,
- * capped at a reasonable pixel budget for performance.
- */
-export function renderThumbnail(
+   
+                                                        
+                                                         
+                                                       
+   
+export const renderThumbnail = (
   doc: DesignDocument,
   displayWidth: number = 600,
-  displayHeight: number = 400,
-): string {
+  displayHeight: number = 400,):string => {
   const aspect = doc.format.width / doc.format.height
   let thumbW: number, thumbH: number
 
@@ -22,7 +21,7 @@ export function renderThumbnail(
     thumbW = Math.round(displayHeight * aspect)
   }
 
-  // Render at high DPI for crisp previews
+                                          
   const dpr = Math.min(window.devicePixelRatio || 2, 3)
   const canvasW = Math.round(thumbW * dpr)
   const canvasH = Math.round(thumbH * dpr)
@@ -40,6 +39,6 @@ export function renderThumbnail(
     renderLayer(ctx, layer, canvasW, canvasH, scale)
   }
 
-  // PNG for full quality (no JPEG compression artifacts)
+                                                         
   return canvas.toDataURL('image/png')
-}
+};

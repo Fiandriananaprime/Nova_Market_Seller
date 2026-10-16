@@ -1,17 +1,17 @@
 import { Shuffle } from 'lucide-react'
 import { useDesignStore } from '@/features/product-studio/canvas/store/useDesignStore'
 import { randomAvatarDataUrl } from '@/features/product-studio/canvas/brand/avatars'
-// import { SliderField } from '@/features/product-studio/canvas/components/controls/SliderField'
+                                                                                                 
 
 import type { ImageLayer } from '@/features/product-studio/canvas/types/design'
 
-// SliderField still used for Opacity and Rotation
+                                                  
 
 interface Props {
   layer: ImageLayer
 }
 
-export function ImagePropertiesPanel({ layer }: Props) {
+export const ImagePropertiesPanel = ({ layer }: Props) => {
   const updateLayer = useDesignStore((s) => s.updateLayer)
   const pushSnapshot = useDesignStore((s) => s.pushSnapshot)
 
@@ -29,7 +29,7 @@ export function ImagePropertiesPanel({ layer }: Props) {
   }
 
   const handleShuffle = async () => {
-    // Exclude the current face so the shuffle always visibly changes.
+                                                                      
     const dataUrl = await randomAvatarDataUrl(layer.imageUrl)
     pushSnapshot()
     updateLayer<ImageLayer>(layer.id, { imageUrl: dataUrl })
@@ -41,7 +41,7 @@ export function ImagePropertiesPanel({ layer }: Props) {
         {layer.avatarSet ? 'Avatar' : 'Image'}
       </div>
 
-      {/* Shuffle — cycle through the bundled avatar set (avatar images only). */}
+      
       {layer.avatarSet && (
         <button
           onClick={() => void handleShuffle()}
@@ -52,7 +52,7 @@ export function ImagePropertiesPanel({ layer }: Props) {
         </button>
       )}
 
-      {/* Upload */}
+      
       <div>
         <label
           className="block w-full py-2 text-center text-[11px] bg-muted text-muted-foreground rounded-[5px] cursor-pointer hover:bg-muted/80 transition-colors"
@@ -67,7 +67,7 @@ export function ImagePropertiesPanel({ layer }: Props) {
         </label>
       </div>
 
-      {/* Fit mode */}
+      
       <div className="space-y-1.5">
         <label className="text-[13px] text-muted-foreground font-normal">Fit</label>
         <div className="flex gap-1">
@@ -91,7 +91,7 @@ export function ImagePropertiesPanel({ layer }: Props) {
         </div>
       </div>
 
-      {/* Border radius — brand-constrained presets */}
+      
       <div className="space-y-1.5">
         <label className="text-[13px] text-muted-foreground font-normal">Corner Radius</label>
         <div className="flex gap-1 flex-wrap">
@@ -123,7 +123,7 @@ export function ImagePropertiesPanel({ layer }: Props) {
         </div>
       </div>
 
-      {/* Position, Size, Opacity, Rotation are in PositionSizePanel */}
+      
     </div>
   )
-}
+};

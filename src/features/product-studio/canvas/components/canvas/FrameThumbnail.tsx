@@ -4,16 +4,16 @@ import { captureDesignShaders } from '@/features/product-studio/canvas/engine/sh
 import type { Frame } from '@/features/product-studio/canvas/types/workspace'
 import type { DesignDocument } from '@/features/product-studio/canvas/types/design'
 
-/**
- * Static render of a non-active frame on the multi-frame canvas.
- *
- * Renders through the SAME <SvgScene> as the live editing surface, so a frame's
- * thumbnail matches exactly what you see when it's active — one renderer, no
- * drift from the old Canvas-2D compositor. Shader backgrounds have no vector
- * form, so they're captured to a still <image> (async, cached); non-shader
- * frames render instantly.
- */
-export function FrameThumbnail({ frame, zoom }: { frame: Frame; zoom: number }) {
+   
+                                                                 
+  
+                                                                                
+                                                                             
+                                                                             
+                                                                           
+                           
+   
+export const FrameThumbnail = ({ frame, zoom }: { frame: Frame; zoom: number }) => {
   const [stills, setStills] = useState<Record<string, string>>({})
 
   useEffect(() => {
@@ -35,4 +35,4 @@ export function FrameThumbnail({ frame, zoom }: { frame: Frame; zoom: number }) 
 
   const doc = { format: frame.format, layers: frame.layers } as DesignDocument
   return <SvgScene doc={doc} zoom={zoom} shaderStills={stills} className="block h-full w-full" />
-}
+};

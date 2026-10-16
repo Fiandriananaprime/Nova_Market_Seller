@@ -6,7 +6,6 @@ import {
   CheckCircle2,
   AlertTriangle,
   RotateCw,
-  Sparkles,
   Info,
   MapPin,
   AlertCircle,
@@ -20,7 +19,7 @@ import { DeliveryFilters } from "../components/DeliveryFilters"
 import { DeliveryDetails } from "../components/DeliveryDetails"
 import type { DeliveryRecord, Coordinates } from "../types/deliveryTracking.types"
 
-export default function DeliveryTrackingPage() {
+const DeliveryTrackingPage = () => {
   const { t } = useTranslation()
   const {
     deliveries,
@@ -32,9 +31,13 @@ export default function DeliveryTrackingPage() {
     selectDelivery,
     filters,
     setFilters,
-    isSimulating,
-    toggleSimulation,
     refresh,
+    hasMore,
+    loadingMore,
+    loadMore,
+    realtimeConnected,
+    realtimeConnectedCount,
+    realtimeTrackedCount,
   } = useDeliveryTracking()
 
   const [isRefreshing, setIsRefreshing] = useState(false)
@@ -53,13 +56,13 @@ export default function DeliveryTrackingPage() {
     setTimeout(() => setIsRefreshing(false), 500)
   }
 
-  // Selecting a delivery sets it as active and opens details drawer
+                                                                    
   const handleSelectDelivery = (record: DeliveryRecord) => {
     selectDelivery(record.id)
     setIsDrawerOpen(true)
   }
 
-  // Focusing on courier centers camera and minimizes drawer so seller sees map
+                                                                               
   const handleFocusDelivery = (record: DeliveryRecord) => {
     selectDelivery(record.id)
     setFocusRequest({
@@ -75,20 +78,20 @@ export default function DeliveryTrackingPage() {
     }
   }
 
-  // Closing drawer only hides the side panel; tracking and map focus REMAIN active!
+                                                                                    
   const handleCloseDrawer = () => {
     setIsDrawerOpen(false)
   }
 
-  // Explicitly stopping tracking
+                                 
   const handleStopTracking = () => {
     selectDelivery(null)
     setIsDrawerOpen(false)
   }
 
   return (
-    <div className="space-y-6 pb-12">
-      {/* ── Page Header ── */}
+    <div className="p-6 md:p-8 space-y-6 pb-12">
+      
       <PageHeader
         title={t("deliveries.title", "Suivi des Livraisons")}
         subtitle={t(
@@ -96,18 +99,15 @@ export default function DeliveryTrackingPage() {
           "Visualisez et suivez en temps réel la progression de vos commandes sur la carte d'Antananarivo"
         )}
         badge={
-          <div className="flex items-center gap-2">
-            <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-amber-500/10 text-amber-700 dark:text-amber-300 border border-amber-500/20">
-              <span className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse" />
-              {t("deliveries.simulatedData", "Données simulées")}
-            </span>
-            {isSimulating && (
-              <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-teal-500/10 text-teal-700 dark:text-teal-300 border border-teal-500/20">
-                <Sparkles size={11} className="text-teal-500 animate-spin" />
-                {t("deliveries.telemetryActive", "Télémétrie active")}
-              </span>
-            )}
-          </div>
+          <span className={`rounded-full border px-2.5 py-1 text-xs font-semibold ${
+            realtimeConnected
+              ? "border-emerald-500/20 bg-emerald-500/5 text-emerald-700 dark:text-emerald-400"
+              : "border-amber-500/20 bg-amber-500/5 text-amber-700 dark:text-amber-400"
+          }`}>
+            {realtimeTrackedCount === 0
+              ? t("deliveries.noLiveTracking", "Aucun coursier en suivi")
+              : `${realtimeConnectedCount}/${realtimeTrackedCount} ${t("deliveries.liveConnections", "suivis en direct")}`}
+          </span>
         }
         actions={
           <div className="flex items-center gap-2">
@@ -125,7 +125,7 @@ export default function DeliveryTrackingPage() {
         }
       />
 
-      {/* ── Error Banner ── */}
+      
       {error && (
         <div className="rounded-2xl border border-rose-500/20 bg-rose-500/10 p-4 flex items-center gap-3 text-rose-700 dark:text-rose-400 text-xs sm:text-sm">
           <AlertCircle size={18} className="shrink-0" />
@@ -136,25 +136,36 @@ export default function DeliveryTrackingPage() {
         </div>
       )}
 
-      {/* ── Context Alert Banner (Mock Explanation) ── */}
+      {loading && <p role="status" className="rounded-xl border border-border bg-card p-4 text-sm text-muted-foreground">{t("deliveries.loading", "Chargement des livraisons…")}</p>}
+      {!loading && !error && deliveries.length === 0 && (
+        <p className="rounded-xl border border-dashed border-border bg-card p-6 text-center text-sm text-muted-foreground">
+          {t("deliveries.empty", "Aucune livraison à afficher pour le moment.")}
+        </p>
+      )}
+
+      
       <div className="rounded-2xl border border-primary/20 bg-primary/5 p-4 flex items-start gap-3.5">
         <div className="p-2 rounded-xl bg-primary/10 text-primary shrink-0 mt-0.5">
           <Info size={18} />
         </div>
         <div className="flex-1 text-xs sm:text-sm">
           <p className="font-semibold text-foreground">
-            {t("deliveries.bannerTitle", "Mode Démonstration Logistique")}
+            {t("deliveries.bannerTitle", "Suivi des livraisons en temps réel")}
           </p>
           <p className="text-muted-foreground mt-0.5 leading-relaxed">
             {t(
-              "deliveries.bannerDesc",
-              "Ce tableau de bord cartographique simule le suivi GPS des coursiers partenaires sur l'agglomération d'Antananarivo (Analakely, Ankorondrano, Ivato, Tanjombato). Activez le bouton « Simuler GPS » pour observer les mises à jour de position en direct."
+              realtimeConnected
+                ? "deliveries.realtimeConnectedDescription"
+                : "deliveries.realtimeDisconnectedDescription",
+              realtimeConnected
+                ? "La carte reçoit les positions et changements de statut en direct. L’historique reste consultable via l’API."
+                : "L’état initial et l’historique sont chargés depuis l’API. La carte se reconnecte automatiquement au flux de suivi."
             )}
           </p>
         </div>
       </div>
 
-      {/* ── Summary Metrics Cards ── */}
+      
       <div data-tour="deliveries-kpis" className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         <KpiCard
           label={t("deliveries.kpiInTransit", "En cours de livraison")}
@@ -186,20 +197,18 @@ export default function DeliveryTrackingPage() {
         />
       </div>
 
-      {/* ── Interactive Filters & Telemetry Controls ── */}
+      
       <div data-tour="deliveries-filters">
         <DeliveryFilters
           filters={filters}
           onChangeFilters={setFilters}
           stats={stats}
-          isSimulating={isSimulating}
-          onToggleSimulation={toggleSimulation}
         />
       </div>
 
-      {/* ── Main Workspace: Interactive Map & Delivery List ── */}
+      
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 items-start">
-        {/* Map Container (7 columns on desktop) */}
+        
         <div data-tour="deliveries-map" className="lg:col-span-7 xl:col-span-8 bg-card rounded-2xl border border-border/80 shadow-xs overflow-hidden flex flex-col">
           <div className="px-4 py-3 border-b border-border/60 bg-muted/30 flex items-center justify-between">
             <div className="flex items-center gap-2">
@@ -228,13 +237,11 @@ export default function DeliveryTrackingPage() {
               filters={filters}
               onChangeFilters={setFilters}
               stats={stats}
-              isSimulating={isSimulating}
-              onToggleSimulation={toggleSimulation}
             />
           </div>
         </div>
 
-        {/* Deliveries Synchronized List (5 columns on desktop) */}
+        
         <div data-tour="deliveries-list" className="lg:col-span-5 xl:col-span-4 bg-card rounded-2xl border border-border/80 shadow-xs overflow-hidden flex flex-col h-[460px] sm:h-[540px] lg:h-[680px]">
           <DeliveryList
             deliveries={deliveries}
@@ -244,7 +251,15 @@ export default function DeliveryTrackingPage() {
         </div>
       </div>
 
-      {/* ── Slide-over Details Drawer ── */}
+      {hasMore && (
+        <div className="flex justify-center">
+          <Button variant="outline" onClick={() => void loadMore()} loading={loadingMore}>
+            {t("deliveries.loadMore", "Charger plus de livraisons")}
+          </Button>
+        </div>
+      )}
+
+      
       <DeliveryDetails
         delivery={isDrawerOpen ? selectedDelivery : null}
         onClose={handleCloseDrawer}
@@ -252,4 +267,5 @@ export default function DeliveryTrackingPage() {
       />
     </div>
   )
-}
+};
+export default DeliveryTrackingPage;

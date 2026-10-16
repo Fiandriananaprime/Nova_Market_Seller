@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react"
 import { Link, useNavigate, useParams } from "react-router"
-import { AlertTriangle, ArrowLeft, Box, Check, ChevronRight, Eye, Heart, MoreHorizontal, Package, ShoppingBag, Star, Store as StoreIcon, Tag } from "lucide-react"
-import { Badge, Button, Card, CardBody, CardHeader, CardTitle, ProductImage, Stars } from "@/components/ui"
+import { AlertTriangle, ArrowLeft, Check, ChevronRight, MoreHorizontal, Package, Tag } from "lucide-react"
+import { Badge, Button, Card, CardBody, CardHeader, CardTitle, ProductImage } from "@/components/ui"
 import { getProductById, updateProductStatus } from "@/service/product"
 import { formatFullMGA } from "@/hook/format"
 import type { Product, productModerationStatus, productStatus } from "@/type/product"
@@ -11,27 +11,20 @@ const moderationLabels: Record<productModerationStatus, string> = {
   draft: "Brouillon", pending: "En attente", approved: "Approuvé", rejected: "Refusé",
 }
 
-function dateLabel(value?: string) {
+const dateLabel = (value?: string) => {
   if (!value) return "—"
   const date = new Date(value)
   return Number.isNaN(date.getTime()) ? "—" : new Intl.DateTimeFormat("fr-MG", { dateStyle: "medium", timeStyle: "short" }).format(date)
-}
+};
 
-function Stat({ label, value, icon: Icon }: { label: string; value: string; icon: typeof Eye }) {
-  return <div className="rounded-xl border border-border/70 bg-background p-4">
-    <div className="flex items-center gap-2 text-muted-foreground"><Icon size={15} /><span className="text-xs font-medium">{label}</span></div>
-    <p className="mt-2 text-xl font-bold tabular-nums text-foreground">{value}</p>
-  </div>
-}
-
-function DetailRow({ label, value, mono = false }: { label: string; value?: string | null; mono?: boolean }) {
+const DetailRow = ({ label, value, mono = false }: { label: string; value?: string | null; mono?: boolean }) => {
   return <div className="flex flex-col gap-1 border-b border-border/60 py-3 last:border-0 sm:flex-row sm:items-start sm:justify-between sm:gap-6">
     <dt className="text-sm text-muted-foreground">{label}</dt>
     <dd className={`min-w-0 break-words text-sm font-medium text-foreground sm:max-w-[65%] sm:text-right ${mono ? "font-mono text-xs" : ""}`}>{value || "—"}</dd>
   </div>
-}
+};
 
-export default function ProductDetail() {
+const ProductDetail = () => {
   const { id = "" } = useParams()
   const navigate = useNavigate()
   const [product, setProduct] = useState<Product | null>(null)
@@ -188,4 +181,5 @@ export default function ProductDetail() {
     </div>
     {product.moderationReason && <Card><CardHeader><CardTitle>Information de modération</CardTitle><Badge variant="warning"><Check size={12}/> Détail disponible</Badge></CardHeader><CardBody><p className="text-sm leading-6 text-muted-foreground">{product.moderationReason}</p></CardBody></Card>}
   </main>
-}
+};
+export default ProductDetail

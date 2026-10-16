@@ -1,29 +1,25 @@
-import { useState } from "react"
+import { useCallback, useEffect, useRef, useState } from "react"
 import { useNavigate } from "react-router"
 import { useTranslation } from "react-i18next"
 import {
   Search,
   Truck,
   CheckCircle2,
-  X,
   Clock,
   Package,
-  Layers,
-  ListFilter,
   Kanban,
   LayoutList,
   ChevronRight,
   MapPin,
-  CreditCard,
-  User,
-  AlertCircle,
   ArrowRight,
   Phone,
   MessageCircle,
   Printer,
   Navigation,
 } from "lucide-react"
-import { orders, formatMGA, formatFullMGA, type Order, type OrderStatus } from "@/hook/mock"
+import { formatMGA, formatFullMGA } from "@/hook/format"
+import { getAllOrders, getOrderById, updateOrder } from "@/service/order"
+import type { Order as ApiOrder, OrderCounts, OrderStatus } from "@/type/order"
 import {
   PageHeader,
   Button,
@@ -35,9 +31,6 @@ import {
   ConfirmModal,
   Toast,
   Card,
-  CardHeader,
-  CardTitle,
-  CardBody,
   SlideOverDrawer,
   ViewToggle,
   Badge,
@@ -59,6 +52,7 @@ const TRANSITION_NEXT: Record<OrderStatus, OrderStatus | null> = {
   shipped: "delivered",
   delivered: null,
   cancelled: null,
+  refunded: null,
 }
 
 const TRANSITION_ACTION_LABELS: Record<OrderStatus, string> = {
@@ -69,83 +63,173 @@ const TRANSITION_ACTION_LABELS: Record<OrderStatus, string> = {
   shipped: "Marquer comme livrée",
   delivered: "Commande terminée",
   cancelled: "Commande annulée",
+  refunded: "Commande remboursée",
 }
 
-export default function Orders() {
+type OrderRow = Omit<ApiOrder, "items"> & {
+  items: Array<ApiOrder["items"][number] & { name: string }>
+  buyerAvatar: string
+  city: string
+  street: string
+  district: string
+  instructions: string
+}
+
+const toOrderRow = (order: ApiOrder):OrderRow => {
+  const address = order.address
+  return {
+    ...order,
+    items: order.items.map((item) => ({ ...item, name: item.productName })),
+    buyerAvatar: order.buyerName.split(/\s+/).map((part) => part[0]).join("").slice(0, 2).toUpperCase(),
+    city: address?.city ?? "—",
+    street: address?.street ?? "",
+    district: address?.district ?? "",
+    instructions: address?.instructions ?? "",
+  }
+};
+
+const Orders = () => {
   const navigate = useNavigate()
   const { t } = useTranslation()
   const [search, setSearch] = useState("")
-  const [statusFilter, setStatusFilter] = useState<string>("all")
+  const [statusFilter, setStatusFilter] = useState<OrderStatus | "all">("all")
   const [viewMode, setViewMode] = useState<"pipeline" | "list">("pipeline")
   const [page, setPage] = useState(1)
-  const [selectedOrder, setSelectedOrder] = useState<Order | null>(null)
-  const [localOrders, setLocalOrders] = useState<Order[]>(orders)
+  const [selectedOrder, setSelectedOrder] = useState<OrderRow | null>(null)
+  const [localOrders, setLocalOrders] = useState<OrderRow[]>([])
+  const [listTotal, setListTotal] = useState(0)
+  const [pipelinePage, setPipelinePage] = useState(1)
+  const [pipelineTotalPages, setPipelineTotalPages] = useState(1)
+  const [loadingMorePipeline, setLoadingMorePipeline] = useState(false)
+  const [orderCounts, setOrderCounts] = useState<OrderCounts>({
+    pending: 0,
+    confirmed: 0,
+    processing: 0,
+    preparing: 0,
+    shipped: 0,
+    delivered: 0,
+    cancelled: 0,
+    refunded: 0,
+  })
+  const [loading, setLoading] = useState(true)
+  const [detailLoading, setDetailLoading] = useState(false)
+  const [updatingOrderId, setUpdatingOrderId] = useState<string | null>(null)
+  const [error, setError] = useState<string | null>(null)
   const [toast, setToast] = useState<string | null>(null)
   const [cancelTargetId, setCancelTargetId] = useState<string | null>(null)
+  const requestIdRef = useRef(0)
 
   const PAGE_SIZE = 8
+  const PIPELINE_PAGE_SIZE = 40
+  const totalOrderCount = Object.values(orderCounts).reduce((total, count) => total + (count ?? 0), 0)
+
+  const loadOrders = useCallback(async (requestedPage: number, append: boolean, isPipeline: boolean) => {
+    const requestId = ++requestIdRef.current
+    if (!append) setLoading(true)
+    setError(null)
+    try {
+      const response = await getAllOrders({
+        page: requestedPage,
+        limit: isPipeline ? PIPELINE_PAGE_SIZE : PAGE_SIZE,
+        status: statusFilter === "all" ? undefined : statusFilter,
+        search: search || undefined,
+      })
+      if (requestId !== requestIdRef.current) return
+      const nextOrders = response.data.map(toOrderRow)
+      setLocalOrders((current) => append ? [...current, ...nextOrders] : nextOrders)
+      setOrderCounts({ ...response.counts, preparing: response.counts.preparing ?? 0 })
+      if (isPipeline) {
+        setPipelinePage(requestedPage)
+        setPipelineTotalPages(response.meta.totalPages)
+      } else {
+        setListTotal(response.meta.total)
+      }
+    } catch {
+      if (requestId === requestIdRef.current) {
+        setError("Les commandes n’ont pas pu être chargées. Vérifiez votre connexion puis réessayez.")
+      }
+    } finally {
+      if (requestId === requestIdRef.current && !append) setLoading(false)
+    }
+  }, [search, statusFilter])
+
+  useEffect(() => {
+    void loadOrders(viewMode === "pipeline" ? 1 : page, false, viewMode === "pipeline")
+  }, [page, viewMode, loadOrders])
+
+  async function loadMorePipelineOrders() {
+    if (loadingMorePipeline || pipelinePage >= pipelineTotalPages) return
+    setLoadingMorePipeline(true)
+    await loadOrders(pipelinePage + 1, true, true)
+    setLoadingMorePipeline(false)
+  }
 
   const showNotification = (msg: string) => {
     setToast(msg)
     setTimeout(() => setToast(null), 3000)
   }
 
-  // Filter logic
-  const filtered = localOrders.filter((o) => {
-    const matchSearch =
-      o.id.toLowerCase().includes(search.toLowerCase()) ||
-      o.buyerName.toLowerCase().includes(search.toLowerCase())
-    const matchStatus = statusFilter === "all" || o.status === statusFilter
-    return matchSearch && matchStatus
-  })
+                 
+  const filtered = localOrders
+  const paginated = localOrders
 
-  const paginated = filtered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE)
-
-  // Status transitions
-  function handleAdvanceStatus(orderId: string) {
+                       
+  async function handleAdvanceStatus(orderId: string) {
     const target = localOrders.find((o) => o.id === orderId)
     if (!target) return
     const next = TRANSITION_NEXT[target.status]
     if (!next) return
 
-    setLocalOrders((prev) =>
-      prev.map((o) => (o.id === orderId ? { ...o, status: next } : o))
-    )
-
-    if (selectedOrder?.id === orderId) {
-      setSelectedOrder((prev) => (prev ? { ...prev, status: next } : null))
-    }
-
-    showNotification(`Statut mis à jour → ${next}`)
+    await changeOrderStatus(orderId, next)
   }
 
-  function handleCancelOrder(orderId: string) {
-    setLocalOrders((prev) =>
-      prev.map((o) => (o.id === orderId ? { ...o, status: "cancelled" } : o))
-    )
-    if (selectedOrder?.id === orderId) {
-      setSelectedOrder((prev) => (prev ? { ...prev, status: "cancelled" } : null))
+  async function changeOrderStatus(orderId: string, status: OrderStatus) {
+    if (updatingOrderId) return
+    setUpdatingOrderId(orderId)
+    setError(null)
+    try {
+      await updateOrder(orderId, status)
+      setLocalOrders((current) => current.map((order) => order.id === orderId ? { ...order, status } : order))
+      setSelectedOrder((current) => current?.id === orderId ? { ...current, status } : current)
+      setCancelTargetId(null)
+      showNotification(status === "cancelled" ? "Commande annulée avec succès" : `Statut mis à jour → ${status}`)
+    } catch {
+      setError("La commande n’a pas pu être mise à jour. Réessayez.")
+    } finally {
+      setUpdatingOrderId(null)
     }
-    setCancelTargetId(null)
-    showNotification("Commande annulée avec succès")
+  }
+
+  async function openOrder(order: OrderRow) {
+    setSelectedOrder(order)
+    setDetailLoading(true)
+    setError(null)
+    try {
+      const detail = await getOrderById(order.id)
+      setSelectedOrder(toOrderRow(detail))
+    } catch {
+      setError("Les détails de cette commande n’ont pas pu être chargés.")
+    } finally {
+      setDetailLoading(false)
+    }
   }
 
   return (
     <div className="p-6 md:p-8 space-y-6 animate-fade-in max-w-7xl mx-auto">
-      {/* Header and Controls */}
+      
       <PageHeader
         title={t("orders.title")}
         subtitle={t("orders.subtitle")}
         badge={
           <Badge variant="primary" dot>
-            {localOrders.length} {t("orders.all").toLowerCase()}
+            {totalOrderCount} {t("orders.all").toLowerCase()}
           </Badge>
         }
         actions={
           <div data-tour="orders-view-toggle" className="flex items-center gap-3">
             <ViewToggle
               value={viewMode}
-              onChange={setViewMode}
+              onChange={(mode) => { setViewMode(mode); setPage(1) }}
               options={[
                 { value: "pipeline", label: t("orders.viewPipeline"), icon: <Kanban size={14} /> },
                 { value: "list", label: t("orders.viewList"), icon: <LayoutList size={14} /> },
@@ -154,10 +238,12 @@ export default function Orders() {
           </div>
         }
       />
+      {error && <div role="alert" className="rounded-xl border border-rose-300 bg-rose-50 px-4 py-3 text-sm text-rose-900 dark:border-rose-900 dark:bg-rose-950/30 dark:text-rose-100">{error}</div>}
+      {loading && <div role="status" aria-live="polite" className="rounded-2xl border border-border bg-card p-8 text-center text-sm text-muted-foreground">Chargement des commandes…</div>}
 
-      {/* Filter and Search Bar */}
+      
       <div data-tour="orders-search-filter" className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-card p-3 rounded-2xl border border-border/80 shadow-xs">
-        {/* Search */}
+        
         <SearchInput
           value={search}
           onChange={(v) => { setSearch(v); setPage(1); }}
@@ -165,7 +251,7 @@ export default function Orders() {
           className="max-w-md w-full"
         />
 
-        {/* Filter status tabs */}
+        
         <div data-tour="orders-status-tabs" className="flex items-center gap-1.5 overflow-x-auto pb-1 sm:pb-0">
           <button
             onClick={() => { setStatusFilter("all"); setPage(1); }}
@@ -175,11 +261,11 @@ export default function Orders() {
                 : "text-muted-foreground hover:bg-muted hover:text-foreground"
             }`}
           >
-            {t("orders.all")} ({localOrders.length})
+            {t("orders.all")} ({totalOrderCount})
           </button>
 
           {PIPELINE_COLUMNS.map((col) => {
-            const count = localOrders.filter((o) => o.status === col.status).length
+            const count = orderCounts[col.status]
             return (
               <button
                 key={col.status}
@@ -197,10 +283,11 @@ export default function Orders() {
         </div>
       </div>
 
-      {/* Main Orders Display */}
-      <div data-tour="orders-content">
-        {/* VIEW 1: Operational Pipeline (Kanban Board) */}
+      
+      {!loading && <div data-tour="orders-content">
+        
         {viewMode === "pipeline" ? (
+          <>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4 overflow-x-auto pb-4">
           {PIPELINE_COLUMNS.map((col) => {
             const colOrders = filtered.filter((o) => o.status === col.status)
@@ -212,7 +299,7 @@ export default function Orders() {
                 key={col.status}
                 className="flex flex-col rounded-2xl bg-muted/40 border border-border/70 p-3 min-w-[240px]"
               >
-                {/* Column header */}
+                
                 <div className="flex items-center justify-between pb-3 mb-3 border-b border-border/60">
                   <div className="flex items-center gap-2 min-w-0">
                     <div className="w-6 h-6 rounded-lg bg-card border border-border flex items-center justify-center text-primary shrink-0">
@@ -228,12 +315,12 @@ export default function Orders() {
                   </span>
                 </div>
 
-                {/* Subtitle with total column value */}
+                
                 <p className="text-[10px] text-muted-foreground font-medium mb-3 px-1">
                   Volume: <span className="font-bold text-foreground">{formatMGA(colTotal)}</span>
                 </p>
 
-                {/* Orders in column */}
+                
                 <div className="space-y-3 flex-1 overflow-y-auto max-h-[680px] pr-0.5">
                   {colOrders.length === 0 ? (
                     <div className="h-28 rounded-xl border border-dashed border-border/80 flex items-center justify-center text-center p-3">
@@ -247,7 +334,7 @@ export default function Orders() {
                       return (
                         <div
                           key={order.id}
-                          onClick={() => setSelectedOrder(order)}
+                          onClick={() => void openOrder(order)}
                           className="group bg-card rounded-xl border border-border/80 p-3.5 shadow-xs hover:border-primary/50 hover:shadow-md transition-all cursor-pointer space-y-2.5"
                         >
                           <div className="flex items-start justify-between gap-2">
@@ -280,8 +367,9 @@ export default function Orders() {
                               type="button"
                               onClick={(e) => {
                                 e.stopPropagation()
-                                handleAdvanceStatus(order.id)
+                                void handleAdvanceStatus(order.id)
                               }}
+                              disabled={updatingOrderId === order.id}
                               className="w-full mt-1.5 py-1.5 px-2 rounded-lg bg-primary/10 hover:bg-primary text-primary hover:text-white text-[11px] font-semibold transition-all flex items-center justify-center gap-1.5 cursor-pointer"
                             >
                               <span>{TRANSITION_ACTION_LABELS[order.status]}</span>
@@ -297,6 +385,20 @@ export default function Orders() {
             )
           })}
         </div>
+          {pipelinePage < pipelineTotalPages && (
+            <div className="flex justify-center">
+              <Button
+                variant="outline"
+                size="md"
+                loading={loadingMorePipeline}
+                disabled={loadingMorePipeline}
+                onClick={() => void loadMorePipelineOrders()}
+              >
+                Charger plus de commandes
+              </Button>
+            </div>
+          )}
+          </>
       ) : (
         /* VIEW 2: Refined Data List */
         <Card>
@@ -312,7 +414,7 @@ export default function Orders() {
                 {paginated.map((order) => (
                   <div
                     key={order.id}
-                    onClick={() => setSelectedOrder(order)}
+                    onClick={() => void openOrder(order)}
                     className="p-4 sm:px-6 flex flex-col md:flex-row md:items-center justify-between gap-4 hover:bg-muted/40 transition-colors cursor-pointer group"
                   >
                     <div className="flex items-center gap-4 min-w-0">
@@ -350,7 +452,8 @@ export default function Orders() {
                           <Button
                             size="sm"
                             variant="primary"
-                            onClick={() => handleAdvanceStatus(order.id)}
+                            disabled={updatingOrderId === order.id}
+                            onClick={() => void handleAdvanceStatus(order.id)}
                           >
                             Étape suivante
                           </Button>
@@ -364,7 +467,7 @@ export default function Orders() {
 
               <Pagination
                 page={page}
-                total={filtered.length}
+                total={listTotal}
                 pageSize={PAGE_SIZE}
                 onChange={setPage}
               />
@@ -372,9 +475,9 @@ export default function Orders() {
           )}
         </Card>
       )}
-      </div>
+      </div>}
 
-      {/* Slide-Over Order Dossier Drawer */}
+      
       <SlideOverDrawer
         isOpen={Boolean(selectedOrder)}
         onClose={() => setSelectedOrder(null)}
@@ -400,10 +503,11 @@ export default function Orders() {
               </Button>
 
               <div className="flex items-center gap-2">
-                {selectedOrder.status !== "cancelled" && selectedOrder.status !== "delivered" && (
+                {selectedOrder.status !== "cancelled" && selectedOrder.status !== "delivered" && selectedOrder.status !== "refunded" && (
                   <Button
                     size="sm"
                     variant="danger"
+                    disabled={updatingOrderId === selectedOrder.id}
                     onClick={() => setCancelTargetId(selectedOrder.id)}
                   >
                     Annuler
@@ -414,6 +518,7 @@ export default function Orders() {
                   <Button
                     size="sm"
                     variant="primary"
+                    disabled={updatingOrderId === selectedOrder.id}
                     onClick={() => handleAdvanceStatus(selectedOrder.id)}
                   >
                     {TRANSITION_ACTION_LABELS[selectedOrder.status]}
@@ -426,7 +531,8 @@ export default function Orders() {
       >
         {selectedOrder && (
           <div className="space-y-6">
-            {/* Status & Tracking overview */}
+            {detailLoading && <p role="status" className="text-sm text-muted-foreground">Chargement des détails…</p>}
+            
             <div className="p-4 rounded-xl bg-muted/60 border border-border/80 space-y-3">
               <div className="flex items-center justify-between">
                 <div>
@@ -457,7 +563,7 @@ export default function Orders() {
               )}
             </div>
 
-            {/* Buyer dossier */}
+            
             <div className="space-y-3">
               <h3 className="font-display font-bold text-xs uppercase tracking-wider text-muted-foreground">
                 Informations Acheteur & Livraison
@@ -473,13 +579,13 @@ export default function Orders() {
                         {selectedOrder.buyerName}
                       </p>
                       <p className="text-xs text-muted-foreground">
-                        {selectedOrder.buyerEmail || `${selectedOrder.buyerName.toLowerCase().replace(/\s+/g, ".")}@gmail.com`}
+                        {selectedOrder.buyerEmail || "—"}
                       </p>
                     </div>
                   </div>
                 </div>
 
-                {/* Direct Madagascar Phone & WhatsApp Actions */}
+                
                 {selectedOrder.buyerPhone && (
                   <div className="p-2.5 rounded-xl bg-muted/50 border border-border/60 flex items-center justify-between gap-2">
                     <div className="flex items-center gap-2 text-xs">
@@ -497,9 +603,7 @@ export default function Orders() {
                         <span>Appel</span>
                       </a>
                       <a
-                        href={`https://wa.me/${selectedOrder.buyerPhone.replace(/[^0-9]/g, "")}?text=${encodeURIComponent(
-                          `Bonjour ${selectedOrder.buyerName}, je vous contacte concernant votre commande ${selectedOrder.id} sur Nova Market.`
-                        )}`}
+                        href={`https://wa.me/${selectedOrder.buyerPhone.replace(/\D/g, "")}?text=${encodeURIComponent(`Bonjour ${selectedOrder.buyerName}, je vous contacte concernant votre commande ${selectedOrder.id} sur Nova Market.`)}`}
                         target="_blank"
                         rel="noopener noreferrer"
                         className="px-2.5 py-1 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold flex items-center gap-1 shadow-xs transition-colors"
@@ -512,13 +616,13 @@ export default function Orders() {
                   </div>
                 )}
 
-                {/* Delivery address & district */}
+                
                 <div className="text-xs space-y-1.5 pt-1">
                   <div className="flex items-start gap-1.5 text-muted-foreground">
                     <MapPin size={13} className="mt-0.5 text-primary shrink-0" />
                     <div>
                       <p className="font-semibold text-foreground">
-                        {[selectedOrder.street, selectedOrder.district].filter(Boolean).join(", ") || "Analakely"}
+                        {[selectedOrder.street, selectedOrder.district].filter(Boolean).join(", ") || "—"}
                       </p>
                       <p className="text-muted-foreground">{selectedOrder.city}, Madagascar</p>
                     </div>
@@ -541,7 +645,7 @@ export default function Orders() {
               </div>
             </div>
 
-            {/* Itemized receipt */}
+            
             <div className="space-y-3">
               <h3 className="font-display font-bold text-xs uppercase tracking-wider text-muted-foreground">
                 Articles Commandés ({selectedOrder.items.length})
@@ -573,20 +677,21 @@ export default function Orders() {
         )}
       </SlideOverDrawer>
 
-      {/* Cancel Order Confirmation Modal */}
+      
       {cancelTargetId && (
         <ConfirmModal
           title="Annuler cette commande ?"
           message="Êtes-vous sûr de vouloir annuler cette commande ? Le client sera immédiatement notifié et les stocks seront réintégrés."
           danger
-          confirmLabel="Oui, annuler"
-          onConfirm={() => handleCancelOrder(cancelTargetId)}
+          confirmLabel={updatingOrderId === cancelTargetId ? "Annulation…" : "Oui, annuler"}
+          onConfirm={() => void changeOrderStatus(cancelTargetId, "cancelled")}
           onCancel={() => setCancelTargetId(null)}
         />
       )}
 
-      {/* Toast Feedback */}
+      
       {toast && <Toast message={toast} onDismiss={() => setToast(null)} />}
     </div>
   )
-}
+};
+export default Orders

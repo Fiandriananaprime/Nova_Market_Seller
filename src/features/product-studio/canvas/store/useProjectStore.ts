@@ -9,36 +9,36 @@ interface ProjectStore {
   activeProjectId: string | null
   activeFolderId: string | null
 
-  // Project CRUD
+                 
   createProject: (name: string, description?: string) => string
   updateProject: (id: string, updates: Partial<Pick<Project, 'name' | 'description'>>) => void
   deleteProject: (id: string) => void
 
-  // Folder CRUD
+                
   createFolder: (projectId: string, name: string, parentId?: string | null) => string
   renameFolder: (projectId: string, folderId: string, name: string) => void
   deleteFolder: (projectId: string, folderId: string) => void
 
-  // Design management
+                      
   addDesign: (projectId: string, document: DesignDocument, folderId?: string | null) => string
   updateDesign: (projectId: string, designId: string, document: DesignDocument) => void
   removeDesign: (projectId: string, designId: string) => void
   setDesignStatus: (projectId: string, designId: string, status: ApprovalStatus) => void
   bulkSetStatus: (projectId: string, designIds: string[], status: ApprovalStatus) => void
 
-  // Comments
+             
   addComment: (projectId: string, designId: string, text: string, author: string, pinX?: number, pinY?: number) => void
   resolveComment: (projectId: string, designId: string, commentId: string) => void
 
-  // Versions
+             
   saveVersion: (projectId: string, designId: string, name: string) => void
   restoreVersion: (projectId: string, designId: string, versionId: string) => DesignDocument | null
 
-  // Navigation
+               
   setActiveProject: (id: string | null) => void
   setActiveFolder: (id: string | null) => void
 
-  // Helpers
+            
   getProject: (id: string) => Project | undefined
   getDesignsInFolder: (projectId: string, folderId: string | null) => AdDesign[]
   getAllDesignsInProject: (projectId: string) => AdDesign[]
@@ -224,7 +224,7 @@ export const useProjectStore = create<ProjectStore>()(
       getProject: (id) => get().projects.find((p) => p.id === id),
 
       getDesignsInFolder: (_projectId, _folderId) => {
-        // For now, all designs are at project root (no folder assignment yet)
+                                                                              
         const project = get().projects.find((p) => p.id === _projectId)
         return project?.designs ?? []
       },

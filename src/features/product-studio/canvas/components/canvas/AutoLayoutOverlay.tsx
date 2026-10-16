@@ -1,7 +1,7 @@
 import { useDesignStore } from '@/features/product-studio/canvas/store/useDesignStore'
 import type { AutoLayoutConfig } from '@/features/product-studio/canvas/types/design'
 
-// Colour matches the Auto Layout accent used elsewhere (indigo).
+                                                                 
 const AL = '#6366F1'
 
 interface Props {
@@ -10,14 +10,14 @@ interface Props {
 
 type DragKind = 'gap' | 'padH' | 'padV'
 
-/**
- * Direct-manipulation overlay for the selected Auto Layout container: draws the
- * container box and draggable handles for gap and horizontal/vertical padding.
- * Handles drive the config live (one undo step per drag); the store reflows the
- * children as you drag. Shown only when the active layer belongs to an Auto
- * Layout group.
- */
-export function AutoLayoutOverlay({ zoom }: Props) {
+   
+                                                                                
+                                                                               
+                                                                                
+                                                                            
+                
+   
+export const AutoLayoutOverlay = ({ zoom }: Props) => {
   const activeLayerId = useDesignStore((s) => s.activeLayerId)
   const layers = useDesignStore((s) => s.document.layers)
   const autoLayouts = useDesignStore((s) => s.document.autoLayouts)
@@ -63,17 +63,17 @@ export function AutoLayoutOverlay({ zoom }: Props) {
     window.addEventListener('pointerup', up)
   }
 
-  // Which screen axis a handle drags along: gap follows the layout direction;
-  // padH is horizontal, padV vertical.
+                                                                              
+                                       
   function horizAxis(kind: DragKind): boolean {
     if (kind === 'padH') return true
     if (kind === 'padV') return false
     return horiz
   }
 
-  // Resize the CONTAINER (not the children). Dragging a box handle sets the
-  // dragged dimension(s) to Fixed at the new size and anchors the opposite edge;
-  // the store reflows the children inside — their own sizes are never scaled.
+                                                                            
+                                                                                 
+                                                                              
   const startResize = (handle: string) => (e: React.PointerEvent) => {
     e.stopPropagation()
     e.preventDefault()
@@ -121,7 +121,7 @@ export function AutoLayoutOverlay({ zoom }: Props) {
     { id: 'w', x: bx, y: by + bh / 2, cursor: 'ew-resize' },
   ]
 
-  // Gap handle centres: midpoint of each gap between consecutive members.
+                                                                          
   const gapHandles = members.slice(0, -1).map((m, i) => {
     const next = members[i + 1]
     const cx = horiz ? ((m.x + m.width + next.x) / 2) * zoom : (config.x + config.width / 2) * zoom
@@ -131,13 +131,13 @@ export function AutoLayoutOverlay({ zoom }: Props) {
 
   return (
     <svg className="absolute top-0 left-0 pointer-events-none" style={{ width: '100%', height: '100%', overflow: 'visible' }}>
-      {/* Container box */}
+      
       <rect x={bx} y={by} width={bw} height={bh} fill="none" stroke={AL} strokeWidth={1} strokeDasharray="4 3" opacity={0.7} />
 
-      {/* Padding shading (between box edge and content edge) */}
+      
       <PaddingBands config={config} zoom={zoom} />
 
-      {/* Padding handles — H (left inner edge) + V (top inner edge) */}
+      
       <Handle
         x={(config.x + config.padding.left) * zoom}
         y={by + bh / 2}
@@ -153,7 +153,7 @@ export function AutoLayoutOverlay({ zoom }: Props) {
         onPointerDown={startDrag('padV', config.padding.top)}
       />
 
-      {/* Gap handles */}
+      
       {gapHandles.map((g) => (
         <Handle
           key={g.key}
@@ -166,7 +166,7 @@ export function AutoLayoutOverlay({ zoom }: Props) {
         />
       ))}
 
-      {/* Container resize handles — resize the box, never the children. */}
+      
       {RESIZE_HANDLES.map((r) => (
         <rect
           key={r.id}
@@ -184,11 +184,11 @@ export function AutoLayoutOverlay({ zoom }: Props) {
       ))}
     </svg>
   )
-}
+};
 
-// A short draggable bar (pointer-events on). `orientation` is the bar's long
-// axis; `filled` marks the gap pills vs the thin padding bars.
-function Handle({
+                                                                             
+                                                               
+const Handle = ({
   x,
   y,
   orientation,
@@ -202,7 +202,7 @@ function Handle({
   cursor: string
   onPointerDown: (e: React.PointerEvent) => void
   filled?: boolean
-}) {
+}) => {
   const long = 18
   const thick = filled ? 6 : 4
   const w = orientation === 'h' ? long : thick
@@ -221,9 +221,9 @@ function Handle({
       onPointerDown={onPointerDown}
     />
   )
-}
+};
 
-function PaddingBands({ config, zoom }: { config: AutoLayoutConfig; zoom: number }) {
+const PaddingBands = ({ config, zoom }: { config: AutoLayoutConfig; zoom: number }) => {
   const p = config.padding
   const x = config.x * zoom
   const y = config.y * zoom
@@ -239,4 +239,4 @@ function PaddingBands({ config, zoom }: { config: AutoLayoutConfig; zoom: number
       {band(x + w - p.right * zoom, y, p.right * zoom, h, 'r')}
     </>
   )
-}
+};

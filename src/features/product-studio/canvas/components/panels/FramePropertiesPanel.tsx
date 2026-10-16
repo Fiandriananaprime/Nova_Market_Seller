@@ -6,13 +6,13 @@ import { BackgroundPanel } from '@/features/product-studio/canvas/components/pan
 import { Copy, Trash2, LayoutGrid } from 'lucide-react'
 import type { Frame } from '@/features/product-studio/canvas/types/workspace'
 
-/**
- * Inspector for the active frame (shown when a frame is selected but no layer is).
- * Size & background drive the design store (the active frame is loaded there), so
- * `_syncBackToFrame` persists them onto the workspace frame; name & position live
- * purely on the frame object and update the workspace store directly.
- */
-export function FramePropertiesPanel({ frame }: { frame: Frame }) {
+   
+                                                                                   
+                                                                                  
+                                                                                  
+                                                                      
+   
+export const FramePropertiesPanel = ({ frame }: { frame: Frame }) => {
   const format = useDesignStore((s) => s.document.format)
   const setFormat = useDesignStore((s) => s.setFormat)
   const renameFrame = useWorkspaceStore((s) => s.renameFrame)
@@ -78,32 +78,32 @@ export function FramePropertiesPanel({ frame }: { frame: Frame }) {
       </div>
     </div>
   )
-}
+};
 
-function SectionHeader({ children }: { children: ReactNode }) {
+const SectionHeader = ({ children }: { children: ReactNode }) => {
   return (
     <div className="text-[11px] uppercase tracking-[0.12em] text-muted-foreground/60 font-medium">
       {children}
     </div>
   )
-}
+};
 
-function Label({ children }: { children: ReactNode }) {
+const Label = ({ children }: { children: ReactNode }) => {
   return <label className="text-[12px] text-muted-foreground">{children}</label>
-}
+};
 
-function Field({ label, children }: { label: string; children: ReactNode }) {
+const Field = ({ label, children }: { label: string; children: ReactNode }) => {
   return (
     <div className="space-y-1">
       <Label>{label}</Label>
       {children}
     </div>
   )
-}
+};
 
-function ActionButton({
+const ActionButton = ({
   onClick, icon, children, destructive = false,
-}: { onClick: () => void; icon: ReactNode; children: ReactNode; destructive?: boolean }) {
+}: { onClick: () => void; icon: ReactNode; children: ReactNode; destructive?: boolean }) => {
   return (
     <button
       type="button"
@@ -118,4 +118,4 @@ function ActionButton({
       {children}
     </button>
   )
-}
+};

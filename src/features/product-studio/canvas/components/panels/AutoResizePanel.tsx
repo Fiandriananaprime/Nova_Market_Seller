@@ -6,11 +6,11 @@ import { exportDesign, downloadBlob } from '@/features/product-studio/canvas/eng
 import { Button } from '@/features/product-studio/canvas/components/ui/button'
 import { Download, Loader2 } from 'lucide-react'
 
-export function AutoResizePanel() {
+export const AutoResizePanel = () => {
   const document = useDesignStore((s) => s.document)
   const [exporting, setExporting] = useState(false)
 
-  // Formats other than the current one
+                                       
   const otherFormats = AD_FORMATS.filter((f) => f.id !== document.format.id)
 
   const handleExportAll = async () => {
@@ -63,13 +63,13 @@ export function AutoResizePanel() {
         Export your design resized for all ad platforms. Layers scale proportionally and reposition automatically.
       </p>
 
-      {/* Current format */}
+      
       <div className="text-[11px] text-foreground/80">
         Source: <span className="font-medium">{document.format.label}</span>
         {' '}<span className="tabular-nums">({document.format.width} x {document.format.height})</span>
       </div>
 
-      {/* Format previews */}
+      
       <div className="space-y-1.5">
         {otherFormats.map((format) => {
           const maxW = 48
@@ -106,7 +106,7 @@ export function AutoResizePanel() {
         })}
       </div>
 
-      {/* Export all */}
+      
       <Button
         className="w-full rounded-[5px]"
         onClick={handleExportAll}
@@ -120,4 +120,4 @@ export function AutoResizePanel() {
       </Button>
     </div>
   )
-}
+};

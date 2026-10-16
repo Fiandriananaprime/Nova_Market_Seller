@@ -8,17 +8,17 @@ interface Props {
   zoom: number
 }
 
-/**
- * Inline text editor. It renders a contentEditable box styled *identically* to
- * the scene's TextNode — same font metrics, wrap, and (critically) the same
- * `text-box-trim` cap trim — so what you edit is pixel-for-pixel what renders.
- *
- * A plain <textarea> can't apply text-box-trim, so its untrimmed line box is
- * taller than the trimmed layer height: the text looked bigger and its bottom
- * got clipped by the box on entering edit. A contentEditable block trims like
- * the canvas and auto-grows, so there's no jump and nothing is clipped.
- */
-export function TextEditOverlay({ zoom }: Props) {
+   
+                                                                               
+                                                                            
+                                                                               
+  
+                                                                             
+                                                                              
+                                                                              
+                                                                        
+   
+export const TextEditOverlay = ({ zoom }: Props) => {
   const editingTextLayerId = useDesignStore((s) => s.editingTextLayerId)
   const layers = useDesignStore((s) => s.document.layers)
   const updateLayer = useDesignStore((s) => s.updateLayer)
@@ -27,15 +27,15 @@ export function TextEditOverlay({ zoom }: Props) {
 
   const ref = useRef<HTMLDivElement>(null)
   const isCommitting = useRef(false)
-  // On touch, MobileTextEditor takes over with a fullscreen field instead.
+                                                                           
   const coarse = useCoarsePointer()
 
   const layer = editingTextLayerId
     ? (layers.find((l) => l.id === editingTextLayerId) as TextLayer | undefined)
     : null
 
-  // Seed the text and place the caret at the end on enter — write it imperatively
-  // so React never re-sets the node's content (which would fight the caret).
+                                                                                  
+                                                                             
   useEffect(() => {
     if (!layer || !ref.current) return
     const el = ref.current
@@ -51,7 +51,7 @@ export function TextEditOverlay({ zoom }: Props) {
     })
     pushSnapshot()
     isCommitting.current = false
-  }, [layer?.id]) // eslint-disable-line react-hooks/exhaustive-deps
+  }, [layer, pushSnapshot])
 
   const commit = useCallback(() => {
     if (isCommitting.current) return
@@ -67,11 +67,11 @@ export function TextEditOverlay({ zoom }: Props) {
       e.preventDefault()
       commit()
     }
-    // Stop propagation so canvas keyboard shortcuts don't fire while typing.
+                                                                             
     e.stopPropagation()
   }, [commit])
 
-  // Paste as plain text — never carry markup into a text layer.
+                                                                
   const handlePaste = useCallback((e: React.ClipboardEvent) => {
     e.preventDefault()
     const text = e.clipboardData.getData('text/plain')
@@ -95,8 +95,8 @@ export function TextEditOverlay({ zoom }: Props) {
     position: 'absolute',
     left: x,
     top: y,
-    // Auto-width never wraps (grows sideways, one line); everything else wraps
-    // at the box width. Height is always auto so the text is never clipped.
+                                                                               
+                                                                            
     width: autoWidth ? 'max-content' : w,
     minWidth: autoWidth ? w : undefined,
     fontFamily: FONT_FAMILY,
@@ -104,7 +104,7 @@ export function TextEditOverlay({ zoom }: Props) {
     fontWeight: layer.fontWeight,
     color: layer.color.hex,
     textAlign: layer.textAlign,
-    // letterSpacing is a font-size multiplier (matches textMeasure/scene render).
+                                                                                  
     letterSpacing: `${layer.letterSpacing * fontSize}px`,
     lineHeight: layer.lineHeight,
     textTransform: layer.textTransform,
@@ -145,4 +145,4 @@ export function TextEditOverlay({ zoom }: Props) {
       onClick={(e) => e.stopPropagation()}
     />
   )
-}
+};

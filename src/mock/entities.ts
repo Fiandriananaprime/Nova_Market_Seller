@@ -1,10 +1,11 @@
-import { AuthResponse, User } from "@/type/auth"
+import { User } from "@/type/auth"
 import { Customer } from "@/type/customer"
 import { SellerDashboard } from "@/type/dashboard"
 import { Order } from "@/type/order"
 import { Product, topProductsUnits } from "@/type/product"
 import { Review } from "@/type/review"
 import { Store } from "@/type/store"
+import { Category } from "@/type/product"
 
 import { sellerDashboard as dashboardSeed } from "./data/dashboard"
 import { orders as orderSeed } from "./data/order/order"
@@ -32,6 +33,20 @@ const seller: User = {
 
 const canonicalStores: Store[] = storeSeed
 const currentStore = canonicalStores[0]
+const categories: Category[] = [
+  { id: "c0000000-0000-4000-8000-000000000001", name: "Électronique" },
+  { id: "c0000000-0000-4000-8000-000000000002", name: "Ordinateurs" },
+  { id: "c0000000-0000-4000-8000-000000000003", name: "Mode" },
+  { id: "c0000000-0000-4000-8000-000000000004", name: "Audio" },
+  { id: "c0000000-0000-4000-8000-000000000005", name: "Objets connectés" },
+  { id: "c0000000-0000-4000-8000-000000000006", name: "Photo" },
+]
+const categoryIdsByName = new Map(categories.map(({ id, name }) => [name, id]))
+const categoryIdForName = (name: string) => {
+  const id = categoryIdsByName.get(name)
+  if (!id) throw new Error(`Missing mock category for product category "${name}"`)
+  return id
+}
 
 const customers: Customer[] = orderSeed.map((order, index) => ({
   id: `customer-${String(index + 1).padStart(3, "0")}`,
@@ -51,6 +66,8 @@ const customers: Customer[] = orderSeed.map((order, index) => ({
 
 const canonicalProducts: Product[] = productSeed.map((product) => ({
   ...product,
+  categoryId: categoryIdForName(product.categoryName),
+  moderationStatus: product.moderationStatus ?? "approved",
   sellerId: seller.id,
   sellerName: seller.name ?? `${seller.firstName} ${seller.lastName}`,
   storeId: currentStore.id,
@@ -114,19 +131,32 @@ const dashboard: SellerDashboard = {
   topProducts: canonicalTopProducts,
 }
 
-export const authResponse: AuthResponse = {
-  user: seller,
-  tokens: {
-    accessToken: "mock-access-token",
-    refreshToken: "mock-refresh-token",
-    expiresIn: 3600,
-  },
-  currentStore: currentStore.id,
+let activeSellerEmail = seller.email
+let activeSellerPhone = seller.phone
+let mockAuthenticated = false
+
+export const setActiveSellerIdentifier = (identifier: string) => {
+  activeSellerEmail = seller.email
+  activeSellerPhone = seller.phone
+
+  if (identifier.includes("@")) {
+    activeSellerEmail = identifier
+  } else {
+    activeSellerPhone = identifier
+  }
 }
+
+export const getActiveSellerEmail = () => activeSellerEmail
+export const getActiveSellerPhone = () => activeSellerPhone
+export const setMockAuthenticated = (authenticated: boolean) => {
+  mockAuthenticated = authenticated
+}
+export const isMockAuthenticated = () => mockAuthenticated
 
 export const entities = {
   users: [seller],
   stores: canonicalStores,
+  categories,
   customers,
   products: canonicalProducts,
   orders: canonicalOrders,

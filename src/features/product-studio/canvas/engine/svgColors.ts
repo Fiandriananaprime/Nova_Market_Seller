@@ -1,19 +1,19 @@
-/**
- * SVG colour extraction + remapping.
- *
- * Imported SVGs can carry colour in several places — presentation attributes
- * (`fill`, `stroke`, `stop-color`…), inline `style="fill:…"`, and `<style>`
- * blocks — and in several notations (#rgb, #rrggbb, rgb(), named). To recolour
- * faithfully we parse the document, normalise each colour to a canonical key,
- * collect the distinct set, and remap each one independently. This preserves
- * multi-colour artwork instead of flattening it to a single tint.
- */
+   
+                                     
+  
+                                                                             
+                                                                            
+                                                                               
+                                                                              
+                                                                             
+                                                                  
+   
 
-// Attributes (and matching CSS properties) that carry a paint colour.
+                                                                      
 const COLOR_ATTRS = ['fill', 'stroke', 'stop-color', 'flood-color', 'lighting-color'] as const
 
-// Minimal CSS named-colour map for the few that show up in real-world SVGs.
-// Anything not here still works as a raw key — it just won't merge with its hex.
+                                                                            
+                                                                                 
 const NAMED_COLORS: Record<string, string> = {
   black: '#000000',
   white: '#ffffff',
@@ -24,19 +24,19 @@ const NAMED_COLORS: Record<string, string> = {
   grey: '#808080',
 }
 
-/**
- * Canonicalise a colour string so equal colours written differently collapse to
- * one key. Returns null for non-colours we shouldn't expose (none, transparent,
- * currentColor, url(#…) paint-server references).
- */
-export function normalizeColor(raw: string): string | null {
+   
+                                                                                
+                                                                                
+                                                  
+   
+export const normalizeColor = (raw: string):string | null => {
   const v = raw.trim().toLowerCase()
   if (!v || v === 'none' || v === 'transparent' || v === 'currentcolor' || v.startsWith('url(')) {
     return null
   }
   if (NAMED_COLORS[v]) return NAMED_COLORS[v]
 
-  // #rgb / #rgba → #rrggbb (drop alpha nibble; canvas tint is opaque anyway)
+                                                                             
   const short = /^#([0-9a-f])([0-9a-f])([0-9a-f])([0-9a-f])?$/i.exec(v)
   if (short) return `#${short[1]}${short[1]}${short[2]}${short[2]}${short[3]}${short[3]}`
 
@@ -53,22 +53,22 @@ export function normalizeColor(raw: string): string | null {
 
   // Unknown but plausibly a named colour — keep as-is so it's still editable.
   return v
-}
+};
 
-function parseSvg(svg: string): Document {
+const parseSvg = (svg: string):Document => {
   return new DOMParser().parseFromString(svg, 'image/svg+xml')
-}
+};
 
-function readStyleColor(style: string, prop: string): string | null {
+const readStyleColor = (style: string, prop: string):string | null => {
   const m = new RegExp(`(?:^|;)\\s*${prop}\\s*:\\s*([^;]+)`, 'i').exec(style)
   return m ? normalizeColor(m[1]) : null
-}
+};
 
 /**
  * Distinct, normalised colours used anywhere in the SVG, in document order of
  * first appearance.
  */
-export function extractSvgColors(svg: string): string[] {
+export const extractSvgColors = (svg: string):string[] => {
   const doc = parseSvg(svg)
   if (doc.querySelector('parsererror')) return []
 
@@ -92,14 +92,14 @@ export function extractSvgColors(svg: string): string[] {
   })
 
   return ordered
-}
+};
 
 /**
  * Return a new SVG string with each original colour replaced by its override
  * (a `normalizedOriginal -> newHex` map). Colours without an override are left
  * untouched, so multi-colour artwork keeps the colours the user didn't change.
  */
-export function applySvgColorOverrides(svg: string, overrides: Record<string, string>): string {
+export const applySvgColorOverrides = (svg: string, overrides: Record<string, string>):string => {
   const entries = Object.entries(overrides).filter(([, v]) => !!v)
   if (entries.length === 0) return svg
 
@@ -124,9 +124,9 @@ export function applySvgColorOverrides(svg: string, overrides: Record<string, st
   })
 
   return new XMLSerializer().serializeToString(doc.documentElement)
-}
+};
 
-function rewriteStyleColors(css: string, map: Map<string, string>): string {
+const rewriteStyleColors = (css: string, map: Map<string, string>):string => {
   return css.replace(
     /((?:fill|stroke|stop-color|flood-color|lighting-color)\s*:\s*)([^;}\s]+)/gi,
     (full, prop: string, value: string) => {
@@ -134,7 +134,7 @@ function rewriteStyleColors(css: string, map: Map<string, string>): string {
       return norm && map.has(norm) ? `${prop}${map.get(norm)}` : full
     },
   )
-}
+};
 
 export interface SvgColorRole {
   color: string
@@ -146,7 +146,7 @@ export interface SvgColorRole {
  * "fill" colours separately from "stroke" colours. A colour used for both is
  * tagged with both roles (recolouring still remaps it everywhere).
  */
-export function extractSvgColorRoles(svg: string): SvgColorRole[] {
+export const extractSvgColorRoles = (svg: string):SvgColorRole[] => {
   const doc = parseSvg(svg)
   if (doc.querySelector('parsererror')) return []
   const roleMap = new Map<string, Set<'fill' | 'stroke'>>()
@@ -169,10 +169,10 @@ export function extractSvgColorRoles(svg: string): SvgColorRole[] {
     color,
     roles: [...(roleMap.get(color) ?? [])],
   }))
-}
+};
 
 /** True when the artwork paints any stroke, so a stroke-width control applies. */
-export function svgHasStroke(svg: string): boolean {
+export const svgHasStroke = (svg: string):boolean => {
   const doc = parseSvg(svg)
   if (doc.querySelector('parsererror')) return false
   return [...doc.querySelectorAll('*')].some((el) => {
@@ -181,14 +181,14 @@ export function svgHasStroke(svg: string): boolean {
     const style = el.getAttribute('style') ?? ''
     return /(?:^|;)\s*stroke\s*:\s*(?!none)[^;]/i.test(style)
   })
-}
+};
 
 /**
  * Scale every stroke width in the artwork by `factor` (1 = unchanged). Stroked
  * elements with no explicit width inherit the SVG default of 1. Scaling (rather
  * than setting one absolute width) preserves relative thick/thin strokes.
  */
-export function applySvgStrokeWidth(svg: string, factor: number): string {
+export const applySvgStrokeWidth = (svg: string, factor: number):string => {
   if (!factor || factor === 1) return svg
   const doc = parseSvg(svg)
   if (doc.querySelector('parsererror')) return svg
@@ -203,4 +203,4 @@ export function applySvgStrokeWidth(svg: string, factor: number): string {
     el.setAttribute('stroke-width', String(+(cur * factor).toFixed(3)))
   })
   return new XMLSerializer().serializeToString(doc.documentElement)
-}
+};

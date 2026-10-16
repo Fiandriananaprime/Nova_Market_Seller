@@ -1,14 +1,14 @@
 @import "driver.js/dist/driver.css";
 
-/* ═══════════════════════════════════════════════════════════════════════════
-   Nova Market - Bespoke Driver.js Theme
-   Colors:
-     • Primary Blue: #0077B6
-     • Teal Accent:  #5ABCB9
-     • Dark Navy:    #16262E
-     • Neutral Gray: #D0CCD0
-     • Soft Purple:  #F5EFFF
-   ═══════════════════════════════════════════════════════════════════════════ */
+                                                                              
+                                        
+          
+                            
+                            
+                            
+                            
+                            
+                                                                                 
 
 :root {
   --driver-nova-primary: #0077B6;
@@ -33,7 +33,7 @@
   --driver-nova-bg-light: #1E3540;
 }
 
-/* ── Overlay SVG Container (Must remain transparent to preserve cutout) ──── */
+                                                                                
 .driver-overlay {
   background-color: transparent !important;
   background: transparent !important;
@@ -41,13 +41,13 @@
   -webkit-backdrop-filter: none !important;
 }
 
-/* Driver.js SVG cutout path */
+                               
 .driver-overlay path {
   fill: var(--driver-nova-dark, #16262E) !important;
   fill-opacity: 0.75 !important;
 }
 
-/* ── Active Highlighted Element Spotlight & Glow ─────────────────────────── */
+                                                                                
 .driver-active-element {
   outline: 3px solid var(--driver-nova-teal, #5ABCB9) !important;
   outline-offset: 4px !important;
@@ -62,7 +62,7 @@
   z-index: 10001 !important;
 }
 
-/* ── Popover Container ──────────────────────────────────────────────────── */
+                                                                               
 .driver-popover.nova-driver-popover {
   box-sizing: border-box;
   font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
@@ -91,7 +91,7 @@
   }
 }
 
-/* ── Popover Arrow ──────────────────────────────────────────────────────── */
+                                                                               
 .driver-popover.nova-driver-popover .driver-popover-arrow {
   border-width: 7px;
 }
@@ -109,7 +109,7 @@
   border-right-color: var(--driver-nova-card);
 }
 
-/* ── Close Button ───────────────────────────────────────────────────────── */
+                                                                               
 .driver-popover.nova-driver-popover .driver-popover-close-btn {
   all: unset;
   position: absolute;
@@ -134,7 +134,7 @@
   color: var(--driver-nova-text);
 }
 
-/* ── Header / Title ─────────────────────────────────────────────────────── */
+                                                                               
 .driver-popover.nova-driver-popover .driver-popover-title {
   font-family: 'Manrope', 'Plus Jakarta Sans', sans-serif;
   font-size: 16px;
@@ -149,7 +149,7 @@
   letter-spacing: -0.02em;
 }
 
-/* Contextual visual icon in title */
+                                     
 .nova-popover-icon-badge {
   display: inline-flex;
   align-items: center;
@@ -175,7 +175,7 @@
   margin-bottom: 6px;
 }
 
-/* ── Description ────────────────────────────────────────────────────────── */
+                                                                               
 .driver-popover.nova-driver-popover .driver-popover-description {
   font-size: 13px;
   line-height: 1.55;
@@ -183,7 +183,7 @@
   margin: 0 0 16px 0;
 }
 
-/* ── Footer ─────────────────────────────────────────────────────────────── */
+                                                                               
 .driver-popover.nova-driver-popover .driver-popover-footer {
   display: flex;
   align-items: center;
@@ -194,7 +194,7 @@
   border-top: 1px solid var(--driver-nova-border);
 }
 
-/* ── Progress Indicator Text ────────────────────────────────────────────── */
+                                                                               
 .driver-popover.nova-driver-popover .driver-popover-progress-text {
   font-size: 11px;
   font-weight: 700;
@@ -206,7 +206,7 @@
   white-space: nowrap;
 }
 
-/* ── Navigation Buttons ─────────────────────────────────────────────────── */
+                                                                               
 .driver-popover.nova-driver-popover .driver-popover-navigation-btns {
   display: flex;
   align-items: center;
@@ -227,7 +227,7 @@
   justify-content: center;
 }
 
-/* Previous Button */
+                     
 .driver-popover.nova-driver-popover .driver-popover-prev-btn {
   background-color: transparent;
   color: var(--driver-nova-muted);
@@ -239,7 +239,7 @@
   color: var(--driver-nova-text);
 }
 
-/* Next / Finish Button */
+                          
 .driver-popover.nova-driver-popover .driver-popover-next-btn {
   background-color: var(--driver-nova-primary);
   color: #FFFFFF;
@@ -252,7 +252,7 @@
   transform: translateY(-0.5px);
 }
 
-/* Completed Step Finish Button */
+                                  
 .driver-popover.nova-driver-popover .driver-popover-next-btn.driver-popover-done-btn {
   background-color: var(--driver-nova-teal);
   color: #FFFFFF;
@@ -267,7 +267,7 @@
   transform: scale(0.97);
 }
 
-/* ── Accessibility & Reduced Motion ─────────────────────────────────────── */
+                                                                               
 @media (prefers-reduced-motion: reduce) {
   .driver-popover.nova-driver-popover,
   .driver-overlay,
@@ -277,7 +277,7 @@
   }
 }
 
-/* ── Mobile Viewports ───────────────────────────────────────────────────── */
+                                                                               
 @media (max-width: 640px) {
   .driver-popover.nova-driver-popover {
     min-width: 270px;

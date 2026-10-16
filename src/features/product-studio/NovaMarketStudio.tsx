@@ -21,16 +21,16 @@ interface NovaMarketStudioProps {
   onClose: () => void
 }
 
-function readImage(file: Blob): Promise<string> {
+const readImage = (file: Blob):Promise<string> => {
   return new Promise((resolve, reject) => {
     const reader = new FileReader()
     reader.onload = () => typeof reader.result === "string" ? resolve(reader.result) : reject(new Error("Impossible de lire cette image."))
     reader.onerror = () => reject(new Error("Impossible de lire cette image."))
     reader.readAsDataURL(file)
   })
-}
+};
 
-function toFrame(document: DesignDocument) {
+const toFrame = (document: DesignDocument) => {
   return {
     name: document.name,
     width: document.format.width,
@@ -39,9 +39,9 @@ function toFrame(document: DesignDocument) {
     layers: document.layers,
     autoLayouts: document.autoLayouts,
   }
-}
+};
 
-export default function NovaMarketStudio({ images, name, onApply, onClose }: NovaMarketStudioProps) {
+const NovaMarketStudio = ({ images, name, onApply, onClose }: NovaMarketStudioProps) => {
   const [assets, setAssets] = useState<StudioImage[]>(() => images.map((image, index) => ({ id: `product-photo-${index}`, image, name: `${name || "Photo"} ${index + 1}` })))
   const [activeId, setActiveId] = useState(() => `product-photo-0`)
   const [savedImages, setSavedImages] = useState<Record<string, string>>({})
@@ -52,7 +52,9 @@ export default function NovaMarketStudio({ images, name, onApply, onClose }: Nov
   const loadingRef = useRef(false)
   const savedImagesRef = useRef(savedImages)
 
-  savedImagesRef.current = savedImages
+  useEffect(() => {
+    savedImagesRef.current = savedImages
+  }, [savedImages])
 
   useEffect(() => {
     sessionStorage.setItem("novamarket-studio-image-editor", "1")
@@ -160,4 +162,5 @@ export default function NovaMarketStudio({ images, name, onApply, onClose }: Nov
     </div>,
     document.body,
   )
-}
+};
+export default NovaMarketStudio;

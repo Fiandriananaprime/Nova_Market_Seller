@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from 'react'
+import { useState, useRef, useEffect, type ElementType } from 'react'
 import { useDesignStore, createTextLayer } from '@/features/product-studio/canvas/store/useDesignStore'
 import { getBrandColor } from '@/features/product-studio/canvas/brand/palette'
 import { TemplateBrowser } from '@/features/product-studio/canvas/components/panels/TemplateBrowser'
@@ -8,9 +8,17 @@ import { measureImportedSvg } from '@/features/product-studio/canvas/engine/svgM
 import {
   MousePointer2, Type, ImageIcon, Square, Circle, Triangle, Star, Minus, ArrowRight, Palette, FileCode, Hand, LayoutTemplate, LayoutGrid, MessageCircle, ChevronDown,
 } from 'lucide-react'
-import type { ShapeLayer, GradientLayer, ImageLayer, SvgLayer } from '@/features/product-studio/canvas/types/design'
+import type { ShapeLayer } from '@/features/product-studio/canvas/types/design'
 
-// The shape tool is a small dropdown: rectangle / ellipse / triangle / star / line / arrow.
+type ToolEntry = {
+  id: string
+  icon?: ElementType
+  label?: string
+  active?: boolean
+  action?: () => void
+}
+
+                                                                                            
 const SHAPES: { id: string; label: string; Icon: typeof Square; make: () => Partial<ShapeLayer> }[] = [
   { id: 'rectangle', label: 'Rectangle', Icon: Square, make: () => ({ shape: 'rectangle', name: 'Rectangle', fill: getBrandColor('brand-dark'), borderRadius: 7 }) },
   { id: 'ellipse', label: 'Ellipse', Icon: Circle, make: () => ({ shape: 'ellipse', name: 'Ellipse', fill: getBrandColor('brand-accent'), borderRadius: 0 }) },
@@ -20,7 +28,7 @@ const SHAPES: { id: string; label: string; Icon: typeof Square; make: () => Part
   { id: 'arrow', label: 'Arrow', Icon: ArrowRight, make: () => ({ shape: 'line', name: 'Arrow', fill: getBrandColor('charcoal'), borderRadius: 0, width: 240, height: 0, stroke: { color: getBrandColor('charcoal'), width: 3 }, lineCap: 'round', arrowEnd: true }) },
 ]
 
-function ShapeMenu({ addLayer }: { addLayer: (l: Record<string, unknown>) => void }) {
+const ShapeMenu = ({ addLayer }: { addLayer: (l: Record<string, unknown>) => void }) => {
   const [open, setOpen] = useState(false)
   const ref = useRef<HTMLDivElement>(null)
   useEffect(() => {
@@ -62,9 +70,9 @@ function ShapeMenu({ addLayer }: { addLayer: (l: Record<string, unknown>) => voi
       )}
     </div>
   )
-}
+};
 
-export function ToolBar() {
+export const ToolBar = () => {
   const tool = useDesignStore((s) => s.tool)
   const addLayer = useDesignStore((s) => s.addLayer)
   const [templateBrowserOpen, setTemplateBrowserOpen] = useState(false)
@@ -100,7 +108,7 @@ export function ToolBar() {
     input.click()
   }
 
-  const tools = [
+  const tools: ToolEntry[] = [
     { id: 'select', icon: MousePointer2, label: 'Select (V)', active: tool === 'select', action: () => useDesignStore.getState().setTool('select') },
     { id: 'pan', icon: Hand, label: 'Pan (H)', active: tool === 'pan', action: () => useDesignStore.getState().setTool('pan') },
     { id: 'sep1' },
@@ -115,9 +123,10 @@ export function ToolBar() {
 
   return (
     <div className="h-10 bg-card border-b border-border flex items-center px-4 gap-0.5 col-span-full shrink-0">
-      {tools.map((item: any) => {
+      {tools.map((item) => {
         if (item.id.startsWith('sep')) return <div key={item.id} className="w-px h-5 bg-border mx-1" />
         if (item.id === 'shape') return <ShapeMenu key="shape" addLayer={addLayer} />
+        if (!item.icon || !item.label || !item.action) return null
         const Icon = item.icon
         return (
           <button
@@ -152,4 +161,4 @@ export function ToolBar() {
       {layoutPickerOpen && <LayoutPicker onClose={() => setLayoutPickerOpen(false)} />}
     </div>
   )
-}
+};

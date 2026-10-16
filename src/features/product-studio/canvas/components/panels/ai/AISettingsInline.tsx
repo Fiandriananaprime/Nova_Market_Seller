@@ -4,7 +4,7 @@ import { Button } from '@/features/product-studio/canvas/components/ui/button'
 import { Input } from '@/features/product-studio/canvas/components/ui/input'
 import { ChevronDown } from 'lucide-react'
 
-export function AISettingsInline({ onDone, showBackButton }: { onDone?: () => void; showBackButton?: boolean }) {
+export const AISettingsInline = ({ onDone, showBackButton }: { onDone?: () => void; showBackButton?: boolean }) => {
   const model = useAIStore((s) => s.model)
   const productName = useAIStore((s) => s.productName)
   const productDescription = useAIStore((s) => s.productDescription)
@@ -30,7 +30,7 @@ export function AISettingsInline({ onDone, showBackButton }: { onDone?: () => vo
         AI Settings
       </div>
 
-      {/* Model */}
+      
       <div className="space-y-1.5">
         <label className="text-[13px] text-muted-foreground font-normal">Model</label>
         <select
@@ -44,7 +44,7 @@ export function AISettingsInline({ onDone, showBackButton }: { onDone?: () => vo
         </select>
       </div>
 
-      {/* Product context */}
+      
       <div className="space-y-3 pt-3 border-t border-border">
         <div className="text-[11px] uppercase tracking-[0.12em] text-muted-foreground/60 font-medium">
           Product Context
@@ -95,4 +95,4 @@ export function AISettingsInline({ onDone, showBackButton }: { onDone?: () => vo
       )}
     </div>
   )
-}
+};

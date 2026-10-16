@@ -1,12 +1,7 @@
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import {
   Truck,
   RotateCcw,
-  MapPin,
-  Clock,
-  ShieldAlert,
-  Save,
-  Check,
 } from "lucide-react"
 import {
   Card,
@@ -16,13 +11,15 @@ import {
   Button,
   Badge,
 } from "@/components/ui"
+import { getShippingSettings, getStorePolicies, updateShippingSettings, updateStorePolicies } from "@/service/seller"
+import type { ShippingSettings } from "@/type/seller"
 
 export function ShippingReturnsTab({
   showToast,
 }: {
   showToast: (msg: string) => void
 }) {
-  const [rates, setRates] = useState({
+  const [rates, setRates] = useState<ShippingSettings & { disputePolicy: string }>({
     zone1: 4000,
     zone2: 7000,
     zone3: 15000,
@@ -32,14 +29,50 @@ export function ShippingReturnsTab({
     returnShippingPayer: "seller_if_defective",
     disputePolicy: "Médiation Nova Market sous 48h ouvrées. Remboursement intégral si produit non conforme ou colis endommagé.",
   })
+  const [loading, setLoading] = useState(true)
+  const [saving, setSaving] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+
+  useEffect(() => {
+    Promise.all([getShippingSettings(), getStorePolicies()])
+      .then(([shipping, policies]) => {
+        setRates((current) => ({
+          ...current,
+          ...shipping,
+          disputePolicy: policies.refundPolicy ?? current.disputePolicy,
+        }))
+      })
+      .catch(() => setError("Impossible de charger les paramètres de livraison."))
+      .finally(() => setLoading(false))
+  }, [])
+
+  async function saveSettings() {
+    setSaving(true)
+    setError(null)
+    try {
+      const { disputePolicy, ...shippingSettings } = rates
+      await Promise.all([
+        updateShippingSettings(shippingSettings),
+        updateStorePolicies({ refundPolicy: rates.disputePolicy }),
+      ])
+      showToast("Paramètres de livraison et de remboursement enregistrés.")
+    } catch {
+      setError("Impossible d'enregistrer les paramètres de livraison et de retour.")
+    } finally {
+      setSaving(false)
+    }
+
+  }
 
   function handleSave(e: React.FormEvent) {
     e.preventDefault()
-    showToast("Paramètres de livraison et politiques de retour enregistrés")
+    void saveSettings()
   }
 
   return (
     <div className="space-y-6">
+      {loading && <p role="status" className="text-xs text-muted-foreground">Chargement des paramètres de livraison…</p>}
+      {error && <p role="alert" className="rounded-xl border border-destructive/30 bg-destructive/5 p-3 text-xs text-destructive">{error}</p>}
       {/* 11. Livraison et Expédition par Zones */}
       <Card>
         <CardHeader>
@@ -167,7 +200,7 @@ export function ShippingReturnsTab({
             </div>
 
             <div className="flex justify-end pt-2">
-              <Button type="submit" variant="primary" size="sm">
+              <Button type="submit" variant="primary" size="sm" loading={saving} disabled={loading}>
                 Enregistrer la grille de livraison
               </Button>
             </div>
@@ -219,7 +252,10 @@ export function ShippingReturnsTab({
                 onChange={(e) =>
                   setRates({
                     ...rates,
-                    returnShippingPayer: e.target.value,
+                    returnShippingPayer: e.target.value as
+                      | "seller_if_defective"
+                      | "always_seller"
+                      | "always_buyer",
                   })
                 }
                 className="w-full px-3.5 py-2 text-sm rounded-xl border border-border bg-card text-foreground focus:outline-none cursor-pointer"
@@ -251,7 +287,9 @@ export function ShippingReturnsTab({
             <Button
               variant="outline"
               size="sm"
-              onClick={() => showToast("Politique de retour enregistrée")}
+              onClick={() => void saveSettings()}
+              loading={saving}
+              disabled={loading}
             >
               Sauvegarder les politiques de retour
             </Button>

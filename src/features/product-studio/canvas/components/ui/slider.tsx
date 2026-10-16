@@ -3,14 +3,14 @@ import { Slider as SliderPrimitive } from "@base-ui/react/slider"
 
 import { cn } from "@/features/product-studio/canvas/lib/utils"
 
-function Slider({
+const Slider = ({
   className,
   defaultValue,
   value,
   min = 0,
   max = 100,
   ...props
-}: SliderPrimitive.Root.Props) {
+}: SliderPrimitive.Root.Props) => {
   const _values = React.useMemo(
     () =>
       Array.isArray(value)
@@ -52,6 +52,6 @@ function Slider({
       </SliderPrimitive.Control>
     </SliderPrimitive.Root>
   )
-}
+};
 
 export { Slider }

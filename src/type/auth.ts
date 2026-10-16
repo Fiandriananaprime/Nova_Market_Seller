@@ -1,12 +1,6 @@
 export type UserRole = "buyer" | "seller" | "admin"
 export type UserStatus = "active" | "suspended"
 
-export interface AuthTokens {
-  accessToken: string
-  refreshToken: string
-  expiresIn: number
-}
-
 export interface User {
   id: string
   firstName: string
@@ -25,8 +19,17 @@ export interface User {
   ordersCount: number
 }
 
-export interface AuthResponse {
-  user: User
-  tokens: AuthTokens
-  currentStore: string | null
+export interface AuthMe {
+  userId: string
+  email: string
+  phone: string | null
+  role: UserRole
+  status: UserStatus
+  adminRole: string | null
+  emailVerified: boolean
+  phoneVerified: boolean
+}
+
+export interface CsrfToken {
+  token: string
 }

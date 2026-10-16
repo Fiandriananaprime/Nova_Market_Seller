@@ -8,8 +8,8 @@ import { computeResize } from '@/features/product-studio/canvas/hooks/canvas/use
 import type { SnapGuide, SpacingGuide } from '@/features/product-studio/canvas/hooks/canvas/useSnapComputation'
 import type { LayerId, Layer, ShapeLayer } from '@/features/product-studio/canvas/types/design'
 
-const DOUBLE_CLICK_MS = 300 // max ms between clicks for double-click
-const DRAG_DEAD_ZONE = 3 // px in screen space before drag starts
+const DOUBLE_CLICK_MS = 300                                          
+const DRAG_DEAD_ZONE = 3                                         
 
 interface DragState {
   type: 'move' | 'resize' | 'pan' | 'marquee' | 'draw' | 'group-resize' | 'rotate'
@@ -23,28 +23,28 @@ interface DragState {
   startLayerH: number
   startPanX?: number
   startPanY?: number
-  // Rotation gesture state (design-space center + starting angles, degrees).
+                                                                             
   centerX?: number
   centerY?: number
   startRotation?: number
   startPointerAngle?: number
 }
 
-// Snapshot of each member's geometry at the start of a group resize, plus the
-// combined bounding box, so we can scale every layer relative to a fixed anchor.
+                                                                              
+                                                                                 
 interface GroupResizeStart {
   handle: string
   bbox: { x: number; y: number; w: number; h: number }
   layers: Map<string, { x: number; y: number; w: number; h: number; fontSize?: number; borderRadius?: number }>
 }
 
-const MIN_GROUP_SIZE = 8 // px — floor for the combined bbox so it can't collapse
+const MIN_GROUP_SIZE = 8                                                         
 
-// Scale every group member relative to a fixed anchor edge. Corner handles are
-// free-form (independent axes) unless Shift is held, in which case they scale
-// uniformly (aspect locked) — matching Figma and single-layer resize. Edge
-// handles always scale one axis.
-function applyGroupResize(start: GroupResizeStart, dx: number, dy: number, constrainAspect: boolean) {
+                                                                               
+                                                                              
+                                                                           
+                                 
+const applyGroupResize = (start: GroupResizeStart, dx: number, dy: number, constrainAspect: boolean) => {
   const { handle, bbox } = start
   const movingLeft = handle.includes('w')
   const movingRight = handle.includes('e')
@@ -60,7 +60,7 @@ function applyGroupResize(start: GroupResizeStart, dx: number, dy: number, const
   let sx = newW / bbox.w
   let sy = newH / bbox.h
 
-  // Lock aspect on corners only while Shift is held (Figma convention).
+                                                                        
   if (isCorner && constrainAspect) {
     const s = Math.abs(sx - 1) >= Math.abs(sy - 1) ? sx : sy
     sx = s
@@ -69,7 +69,7 @@ function applyGroupResize(start: GroupResizeStart, dx: number, dy: number, const
     newH = bbox.h * sy
   }
 
-  // Anchor = the edge that isn't being dragged.
+                                                
   const originX = movingLeft ? bbox.x + bbox.w - newW : bbox.x
   const originY = movingTop ? bbox.y + bbox.h - newH : bbox.y
 
@@ -80,16 +80,14 @@ function applyGroupResize(start: GroupResizeStart, dx: number, dy: number, const
     const width = Math.max(1, geo.w * sx)
     const height = Math.max(1, geo.h * sy)
     const updates: Record<string, number> = { x, y, width, height }
-    // Text font size tracks vertical scale; rounded corners track the smaller axis.
+                                                                                    
     if (geo.fontSize != null) updates.fontSize = Math.max(1, Math.round(geo.fontSize * sy))
     if (geo.borderRadius != null) updates.borderRadius = Math.max(0, Math.round(geo.borderRadius * Math.min(sx, sy)))
     update(id, updates)
   }
-}
+};
 
-export function useCanvasInteraction(
-  containerRef: React.RefObject<HTMLDivElement | null>,
-) {
+export const useCanvasInteraction = () => {
   const [isDragging, setIsDragging] = useState(false)
   const [snapGuides, setSnapGuides] = useState<SnapGuide[]>([])
   const [spacingGuides, setSpacingGuides] = useState<SpacingGuide[]>([])
@@ -100,15 +98,15 @@ export function useCanvasInteraction(
   const dragExceededDeadZone = useRef(false)
   const multiDragStartRef = useRef<Map<string, { x: number; y: number }>>(new Map())
   const groupResizeRef = useRef<GroupResizeStart | null>(null)
-  // When the user presses on an already-selected unit without dragging, we keep
-  // the selection so it can be dragged as a whole, then collapse to this unit on
-  // release if no drag happened (classic select-on-mouseup behaviour).
+                                                                                
+                                                                                 
+                                                                       
   const pendingCollapseRef = useRef<{ ids: string[]; activeId: string } | null>(null)
 
-  // Double-click detection for text editing
+                                            
   const lastClickRef = useRef<{ layerId: string; time: number } | null>(null)
 
-  // canvasWrapperRef tracks the inner canvas-sized div for accurate coord conversion
+                                                                                     
   const canvasWrapperRef = useRef<HTMLElement | null>(null)
 
   const computeSnap = useSnapComputation()
@@ -133,9 +131,9 @@ export function useCanvasInteraction(
     (designX: number, designY: number): LayerId | null => {
       const layers = useDesignStore.getState().document.layers
       const zoom = useDesignStore.getState().zoom
-      // A finger is far less precise than a cursor: give a generous hit slop on
-      // touch, a small one on mouse. Kept in *design* units (screen px ÷ zoom) so
-      // the tappable margin is a constant on-screen size at any zoom.
+                                                                                
+                                                                                  
+                                                                      
       const coarse = typeof window !== 'undefined' && window.matchMedia?.('(pointer: coarse)').matches
       const slop = (coarse ? 20 : 7) / (zoom || 1)
 
@@ -143,8 +141,8 @@ export function useCanvasInteraction(
         const layer = layers[i]
         if (!layer.visible || layer.locked || layer.type === 'background') continue
 
-        // Inverse-rotate the pointer around the layer centre so rotated layers
-        // hit-test against their true (rotated) bounds, not the original AABB.
+                                                                               
+                                                                               
         let px = designX
         let py = designY
         if (layer.rotation) {
@@ -157,11 +155,11 @@ export function useCanvasInteraction(
           py = cy + ox * Math.sin(rad) + oy * Math.cos(rad)
         }
 
-        // Freehand strokes hit-test against the *ink*, not the bounding box: a
-        // thin diagonal line has a huge, mostly-empty bbox that both makes the
-        // line itself hard to tap and blocks clicks meant for layers underneath.
-        // Measure the distance to the stroke polyline (in its own point space)
-        // and accept a hit within half the stroke width plus the touch slop.
+                                                                               
+                                                                               
+                                                                                 
+                                                                               
+                                                                             
         if (layer.type === 'draw') {
           const sx = layer.natWidth ? layer.width / layer.natWidth : 1
           const sy = layer.natHeight ? layer.height / layer.natHeight : 1
@@ -187,8 +185,8 @@ export function useCanvasInteraction(
     [],
   )
 
-  // The full set of layer ids that should select/move together with `id`: all
-  // members of its group, or just itself when ungrouped.
+                                                                              
+                                                         
   const unitFor = useCallback((id: LayerId): LayerId[] => {
     const layers = useDesignStore.getState().document.layers
     const layer = layers.find((l) => l.id === id)
@@ -198,7 +196,7 @@ export function useCanvasInteraction(
       .map((l) => l.id)
   }, [])
 
-  // Expand a set of ids to include every groupmate (used after marquee select).
+                                                                                
   const expandToGroups = useCallback((ids: Set<string>): Set<string> => {
     const layers = useDesignStore.getState().document.layers
     const groupIds = new Set(
@@ -214,16 +212,16 @@ export function useCanvasInteraction(
 
   const handlePointerDown = useCallback(
     (e: React.PointerEvent) => {
-      // Cache the canvas wrapper element for coordinate calculations
+                                                                     
       canvasWrapperRef.current = e.currentTarget as HTMLElement
 
       const tool = useDesignStore.getState().tool
       const { x, y } = getDesignCoords(e.clientX, e.clientY)
-      // Resolve the layer under the cursor up front: Alt+drag means "duplicate"
-      // over a layer, and "pan" only over empty canvas.
+                                                                                
+                                                        
       const hitId = (tool === 'select' || tool === 'comment') ? hitTest(x, y) : null
 
-      // Pan: middle mouse, the pan tool, or Alt+drag on EMPTY canvas.
+                                                                      
       if (e.button === 1 || tool === 'pan' || (e.button === 0 && e.altKey && !hitId)) {
         const pan = useDesignStore.getState().panOffset
         dragRef.current = {
@@ -243,7 +241,7 @@ export function useCanvasInteraction(
 
       if (e.button !== 0) return
 
-      // Shape tool — draw-to-create
+                                    
       if (tool === 'shape') {
         dragRef.current = {
           type: 'draw',
@@ -264,12 +262,12 @@ export function useCanvasInteraction(
       if (tool !== 'select' && tool !== 'comment') return
 
       if (hitId) {
-        // hitTest already skips locked layers (click-through), so the resolved
-        // layer is guaranteed unlocked — no early return on lock here.
+                                                                               
+                                                                       
         const layer = useDesignStore.getState().getLayer(hitId)
         if (!layer) return
 
-        // Double-click detection: if clicking the same text layer within 300ms, enter edit mode
+                                                                                                
         const now = Date.now()
         const lastClick = lastClickRef.current
         if (
@@ -284,15 +282,15 @@ export function useCanvasInteraction(
         }
         lastClickRef.current = { layerId: hitId, time: now }
 
-        // Resolve the unit (whole group, or the single layer) under the cursor
-        // and reconcile it with the current selection.
+                                                                               
+                                                       
         const store = useDesignStore.getState()
         const unitIds = unitFor(hitId)
         const currentSel = store.selectedLayerIds
         pendingCollapseRef.current = null
 
         if (e.shiftKey) {
-          // Toggle the whole unit in/out of the selection.
+                                                           
           const next = new Set(currentSel)
           const allIn = unitIds.every((id) => next.has(id))
           for (const id of unitIds) {
@@ -306,12 +304,12 @@ export function useCanvasInteraction(
         } else {
           const alreadySelected = unitIds.every((id) => currentSel.has(id))
           if (alreadySelected && currentSel.size >= unitIds.length) {
-            // Keep the existing selection so a multi-selection can be dragged as
-            // one. If the pointer doesn't move, collapse to this unit on release.
+                                                                                 
+                                                                                  
             useDesignStore.setState({ activeLayerId: hitId })
             pendingCollapseRef.current = { ids: unitIds, activeId: hitId }
           } else {
-            // Select the whole unit.
+                                     
             useDesignStore.setState({
               selectedLayerIds: new Set(unitIds),
               activeLayerId: hitId,
@@ -321,15 +319,15 @@ export function useCanvasInteraction(
 
         let targetId = hitId
 
-        // Alt/Option + drag = duplicate the whole selection, then drag the copies.
+                                                                                   
         if (e.altKey) {
           const dupStore = useDesignStore.getState()
           const sel = [...dupStore.selectedLayerIds]
             .map((id) => dupStore.getLayer(id))
             .filter((l): l is Layer => !!l && l.type !== 'background')
           if (sel.length) {
-            // If the copied set shared a single group, the copies form a fresh
-            // group; otherwise they stay ungrouped.
+                                                                               
+                                                    
             const groupIds = new Set(sel.map((l) => l.groupId).filter(Boolean))
             const newGroupId = groupIds.size === 1 && sel.length > 1 ? nanoid() : undefined
             const clones = sel.map((l) => {
@@ -785,4 +783,4 @@ export function useCanvasInteraction(
     handleGroupResizeStart,
     handleDoubleClick,
   }
-}
+};

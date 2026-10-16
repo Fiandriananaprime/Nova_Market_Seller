@@ -26,11 +26,10 @@ import {
 import {
   PageHeader,
   Toast,
-  Badge,
 } from "@/components/ui"
 import { TutorialSettingsSection } from "@/features/tutorials/components/TutorialSettingsSection"
 
-// Tab components
+                 
 import { AccountTab } from "./settings/tabs/AccountTab"
 import { BusinessTab } from "./settings/tabs/BusinessTab"
 import { SecurityTab } from "./settings/tabs/SecurityTab"
@@ -42,7 +41,7 @@ import { NotificationsTab } from "./settings/tabs/NotificationsTab"
 import { IntegrationsTab } from "./settings/tabs/IntegrationsTab"
 import { HelpPoliciesTab } from "./settings/tabs/HelpPoliciesTab"
 
-// ─── Tab definitions ────────────────────────────────────────────────────────
+                                                                               
 
 type TabGroup = {
   label: string
@@ -103,7 +102,7 @@ const TAB_GROUPS: TabGroup[] = [
   },
 ]
 
-// ─── Quick-nav hub items (dedicated pages) ──────────────────────────────────
+                                                                               
 
 const QUICK_PAGES = [
   { label: "Boutique", icon: Store, path: "/store", color: "bg-teal-500/10 text-teal-600 dark:text-teal-400" },
@@ -116,9 +115,9 @@ const QUICK_PAGES = [
   { label: "Analytiques", icon: BarChart3, path: "/analytics", color: "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400" },
 ]
 
-// ─── Main component ─────────────────────────────────────────────────────────
+                                                                               
 
-export default function Settings() {
+const Settings = () => {
   const { t } = useTranslation()
   const navigate = useNavigate()
   const [activeTab, setActiveTab] = useState<TabId>("account")
@@ -134,13 +133,13 @@ export default function Settings() {
 
   return (
     <div className="p-4 md:p-8 space-y-6 animate-fade-in max-w-screen-xl mx-auto">
-      {/* ── Page Header ─────────────────────────────────── */}
+      
       <PageHeader
         title={t("nav.settings")}
         subtitle="Gérez l'ensemble de vos paramètres marchand, finances, équipe et conformité"
       />
 
-      {/* ── Quick-Navigation Hub ────────────────────────── */}
+      
       <div data-tour="settings-quickhub" className="rounded-2xl border border-border bg-card p-4">
         <div className="flex items-center justify-between mb-3">
           <p className="text-xs font-bold text-foreground flex items-center gap-1.5">
@@ -170,9 +169,9 @@ export default function Settings() {
         </div>
       </div>
 
-      {/* ── Content: Sidebar + Tab pane ─────────────────── */}
+      
       <div className="flex flex-col md:flex-row gap-6">
-        {/* Sidebar navigation */}
+        
         <nav data-tour="settings-sidebar" className="w-full md:w-60 shrink-0 space-y-4">
           {TAB_GROUPS.map((group) => (
             <div key={group.label}>
@@ -216,80 +215,81 @@ export default function Settings() {
           ))}
         </nav>
 
-        {/* Tab content pane */}
+        
         <div className="flex-1 min-w-0">
-          {/* Breadcrumb */}
+          
           <div className="flex items-center gap-1 text-xs text-muted-foreground mb-4">
             <span>Paramètres</span>
             <ArrowRight size={12} />
             <span className="text-foreground font-semibold">{currentTabLabel}</span>
           </div>
 
-          {/* ── Tab: Compte ─────────────────────────────── */}
+          
           {activeTab === "account" && (
             <div data-tour="settings-account">
               <AccountTab showToast={showToast} />
             </div>
           )}
 
-          {/* ── Tab: Business / KYC ─────────────────────── */}
+          
           {activeTab === "business" && (
             <BusinessTab showToast={showToast} />
           )}
 
-          {/* ── Tab: Sécurité ───────────────────────────── */}
+          
           {activeTab === "security" && (
             <SecurityTab showToast={showToast} />
           )}
 
-          {/* ── Tab: Notifications ──────────────────────── */}
+          
           {activeTab === "notifications" && (
             <NotificationsTab showToast={showToast} />
           )}
 
-          {/* ── Tab: Paiements ──────────────────────────── */}
+          
           {activeTab === "payments" && (
             <div data-tour="settings-payments">
               <PaymentsTab showToast={showToast} />
             </div>
           )}
 
-          {/* ── Tab: Livraison & Retours ─────────────────── */}
+          
           {activeTab === "shipping" && (
             <ShippingReturnsTab showToast={showToast} />
           )}
 
-          {/* ── Tab: Promotions ─────────────────────────── */}
+          
           {activeTab === "promotions" && (
             <PromotionsTab showToast={showToast} />
           )}
 
-          {/* ── Tab: Équipe ─────────────────────────────── */}
+          
           {activeTab === "team" && (
             <TeamTab showToast={showToast} />
           )}
 
-          {/* ── Tab: Intégrations & API ─────────────────── */}
+          
           {activeTab === "integrations" && (
             <IntegrationsTab showToast={showToast} />
           )}
 
-          {/* ── Tab: Tutoriels ──────────────────────────── */}
+          
           {activeTab === "tours" && (
             <div className="space-y-6">
               <TutorialSettingsSection />
             </div>
           )}
 
-          {/* ── Tab: Aide & Conditions ──────────────────── */}
+          
           {activeTab === "help" && (
             <HelpPoliciesTab showToast={showToast} />
           )}
         </div>
       </div>
 
-      {/* Toast notification */}
+      
       {toast && <Toast message={toast} onDismiss={() => setToast(null)} />}
     </div>
   )
-}
+};
+export default Settings

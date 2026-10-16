@@ -118,12 +118,12 @@ const COMPLEXITY_BADGE: Record<string, string> = {
   avancé: "bg-rose-500/10 text-rose-600 dark:text-rose-400",
 }
 
-export function TutorialSettingsSection() {
+export const TutorialSettingsSection = () => {
   const { t } = useTranslation()
   const { replayTour, isTourActive } = useTutorial()
 
-  const totalTours = AVAILABLE_TOURS.length + 1 // + onboarding
-  const totalSteps = AVAILABLE_TOURS.reduce((s, t) => s + t.stepCount, 0) + 9 // + onboarding steps
+  const totalTours = AVAILABLE_TOURS.length + 1                
+  const totalSteps = AVAILABLE_TOURS.reduce((s, t) => s + t.stepCount, 0) + 9                      
 
   return (
     <Card className="border border-border/80 shadow-xs overflow-hidden">
@@ -146,7 +146,7 @@ export function TutorialSettingsSection() {
       </CardHeader>
 
       <CardBody className="space-y-6">
-        {/* ── Onboarding Highlight Banner ─────────────────────────── */}
+        
         <div className="p-5 rounded-2xl bg-gradient-to-r from-primary/10 via-teal-500/10 to-card border border-primary/20 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div className="space-y-1.5">
             <div className="flex items-center gap-2 flex-wrap">
@@ -177,7 +177,7 @@ export function TutorialSettingsSection() {
           </Button>
         </div>
 
-        {/* ── Section Tours Grid ────────────────────────────────────── */}
+        
         <div className="space-y-3">
           <p className="text-xs font-bold text-muted-foreground uppercase tracking-wider flex items-center gap-1.5">
             <Sparkles size={12} className="text-primary" />
@@ -193,7 +193,7 @@ export function TutorialSettingsSection() {
                   key={tour.id}
                   className="p-4 rounded-xl border border-border/80 bg-card hover:border-primary/30 hover:shadow-xs transition-all flex flex-col gap-3"
                 >
-                  {/* Header row */}
+                  
                   <div className="flex items-start justify-between gap-2">
                     <div className="flex items-center gap-2.5">
                       <div className={`w-9 h-9 rounded-lg flex items-center justify-center shrink-0 ${tour.color}`}>
@@ -217,12 +217,12 @@ export function TutorialSettingsSection() {
                     </div>
                   </div>
 
-                  {/* Description */}
+                  
                   <p className="text-[11px] text-muted-foreground line-clamp-2 leading-relaxed">
                     {t(tour.descKey)}
                   </p>
 
-                  {/* Action */}
+                  
                   <Button
                     size="sm"
                     variant="outline"
@@ -239,7 +239,7 @@ export function TutorialSettingsSection() {
           </div>
         </div>
 
-        {/* ── Tip footer ──────────────────────────────────────────── */}
+        
         <div className="rounded-xl bg-muted/50 border border-border/50 px-4 py-3 text-xs text-muted-foreground flex items-center gap-2">
           <Sparkles size={13} className="text-primary shrink-0" />
           <span>
@@ -249,4 +249,4 @@ export function TutorialSettingsSection() {
       </CardBody>
     </Card>
   )
-}
+};

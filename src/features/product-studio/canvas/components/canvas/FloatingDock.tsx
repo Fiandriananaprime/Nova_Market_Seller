@@ -16,7 +16,7 @@ import {
 type LeftTab = 'layers' | 'components' | 'assets' | 'icons'
 type RightTab = 'inspector' | 'export' | 'auto-resize' | 'ai'
 
-export function FloatingDock() {
+export const FloatingDock = () => {
   const rightPanel = useUIStore((s) => s.rightPanel)
   const setRightPanel = useUIStore((s) => s.setRightPanel)
   const setExportPanelOpen = useUIStore((s) => s.setExportPanelOpen)
@@ -46,7 +46,7 @@ export function FloatingDock() {
     { id: 'inspector', icon: SlidersHorizontal, label: 'Inspector' },
     { id: 'export', icon: Download, label: 'Export' },
     { id: 'auto-resize', icon: Scaling, label: 'Resize' },
-    // Only shown when an AI endpoint is configured (VITE_AI_API_ORIGIN).
+                                                                         
     { id: 'ai', icon: Wand2, label: 'AI', aiOnly: true },
   ]
 
@@ -100,4 +100,4 @@ export function FloatingDock() {
       })}
     </div>
   )
-}
+};

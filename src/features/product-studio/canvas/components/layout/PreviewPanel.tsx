@@ -1,4 +1,4 @@
-import { useRef, useState, useEffect, useCallback } from 'react'
+import { useRef, useState, useEffect, useCallback, useMemo } from 'react'
 import { motion, AnimatePresence } from 'motion/react'
 import { useDesignStore, createTextLayer } from '@/features/product-studio/canvas/store/useDesignStore'
 import { relayoutActiveFrame } from '@/features/product-studio/canvas/store/useAIStore'
@@ -26,12 +26,12 @@ import { Minus, Plus, Maximize, Grid3X3, Copy, Trash2, Pencil, Type, Square, Arr
 import { useUIStore, GRID_PRESETS, resolveGrid } from '@/features/product-studio/canvas/store/useUIStore'
 import type { Frame } from '@/features/product-studio/canvas/types/workspace'
 
-const DRAG_THRESHOLD = 3 // px in screen space before a frame label drag commits
+const DRAG_THRESHOLD = 3                                                        
 
-// Text-only empty-state flourish: each word rises, unblurs, and fades in one
-// after another on the golden easing curve, so the message assembles itself
-// rather than popping in. No icons — the type is the whole show.
-function RevealWords({ text, baseDelay = 0, stagger = 0.045 }: { text: string; baseDelay?: number; stagger?: number }) {
+                                                                             
+                                                                            
+                                                                 
+const RevealWords = ({ text, baseDelay = 0, stagger = 0.045 }: { text: string; baseDelay?: number; stagger?: number }) => {
   const words = text.split(' ')
   return (
     <>
@@ -49,13 +49,13 @@ function RevealWords({ text, baseDelay = 0, stagger = 0.045 }: { text: string; b
       ))}
     </>
   )
-}
+};
 
-// After a format change, the deterministic reflow has already kept the design
-// safe. This pill fades in offering the *optional* AI pass that recomposes it
-// for the new shape — "constraints keep you safe, AI makes it nice". Transient,
-// contextual, self-dismissing (design-with-taste: inline > toast for actions).
-function ReformatNudge() {
+                                                                              
+                                                                              
+                                                                                
+                                                                               
+const ReformatNudge = () => {
   const format = useDesignStore((s) => s.document.format)
   const contentCount = useDesignStore((s) =>
     s.document.layers.reduce((n, l) => (l.type === 'background' ? n : n + 1), 0),
@@ -65,11 +65,11 @@ function ReformatNudge() {
   const prevId = useRef(format.id)
 
   useEffect(() => {
-    // First mount (prevId === current) never nudges; only real format changes do.
+                                                                                  
     if (prevId.current === format.id) return
     prevId.current = format.id
     if (contentCount === 0) return
-    // The nudge only offers AI re-layout, so skip it when AI is not configured.
+                                                                                
     if (!AI_ENABLED) return
     setVisible(true)
     const t = setTimeout(() => setVisible(false), 8000)
@@ -120,26 +120,26 @@ function ReformatNudge() {
       )}
     </AnimatePresence>
   )
-}
+};
 
-export function PreviewPanel() {
+export const PreviewPanel = () => {
   const containerRef = useRef<HTMLDivElement>(null)
   const activeWrapRef = useRef<HTMLDivElement>(null)
 
-  // Active-frame editing surface is driven by the design store.
+                                                                
   const docFormat = useDesignStore((s) => s.document.format)
   const zoom = useDesignStore((s) => s.zoom)
   const panOffset = useDesignStore((s) => s.panOffset)
   const setZoom = useDesignStore((s) => s.setZoom)
   const setPanOffset = useDesignStore((s) => s.setPanOffset)
   const tool = useDesignStore((s) => s.tool)
-  // Content layers = everything except the background, so a fresh frame (bg only)
-  // shows an inviting empty state instead of a blank rectangle.
+                                                                                  
+                                                                
   const contentLayerCount = useDesignStore((s) =>
     s.document.layers.reduce((n, l) => (l.type === 'background' ? n : n + 1), 0),
   )
 
-  // The page's frames live in the workspace store (world coordinates).
+                                                                       
   const workspace = useWorkspaceStore((s) => s.workspace)
   const activeFrameId = useWorkspaceStore((s) => s.activeFrameId)
   const setActiveFrame = useWorkspaceStore((s) => s.setActiveFrame)
@@ -157,7 +157,7 @@ export function PreviewPanel() {
   const setGridPreset = useUIStore((s) => s.setGridPreset)
   const [gridMenuOpen, setGridMenuOpen] = useState(false)
 
-  // Inline frame rename (double-click the frame label).
+                                                        
   const [editingFrameId, setEditingFrameId] = useState<string | null>(null)
   const [editingName, setEditingName] = useState('')
   const commitFrameRename = () => {
@@ -169,7 +169,7 @@ export function PreviewPanel() {
   }
 
   const activePage = workspace.pages.find((p) => p.id === workspace.activePageId)
-  const frames = activePage?.frames ?? []
+  const frames = useMemo(() => activePage?.frames ?? [], [activePage?.frames])
   const hasFrames = frames.length > 0
   const showLabels = workspace.showFrameLabels !== false
   const activeFrame = frames.find((f) => f.id === activeFrameId) ?? null
@@ -178,23 +178,23 @@ export function PreviewPanel() {
     snapGuides, spacingGuides, hoverCursor, marqueeRect,
     handlePointerDown, handlePointerMove, handlePointerUp,
     handleResizeStart, handleGroupResizeStart, handleDoubleClick,
-  } = useCanvasInteraction(activeWrapRef)
+  } = useCanvasInteraction()
 
-  // Freehand pen. Its handlers consume the event when tool==='draw'; otherwise
-  // we fall through to the normal selection/marquee handlers below.
+                                                                               
+                                                                    
   const drawTool = useDrawTool(activeWrapRef, zoom)
 
-  // Frames exist but none is active (e.g. just switched pages) — adopt the first
-  // so there's always an editable surface and the canvas isn't blank.
+                                                                                 
+                                                                      
   useEffect(() => {
     if (hasFrames && !frames.some((f) => f.id === activeFrameId)) {
       setActiveFrame(frames[0].id)
     }
   }, [hasFrames, frames, activeFrameId, setActiveFrame])
 
-  // Ease the viewport (zoom + pan) toward a target instead of snapping — the
-  // camera "flies" when fitting to frames or spawning a new frame. Respects
-  // reduced-motion (instant), and cancels any in-flight tween.
+                                                                             
+                                                                            
+                                                               
   const viewTweenRef = useRef<number>(0)
   const tweenView = useCallback((targetZoom: number, targetPan: { x: number; y: number }) => {
     cancelAnimationFrame(viewTweenRef.current)
@@ -205,7 +205,7 @@ export function PreviewPanel() {
     }
     const duration = 420
     const start = performance.now()
-    const ease = (t: number) => 1 - Math.pow(1 - t, 3) // easeOutCubic
+    const ease = (t: number) => 1 - Math.pow(1 - t, 3)                
     const step = (now: number) => {
       const t = Math.min(1, (now - start) / duration)
       const k = ease(t)
@@ -218,8 +218,8 @@ export function PreviewPanel() {
 
   useEffect(() => () => cancelAnimationFrame(viewTweenRef.current), [])
 
-  // Fit all frames into the viewport: pick a zoom that fits their bounding box
-  // with padding, then pan so the box centre lands at the viewport centre.
+                                                                               
+                                                                           
   const fitToFrames = useCallback(() => {
     const el = containerRef.current
     if (!el) return
@@ -237,8 +237,8 @@ export function PreviewPanel() {
     tweenView(z, { x: -((minX + maxX) / 2) * z, y: -((minY + maxY) / 2) * z })
   }, [tweenView])
 
-  // Auto-fit on first mount and whenever a frame is added, so freshly created
-  // frames (which spawn to the right) never end up hidden under the sidebar.
+                                                                              
+                                                                             
   const prevFrameCount = useRef(-1)
   useEffect(() => {
     if (!hasFrames) { prevFrameCount.current = frames.length; return }
@@ -248,11 +248,11 @@ export function PreviewPanel() {
     prevFrameCount.current = frames.length
   }, [frames.length, hasFrames, fitToFrames])
 
-  // Mobile layout settles after mount (the viewport can resize as browser chrome
-  // appears), so the initial fit above can run against a zero/wrong-sized
-  // container and leave the design off-screen. Fit exactly once, as soon as the
-  // container reports a real size. The guard means it never refits later and
-  // fights the user; on desktop the size is already correct so it's a no-op.
+                                                                                 
+                                                                          
+                                                                                
+                                                                             
+                                                                             
   const didInitialFit = useRef(false)
   useEffect(() => {
     const el = containerRef.current
@@ -270,10 +270,10 @@ export function PreviewPanel() {
     return () => ro.disconnect()
   }, [fitToFrames])
 
-  // Zoom toward a screen point (cursor or viewport centre), keeping the world
-  // point under that screen point fixed. Frames live in a world whose origin is
-  // the container centre shifted by panOffset, so: screen = centre + pan + world*z.
-  // Holding the cursor fixed across a zoom change gives: pan1 = s - (s - pan0)*(z1/z0).
+                                                                              
+                                                                                
+                                                                                    
+                                                                                        
   const zoomAtPoint = useCallback((nextZoom: number, clientX: number, clientY: number) => {
     const el = containerRef.current
     const z0 = useDesignStore.getState().zoom
@@ -295,8 +295,8 @@ export function PreviewPanel() {
     zoomAtPoint(nextZoom, rect.left + rect.width / 2, rect.top + rect.height / 2)
   }, [zoomAtPoint, setZoom])
 
-  // Zoom-to-selection: frame the current selection (or fall back to fit). World
-  // coords = active frame origin + layer box (layers are frame-local).
+                                                                                
+                                                                       
   const fitToSelection = useCallback(() => {
     const el = containerRef.current
     if (!el) return
@@ -319,7 +319,7 @@ export function PreviewPanel() {
     tweenView(z, { x: -((minX + maxX) / 2) * z, y: -((minY + maxY) / 2) * z })
   }, [tweenView, fitToFrames])
 
-  // Keyboard zoom (useKeyboardShortcuts emits these so the viewport math stays here).
+                                                                                      
   useEffect(() => {
     const onZoom = (e: Event) => {
       const action = (e as CustomEvent).detail?.action
@@ -334,8 +334,8 @@ export function PreviewPanel() {
     return () => window.removeEventListener('canvas-zoom', onZoom)
   }, [zoomToCentre, fitToFrames, fitToSelection, setZoom, setPanOffset])
 
-  // Trackpad pan / pinch-zoom. Pinch (ctrlKey) zooms toward the cursor with a
-  // delta-proportional factor so it tracks the gesture smoothly; otherwise pan.
+                                                                              
+                                                                                
   useEffect(() => {
     const el = containerRef.current
     if (!el) return
@@ -353,11 +353,11 @@ export function PreviewPanel() {
     return () => el.removeEventListener('wheel', handler)
   }, [zoomAtPoint])
 
-  // All canvas touch gestures live here so they never fight the mouse path:
-  //   • two fingers          → pinch-zoom + pan (anchored to the pinch midpoint)
-  //   • one finger on empty   → pan the canvas; a tap (no movement) deselects
-  //   • one finger on a layer → falls through to the pointer-based move/select
-  // (Marquee drag-select stays a mouse-only affordance — see onContainerPointerDown.)
+                                                                            
+                                                                                 
+                                                                              
+                                                                               
+                                                                                      
   useEffect(() => {
     const el = containerRef.current
     if (!el) return
@@ -375,9 +375,9 @@ export function PreviewPanel() {
         e.preventDefault()
         return
       }
-      // One finger on the empty canvas background pans; a tap deselects. A touch
-      // that lands on a layer/frame has a child as target and is left to the
-      // pointer handlers (drag = move, tap = select).
+                                                                                 
+                                                                             
+                                                      
       if (e.touches.length === 1 && e.target === el) {
         const p = useDesignStore.getState().panOffset
         const t = e.touches[0]
@@ -435,7 +435,7 @@ export function PreviewPanel() {
     }
   }, [zoomAtPoint])
 
-  // --- Frame label drag (moves the frame, or the whole selection, in world space) ---
+                                                                                       
   const frameDrag = useRef<{
     startClientX: number; startClientY: number; moved: boolean; starts: { id: string; x: number; y: number; w: number; h: number }[]
   } | null>(null)
@@ -451,9 +451,9 @@ export function PreviewPanel() {
     let dx = (e.clientX - d.startClientX) / z
     let dy = (e.clientY - d.startClientY) / z
 
-    // Frame-to-frame snapping: snap the primary dragged frame's edges/centres to
-    // the other frames' edges/centres, then apply the correction to the whole
-    // dragged set (keeps a multi-frame drag rigid). Threshold is screen-constant.
+                                                                                 
+                                                                              
+                                                                                  
     const primary = d.starts[0]
     if (primary) {
       const draggedIds = new Set(d.starts.map((s) => s.id))
@@ -487,15 +487,14 @@ export function PreviewPanel() {
   const onFrameDragUp = useCallback(() => {
     frameDrag.current = null
     window.removeEventListener('pointermove', onFrameDragMove)
-    window.removeEventListener('pointerup', onFrameDragUp)
   }, [onFrameDragMove])
 
-  // Click an inactive frame to select it; shift-click to add/remove it from the
-  // current multi-selection (so alignment controls become reachable).
+                                                                                
+                                                                      
   const pickFrame = useCallback((e: React.PointerEvent, frame: Frame) => {
     e.stopPropagation()
-    // Selecting a frame as a unit clears any lingering layer selection so the
-    // frame becomes the unambiguous target for Delete/Backspace.
+                                                                              
+                                                                 
     useDesignStore.getState().deselectAll()
     const selected = useWorkspaceStore.getState().selectedFrameIds
     if (e.shiftKey) {
@@ -516,12 +515,12 @@ export function PreviewPanel() {
     useDesignStore.getState().deselectAll()
     setActiveFrame(frame.id)
 
-    // Drag the whole selection when grabbing a frame that's part of a multi-select;
-    // otherwise the grabbed frame becomes the sole selection.
+                                                                                    
+                                                              
     const selected = useWorkspaceStore.getState().selectedFrameIds
     const pageFrames = useWorkspaceStore.getState().getActivePage()?.frames ?? []
-    // Grabbed frame must be first so it's the snapping primary in onFrameDragMove
-    // (page order is arbitrary).
+                                                                                  
+                                 
     const group = selected.has(frame.id) && selected.size > 1
       ? [frame, ...pageFrames.filter((f) => selected.has(f.id) && f.id !== frame.id)]
       : [frame]
@@ -532,10 +531,10 @@ export function PreviewPanel() {
       starts: group.map((f) => ({ id: f.id, x: f.x, y: f.y, w: f.width, h: f.height })),
     }
     window.addEventListener('pointermove', onFrameDragMove)
-    window.addEventListener('pointerup', onFrameDragUp)
+    window.addEventListener('pointerup', onFrameDragUp, { once: true })
   }, [pickFrame, setActiveFrame, setSelectedFrames, onFrameDragMove, onFrameDragUp])
 
-  // --- Canvas-background marquee (selects frames in world space) ---
+                                                                      
   const marqueeStart = useRef<{ clientX: number; clientY: number } | null>(null)
   const [marqueeRectScreen, setMarqueeRectScreen] = useState<{ left: number; top: number; width: number; height: number } | null>(null)
 
@@ -545,7 +544,7 @@ export function PreviewPanel() {
     const rect = el.getBoundingClientRect()
     const z = useDesignStore.getState().zoom
     const pan = useDesignStore.getState().panOffset
-    // World origin (0,0) on screen = container centre shifted by the pan offset.
+                                                                                 
     const originX = rect.left + rect.width / 2 + pan.x
     const originY = rect.top + rect.height / 2 + pan.y
     const wMinX = (Math.min(aX, bX) - originX) / z
@@ -578,23 +577,22 @@ export function PreviewPanel() {
     marqueeStart.current = null
     setMarqueeRectScreen(null)
     window.removeEventListener('pointermove', onMarqueeMove)
-    window.removeEventListener('pointerup', onMarqueeUp)
     if (!s) return
     const moved = Math.abs(e.clientX - s.clientX) > DRAG_THRESHOLD || Math.abs(e.clientY - s.clientY) > DRAG_THRESHOLD
     if (!moved) {
-      useWorkspaceStore.getState().setSelectedFrames([]) // bare click on empty canvas clears
+      useWorkspaceStore.getState().setSelectedFrames([])                                     
     } else {
-      // A single marquee'd frame becomes the editable one.
+                                                           
       const ids = [...useWorkspaceStore.getState().selectedFrameIds]
       if (ids.length === 1) useWorkspaceStore.getState().setActiveFrame(ids[0])
     }
   }, [onMarqueeMove])
 
   const onContainerPointerDown = useCallback((e: React.PointerEvent) => {
-    // Marquee drag-select is mouse-only; touch empty-canvas drag pans instead
-    // (handled by the touch-gesture effect above).
+                                                                              
+                                                   
     if (e.pointerType !== 'mouse') return
-    // Only an empty-background press starts a marquee; frame bodies/labels handle their own.
+                                                                                             
     if (e.target !== containerRef.current) return
     if (e.button !== 0) return
     const el = containerRef.current
@@ -605,7 +603,7 @@ export function PreviewPanel() {
     const rect = el.getBoundingClientRect()
     setMarqueeRectScreen({ left: e.clientX - rect.left, top: e.clientY - rect.top, width: 0, height: 0 })
     window.addEventListener('pointermove', onMarqueeMove)
-    window.addEventListener('pointerup', onMarqueeUp)
+    window.addEventListener('pointerup', onMarqueeUp, { once: true })
   }, [onMarqueeMove, onMarqueeUp])
 
   useEffect(() => () => {
@@ -615,8 +613,8 @@ export function PreviewPanel() {
     window.removeEventListener('pointerup', onMarqueeUp)
   }, [onFrameDragMove, onFrameDragUp, onMarqueeMove, onMarqueeUp])
 
-  // Brush cursor: a ring sized to the pen (or a fixed eraser ring) that follows
-  // the cursor on desktop, so you can see the tool's footprint before drawing.
+                                                                                
+                                                                               
   const coarsePointer = useCoarsePointer()
   const [brush, setBrush] = useState<{ x: number; y: number } | null>(null)
   const showBrush = !coarsePointer && (tool === 'draw' || tool === 'eraser') && !!brush
@@ -627,19 +625,19 @@ export function PreviewPanel() {
   }, [coarsePointer, tool])
   const brushSize = tool === 'eraser' ? 36 : Math.max(6, drawTool.strokeWidth * zoom)
 
-  // Hide the native cursor while the brush ring is shown, so only the ring reads.
+                                                                                  
   const cursor = showBrush
     ? 'none'
     : tool === 'pan' ? 'grab' : tool === 'text' ? 'text' : (tool === 'shape' || tool === 'draw' || tool === 'eraser') ? 'crosshair' : hoverCursor
   const activeW = (activeFrame?.width ?? docFormat.width) * zoom
   const activeH = (activeFrame?.height ?? docFormat.height) * zoom
 
-  // Resolve presets against the active frame so the menu shows the real cell
-  // counts for the current aspect ratio (e.g. "6 × 4" on a landscape frame).
+                                                                             
+                                                                             
   const gridFormat = { width: activeFrame?.width ?? docFormat.width, height: activeFrame?.height ?? docFormat.height }
   const activeGrid = resolveGrid(gridConfig, gridFormat)
 
-  // ── Right-click context menus (frame / layer / canvas) ──
+                                                             
   const layerMenuItems = (layer: Layer): ContextMenuItem[] => {
     const d = useDesignStore.getState()
     return [
@@ -692,12 +690,12 @@ export function PreviewPanel() {
   }
 
   const handleContainerContextMenu = (e: React.MouseEvent) => {
-    // Catch-all for the whole canvas region. Frame (label/body) and layer
-    // handlers call stopPropagation(), so a right-click only reaches here when
-    // nothing more specific claimed it — empty world space, the gaps between
-    // frames, a frame's outer padding. Previously this bailed unless the target
-    // was exactly the container div, which let most of the canvas fall through
-    // to the native browser menu.
+                                                                          
+                                                                               
+                                                                             
+                                                                                
+                                                                               
+                                  
     e.preventDefault()
     openMenu(e.clientX, e.clientY, [
       { id: 'new-frame', label: 'New frame', icon: Plus, action: () => useWorkspaceStore.getState().addFrame(useDesignStore.getState().document.format) },
@@ -705,25 +703,25 @@ export function PreviewPanel() {
     ])
   }
 
-  // The live editing stack for the active frame, reused in both layouts.
-  //
-  // Two sibling layers so shapes can be dragged/resized PAST the frame edge
-  // while their rendered content stays clipped to the frame:
-  //   1. Clipped content box (overflow-hidden) — shader + vector scene. The
-  //      frame's own DesignSvgScene <svg> also clips via its viewBox, so this
-  //      box is a belt-and-braces clip on the visible artwork.
-  //   2. Un-clipped overlay box (overflow: visible) — the interaction surface,
-  //      selection handles, grids and transient overlays. Nothing here clips,
-  //      so a bounding-box handle stays visible and grabbable outside the frame.
+                                                                         
+    
+                                                                            
+                                                             
+                                                                            
+                                                                              
+                                                               
+                                                                               
+                                                                              
+                                                                                 
   const editingStack = (
     <>
-      {/* 1. Clipped content — artwork is trimmed at the frame edge. */}
+      
       <div className="absolute inset-0 overflow-hidden">
         <ShaderBackgroundOverlay />
         <DesignSvgScene />
       </div>
 
-      {/* 2. Un-clipped interaction + overlays — handles escape the frame. */}
+      
       <div
         ref={activeWrapRef}
         className="absolute inset-0"
@@ -735,9 +733,7 @@ export function PreviewPanel() {
         onDoubleClick={handleDoubleClick}
         onContextMenu={handleStackContextMenu}
       >
-        {/* Live pen/highlighter preview while drawing (design coords via the
-            frame viewBox). Uses the same getDrawPath geometry as the committed
-            layer so what you see is what you get. */}
+        
         {drawTool.drawing && (
           <svg className="absolute top-0 left-0 pointer-events-none" width={activeW} height={activeH} viewBox={`0 0 ${activeFrame?.width ?? docFormat.width} ${activeFrame?.height ?? docFormat.height}`}>
             <path
@@ -771,16 +767,15 @@ export function PreviewPanel() {
 
         {snapGuides.length > 0 && (
           <svg className="absolute top-0 left-0 pointer-events-none" width={activeW} height={activeH} style={{ overflow: 'visible' }}>
-            {/* Guides draw in (not hard-appear) so a snap reads as a quick "tick". */}
-            {snapGuides.map((g: any, i: number) => g.orientation === 'v'
+            
+            {snapGuides.map((g, i) => g.orientation === 'v'
               ? <motion.line key={`v-${i}`} initial={{ opacity: 0, pathLength: 0 }} animate={{ opacity: 1, pathLength: 1 }} transition={{ duration: 0.14, ease: [0.16, 1, 0.3, 1] }} x1={g.position * zoom} y1={0} x2={g.position * zoom} y2={activeH} stroke="#F56139" strokeWidth={1} strokeDasharray="4 3" />
               : <motion.line key={`h-${i}`} initial={{ opacity: 0, pathLength: 0 }} animate={{ opacity: 1, pathLength: 1 }} transition={{ duration: 0.14, ease: [0.16, 1, 0.3, 1] }} x1={0} y1={g.position * zoom} x2={activeW} y2={g.position * zoom} stroke="#F56139" strokeWidth={1} strokeDasharray="4 3" />
             )}
           </svg>
         )}
 
-        {/* Equal-spacing (distribution) guides — pink measure between siblings
-            sharing a gap, matching Figma's "smart spacing". */}
+        
         {spacingGuides.length > 0 && (
           <svg className="absolute top-0 left-0 pointer-events-none" width={activeW} height={activeH} style={{ overflow: 'visible' }}>
             {spacingGuides.flatMap((sg, gi) =>
@@ -833,9 +828,7 @@ export function PreviewPanel() {
           }} />
         )}
 
-        {/* Empty state — a fresh frame (background only). Text-only, assembles
-            itself word by word. Kept light: you see this often, so the delight
-            stays subtle (design-with-taste frequency curve). */}
+        
         {contentLayerCount === 0 && tool === 'select' && (
           // Type scales with the frame (design-space sizes × zoom) so it reads as
           // part of the frame, not a fixed screen overlay — with a small floor so
@@ -864,7 +857,7 @@ export function PreviewPanel() {
 
   return (
     <div className="flex flex-col h-full min-w-0 bg-[#e8e8e2] overflow-hidden relative">
-      {/* Canvas area */}
+      
       <div
         ref={containerRef}
         className="flex-1 overflow-hidden relative"
@@ -901,8 +894,7 @@ export function PreviewPanel() {
                     height: frame.height * zoom,
                   }}
                 >
-                  {/* Frame name label — click to select, drag to move,
-                      double-click to rename inline. */}
+                  
                   {showLabels && (
                     editingFrameId === frame.id ? (
                       <input
@@ -934,11 +926,7 @@ export function PreviewPanel() {
                     )
                   )}
 
-                  {/* Frame body — the white/border chrome. The active frame is
-                      NOT clipped here so bounding-box handles can be dragged
-                      past the frame edge; its artwork is clipped by the inner
-                      content box in editingStack instead. Inactive frames keep
-                      overflow-hidden so their thumbnail stays trimmed. */}
+                  
                   <div
                     className={`absolute inset-0 bg-white border transition-colors ${
                       isActive ? 'border-black/15' : 'overflow-hidden border-black/10'
@@ -950,8 +938,7 @@ export function PreviewPanel() {
                     {isActive ? editingStack : <FrameThumbnail frame={frame} zoom={zoom} />}
                   </div>
 
-                  {/* Selection outline (drawn above the body, never intercepts pointers).
-                      Marks the active frame too, since frames no longer carry a shadow. */}
+                  
                   {(isSelected || isActive) && (
                     <div className={`pointer-events-none absolute inset-0 z-10 ring-inset ${isActive ? 'ring-2 ring-primary' : 'ring-1 ring-primary/60'}`} />
                   )}
@@ -1002,7 +989,7 @@ export function PreviewPanel() {
           </div>
         )}
 
-        {/* Canvas-background marquee rectangle */}
+        
         {marqueeRectScreen && (
           <div
             className="pointer-events-none absolute z-20 rounded-[2px] border border-primary/70 bg-primary/10"
@@ -1015,15 +1002,15 @@ export function PreviewPanel() {
           />
         )}
 
-        {/* Post-reformat AI re-layout nudge (self-dismisses; sits above the toolbar). */}
+        
         <ReformatNudge />
 
-        {/* Floating quick-actions toolbar (bottom-centre, over the canvas). */}
+        
         {hasFrames && <FloatingToolbar />}
         {hasFrames && <DrawQuickBar />}
       </div>
 
-      {/* Bottom bar */}
+      
       <div className="h-10 bg-card border-t border-border flex items-center px-4 gap-2 shrink-0">
         <button className="p-1.5 hover:bg-muted rounded-[5px] text-muted-foreground cursor-pointer transition-transform active:scale-[0.96]" onClick={() => zoomToCentre(zoom / 1.2)}><Minus className="w-4 h-4" /></button>
         <span className="text-[13px] font-mono tabular-nums text-muted-foreground min-w-[48px] text-center">{Math.round(zoom * 100)}%</span>
@@ -1071,4 +1058,4 @@ export function PreviewPanel() {
       </div>
     </div>
   )
-}
+};

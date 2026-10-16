@@ -1,23 +1,23 @@
 import { useCallback } from 'react'
 import { useDesignStore } from '@/features/product-studio/canvas/store/useDesignStore'
 import { useUIStore } from '@/features/product-studio/canvas/store/useUIStore'
-import { getGridSnapTargets } from '@/features/product-studio/canvas/components/canvas/GridOverlay'
+import { getGridSnapTargets } from '@/features/product-studio/canvas/engine/gridSnap'
 import type { LayerId } from '@/features/product-studio/canvas/types/design'
 
-const SNAP_THRESHOLD = 9 // px in design space (stronger pull)
-const SPACING_THRESHOLD = 8 // px pull for equal-spacing (distribution) snap
+const SNAP_THRESHOLD = 9                                      
+const SPACING_THRESHOLD = 8                                                 
 
 export interface SnapGuide {
   orientation: 'h' | 'v'
   position: number
 }
 
-// An equal-spacing (distribution) guide: a set of equal gaps highlighted along
-// one axis with the shared gap value, e.g. three stacked layers all 24px apart.
+                                                                               
+                                                                                
 export interface SpacingGuide {
-  axis: 'x' | 'y' // 'y' = layers stacked vertically, gaps measured along Y
-  value: number // the equal gap in px
-  segments: { start: number; end: number; cross: number }[] // each gap span + its perpendicular position
+  axis: 'x' | 'y'                                                          
+  value: number                       
+  segments: { start: number; end: number; cross: number }[]                                              
 }
 
 export interface SnapResult {
@@ -34,18 +34,17 @@ interface Rect {
   height: number
 }
 
-// Equal-spacing snap: when the moving box drifts into a rhythm established by
-// two or more stationary siblings (matching gap before/after the run, or
-// centered between a pair), pull it so the new gap equals the existing rhythm,
-// and report every equal gap so the UI can highlight the whole run. Mirrors
-// Figma's "smart spacing". Returns null if no rhythm is within threshold.
-function rhythmSnap(
+                                                                              
+                                                                         
+                                                                               
+                                                                            
+                                                                          
+const rhythmSnap = (
   axis: 'x' | 'y',
   mv: Rect,
   others: Rect[],
-  threshold: number,
-): { pos: number; guide: SpacingGuide } | null {
-  // Primary axis = the stacking direction; perpendicular = overlap axis.
+  threshold: number,):{ pos: number; guide: SpacingGuide } | null => {
+                                                                         
   const start = (r: Rect) => (axis === 'y' ? r.y : r.x)
   const size = (r: Rect) => (axis === 'y' ? r.height : r.width)
   const pStart = (r: Rect) => (axis === 'y' ? r.x : r.y)
@@ -54,8 +53,8 @@ function rhythmSnap(
 
   const mvPS = pStart(mv)
   const mvPE = pStart(mv) + pSize(mv)
-  // Stationary layers that overlap the moving box on the perpendicular axis —
-  // i.e. they share a column (vertical rhythm) or a row (horizontal rhythm).
+                                                                              
+                                                                             
   const col = others.filter((l) => pStart(l) < mvPE && pStart(l) + pSize(l) > mvPS)
   if (col.length < 2) return null
 
@@ -67,10 +66,10 @@ function rhythmSnap(
   const mvSize = size(mv)
 
   const cands: { pos: number; G: number }[] = []
-  // Extend the rhythm before the run / after the run.
+                                                      
   if (firstGap > 0) cands.push({ pos: start(first) - firstGap - mvSize, G: firstGap })
   if (lastGap > 0) cands.push({ pos: start(last) + size(last) + lastGap, G: lastGap })
-  // Or drop it centered between a consecutive pair (two equal sub-gaps).
+                                                                         
   for (let i = 0; i < sorted.length - 1; i++) {
     const g = gapBetween(sorted[i], sorted[i + 1])
     if (g > mvSize + 1) {
@@ -87,8 +86,8 @@ function rhythmSnap(
   }
   if (!best) return null
 
-  // Place the moving box at the snapped position, then highlight every gap in the
-  // resulting sequence that matches the rhythm (the existing ones + the new one).
+                                                                                  
+                                                                                  
   const placed: Rect = axis === 'y' ? { ...mv, y: best.pos } : { ...mv, x: best.pos }
   const seq = [...col, placed].sort((a, b) => start(a) - start(b))
   const cross = pStart(mv) + pSize(mv) / 2
@@ -102,9 +101,9 @@ function rhythmSnap(
   if (segments.length === 0) return null
 
   return { pos: Math.round(best.pos), guide: { axis, value: Math.round(best.G), segments } }
-}
+};
 
-export function useSnapComputation() {
+export const useSnapComputation = () => {
   return useCallback(
     (
       layerId: LayerId,
@@ -117,8 +116,8 @@ export function useSnapComputation() {
     ): SnapResult => {
       const state = useDesignStore.getState()
       const format = state.document.format
-      // Exclude the dragged layer and any co-moving members of the selection so
-      // the moving set never snaps to itself (which causes jitter).
+                                                                                
+                                                                    
       const otherLayers = state.document.layers.filter(
         (l) =>
           l.id !== layerId &&
@@ -127,7 +126,7 @@ export function useSnapComputation() {
           l.visible,
       )
 
-      // Collect snap targets: canvas edges, center, and other layers' edges/centers
+                                                                                    
       const snapTargetsX: number[] = [0, format.width / 2, format.width]
       const snapTargetsY: number[] = [0, format.height / 2, format.height]
 
@@ -136,7 +135,7 @@ export function useSnapComputation() {
         snapTargetsY.push(l.y, l.y + l.height / 2, l.y + l.height)
       }
 
-      // Add grid snap targets when grid is visible
+                                                   
       const uiState = useUIStore.getState()
       if (uiState.showGrid) {
         const gridTargets = getGridSnapTargets(format, uiState.gridConfig)
@@ -144,7 +143,7 @@ export function useSnapComputation() {
         snapTargetsY.push(...gridTargets.snapY)
       }
 
-      // Layer edges and center
+                               
       const layerPointsX = [rawX, rawX + w / 2, rawX + w]
       const layerPointsY = [rawY, rawY + h / 2, rawY + h]
 
@@ -152,9 +151,9 @@ export function useSnapComputation() {
       let snappedY = rawY
       let bestDx = SNAP_THRESHOLD + 1
       let bestDy = SNAP_THRESHOLD + 1
-      // Track only the SINGLE winning guide position per axis. Pushing a guide on
-      // every improvement left stale guides in the array, so several rendered per
-      // axis; instead we remember just the best target and emit it once below.
+                                                                                  
+                                                                                  
+                                                                               
       let bestGuideX: number | null = null
       let bestGuideY: number | null = null
 
@@ -180,7 +179,7 @@ export function useSnapComputation() {
         }
       }
 
-      // Emit at most one guide per axis: the winning target.
+                                                             
       const activeGuides: SnapGuide[] = []
       if (bestGuideX != null && bestDx <= SNAP_THRESHOLD) {
         activeGuides.push({ orientation: 'v', position: bestGuideX })
@@ -192,10 +191,10 @@ export function useSnapComputation() {
       let finalX = bestDx <= SNAP_THRESHOLD ? Math.round(snappedX) : Math.round(rawX)
       let finalY = bestDy <= SNAP_THRESHOLD ? Math.round(snappedY) : Math.round(rawY)
 
-      // Shift-drag → snap to EQUAL padding from the two nearest perpendicular
-      // sides (a corner): e.g. equal gap to top+left, or top+right, etc. Uses the
-      // innermost containing layer if the box sits inside one, else the frame.
-      // This is a hard constraint (overrides the soft snap) while Shift is held.
+                                                                              
+                                                                                  
+                                                                               
+                                                                                 
       if (equalPad) {
         const container =
           otherLayers
@@ -224,9 +223,9 @@ export function useSnapComputation() {
         }
       }
 
-      // Smart padding snap: equalize distance to closest edges of containing layers
-      // Works with ANY edge pair (top-left, top-right, left-bottom, etc.) not just parallel edges.
-      // Always on in Basic (a guardrail); a toggle in Pro.
+                                                                                    
+                                                                                                   
+                                                           
       if (uiState.smartPadding || uiState.appMode !== 'pro') {
         const PADDING_THRESHOLD = 15
 
@@ -244,7 +243,7 @@ export function useSnapComputation() {
           const dTop = finalY - c.y
           const dBottom = (c.y + c.height) - (finalY + h)
 
-          // All four distances
+                               
           const distances = [
             { axis: 'x' as const, dir: 'left' as const, val: dLeft },
             { axis: 'x' as const, dir: 'right' as const, val: dRight },
@@ -252,8 +251,8 @@ export function useSnapComputation() {
             { axis: 'y' as const, dir: 'bottom' as const, val: dBottom },
           ].filter((d) => d.val > 0)
 
-          // Find the two closest distances regardless of axis
-          // and snap them equal if they're within threshold
+                                                              
+                                                            
           for (let i = 0; i < distances.length; i++) {
             for (let j = i + 1; j < distances.length; j++) {
               const a = distances[i]
@@ -263,7 +262,7 @@ export function useSnapComputation() {
               if (diff > 0 && diff < PADDING_THRESHOLD) {
                 const avg = Math.round((a.val + b.val) / 2)
 
-                // Apply the equalized distance
+                                               
                 if (a.axis === 'x' && a.dir === 'left') finalX = c.x + avg
                 if (a.axis === 'x' && a.dir === 'right') finalX = c.x + c.width - w - avg
                 if (a.axis === 'y' && a.dir === 'top') finalY = c.y + avg
@@ -273,7 +272,7 @@ export function useSnapComputation() {
                 if (b.axis === 'y' && b.dir === 'top') finalY = c.y + avg
                 if (b.axis === 'y' && b.dir === 'bottom') finalY = c.y + c.height - h - avg
 
-                // Show guides for the equalized edges
+                                                      
                 if (a.dir === 'left' || b.dir === 'left') activeGuides.push({ orientation: 'v', position: finalX })
                 if (a.dir === 'right' || b.dir === 'right') activeGuides.push({ orientation: 'v', position: finalX + w })
                 if (a.dir === 'top' || b.dir === 'top') activeGuides.push({ orientation: 'h', position: finalY })
@@ -284,9 +283,9 @@ export function useSnapComputation() {
         }
       }
 
-      // Equal-spacing (distribution) snap. Runs only on an axis the edge/centre
-      // snap did NOT already lock, so it kicks in exactly when the box is
-      // floating free into a sibling rhythm rather than aligning to an edge.
+                                                                                
+                                                                          
+                                                                             
       const spacing: SpacingGuide[] = []
       if (bestDy > SNAP_THRESHOLD) {
         const r = rhythmSnap('y', { x: finalX, y: finalY, width: w, height: h }, otherLayers, SPACING_THRESHOLD)
@@ -312,4 +311,4 @@ export function useSnapComputation() {
     },
     [],
   )
-}
+};

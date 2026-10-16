@@ -4,6 +4,8 @@
   "loginDescription": "Connectez-vous pour gérer vos boutiques, vos commandes et votre catalogue.",
   "email": "Adresse email",
   "emailPlaceholder": "vendeur@novamarket.mg",
+  "emailOrPhone": "E-mail ou téléphone",
+  "emailOrPhonePlaceholder": "vendeur@novamarket.mg ou +261...",
   "password": "Mot de passe",
   "passwordPlaceholder": "••••••••••••",
   "rememberMe": "Se souvenir de moi",
@@ -144,6 +146,8 @@
     "export": "Exporter",
     "store": "Boutique",
     "notifications": "Notifications",
+    "realtimeConnected": "notifications en temps réel connectées",
+    "reconnecting": "reconnexion aux notifications en cours",
     "markAllRead": "Tout marquer comme lu",
     "open": "Ouverte",
     "closed": "Fermée"
@@ -465,6 +469,11 @@
       }
     }
   },
+  "aiExperience": {
+    "fullscreen": "Mode plein écran",
+    "exitFullscreen": "Quitter le plein écran",
+    "ready": "À votre écoute"
+  },
   "aiAutomation": {
     "title":"Assistant IA & Automatisations","subtitle":"Un espace pour comprendre votre activité et préparer des opérations automatisées.","tabsLabel":"Espace IA et automatisation","tab":{"assistant":"Assistant IA","automations":"Automatisations"},"plan":{"free":"Free","pro":"Pro","max":"Max"},"history":"Conversations","newConversation":"Nouvelle conversation","searchHistory":"Rechercher une conversation","recent":"Récent","emptyHistory":"Vos conversations apparaîtront ici lorsqu’un service IA sera connecté.","quota":"Quota IA","quotaType":{"basic":"Quota de base","increased":"Quota augmenté","five-times-free":"Jusqu’à 5× le quota Free"},"quotaUnavailable":"Utilisation et renouvellement indisponibles sans données du serveur.","upgrade":"Voir les plans","assistant":"Assistant vendeur","assistantCaption":"Aide contextuelle pour votre boutique","welcome":"Bonjour, comment puis-je vous aider ?","welcomeDescription":"Posez vos questions sur les ventes, les produits, les stocks ou les commandes. Les réponses nécessitent une connexion au service IA vendeur.","backendUnavailable":"Service IA indisponible : aucune réponse ne sera simulée tant que le backend ne sera pas connecté.","composerPlaceholder":"Posez une question sur votre boutique…","composerHint":"Entrée pour envoyer · Maj + Entrée pour une nouvelle ligne","send":"Envoyer","prompt":{"sales":"Comment évoluent mes ventes cette semaine ?","stock":"Quels produits ont bientôt besoin d’être réapprovisionnés ?","description":"Aidez-moi à améliorer une description produit.","promote":"Quels produits devrais-je promouvoir ?","bestSellers":"Analysez mes meilleures ventes.","cancelled":"Comment réduire les commandes annulées ?","promotion":"Aidez-moi à préparer une promotion.","summary":"Résumez les performances de ma boutique."},"stat":{"total":"Automatisations","active":"Actives","paused":"En pause","failed":"Échecs"},"automationIntro":"Automatisez les tâches répétitives de votre boutique","proIntro":"Pro permet de configurer des règles simples lorsque le service d’automatisation sera disponible.","freeIntro":"Parcourez les modèles. Le plan Pro débloque les règles simples; Max ajoute les capacités avancées prises en charge.","create":"Créer une automatisation","unlock":"Découvrir Pro","templatesTitle":"Modèles de workflows","templatesSubtitle":"Exemples de déclencheurs et d’actions. Ils ne sont pas encore exécutables.","searchTemplates":"Rechercher un modèle","filterLabel":"Filtrer par plan","filterAll":"Tous les plans","templateOnly":"Exemple","trigger":"Déclencheur","action":"Action","configure":"Configurer","unlockTemplate":"Voir les plans","executionHistory":"Historique des exécutions","noExecutions":"Aucune exécution","historyBackendRequired":"L’historique apparaîtra lorsque le moteur de workflows sera connecté.","builderTitle":"Créer une automatisation","builderUnavailable":"Le backend ne permet pas encore d’enregistrer, tester ou activer des workflows. Les modifications de ce formulaire ne sont pas sauvegardées.","workflowName":"Nom","workflowNamePlaceholder":"Ex. Alerte de stock bas","workflowDescription":"Description","triggerSelect":"Choisir un déclencheur","cancel":"Annuler","saveDraft":"Enregistrer le brouillon","activate":"Activer","template":{"lowStock":"Alerte de stock bas","lowStockDetail":"Prévenez l’équipe quand une référence passe sous son seuil.","newOrder":"Notification de nouvelle commande","newOrderDetail":"Alertez le vendeur à réception d’une commande.","unprocessed":"Rappel de commande à traiter","unprocessedDetail":"Relancez une commande restée en attente au-delà d’un délai.","outOfStock":"Alerte de rupture","outOfStockDetail":"Signalez les produits indisponibles et suggérez un réapprovisionnement.","report":"Rapport de performance","reportDetail":"Préparez un rapport récurrent si le service de rapports est disponible.","delivery":"Retard de livraison","deliveryDetail":"Alertez le vendeur quand une expédition dépasse le délai prévu.","optimize":"Optimisation produit assistée par IA","optimizeDetail":"Suggérez des améliorations de description à la demande.","sales":"Seuil de ventes atteint","salesDetail":"Prévenez le vendeur lorsqu’un objectif de ventes est atteint.","promotion":"Planification de promotion","promotionDetail":"Préparez une activation planifiée si les promotions sont compatibles.","restockSuggestion":"Suggestion de réapprovisionnement","restockDetail":"Proposez une commande selon le stock et le rythme de vente."},"trigger":{"lowStock":"Stock sous le seuil","newOrder":"Nouvelle commande","unprocessed":"Commande non traitée","outOfStock":"Produit indisponible","schedule":"Échéance planifiée","deliveryDelay":"Délai de livraison dépassé","manual":"Demande manuelle","salesThreshold":"Seuil de ventes atteint","stockSales":"Stock et ventes"},"action":{"notify":"Notifier le vendeur","restock":"Suggérer un réapprovisionnement","reportAction":"Préparer un rapport","suggest":"Créer une suggestion à valider","promotionAction":"Préparer une promotion"}
   },
@@ -474,8 +483,13 @@
     "simulatedData": "Données simulées",
     "telemetryActive": "Télémétrie active",
     "refresh": "Actualiser",
+    "loadMore": "Charger plus de livraisons",
     "bannerTitle": "Mode Démonstration Logistique",
-    "bannerDesc": "Ce tableau de bord cartographique simule le suivi GPS des coursiers partenaires sur l'agglomération d'Antananarivo (Analakely, Ankorondrano, Ivato, Tanjombato). Activez le bouton « Simuler GPS » pour observer les mises à jour de position en direct.",
+    "bannerDesc": "Les positions et les statuts arrivent en temps réel. L’historique des notifications et des livraisons reste consultable via l’API.",
+    "noLiveTracking": "Aucun coursier en suivi",
+    "liveConnections": "suivis en direct",
+    "realtimeConnectedDescription": "La carte reçoit les positions et changements de statut en direct. L’historique reste consultable via l’API.",
+    "realtimeDisconnectedDescription": "L’état initial et l’historique sont chargés depuis l’API. La carte se reconnecte automatiquement au flux de suivi.",
     "kpiInTransit": "En cours de livraison",
     "kpiInTransitSub": "Coursiers en route",
     "kpiAwaiting": "En attente d'expédition",

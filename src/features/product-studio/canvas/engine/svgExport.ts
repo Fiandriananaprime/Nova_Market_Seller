@@ -5,17 +5,17 @@ import { SvgScene, type NaturalImageSize } from '@/features/product-studio/canva
 import { captureDesignShaders } from '@/features/product-studio/canvas/engine/shaderCapture'
 import type { DesignDocument, ImageLayer } from '@/features/product-studio/canvas/types/design'
 
-/**
- * Serialise a design document to a standalone, vector SVG string by rendering
- * the SAME <SvgScene> the editor uses. Reusing the live renderer guarantees the
- * exported file matches the canvas exactly — no second renderer to drift.
- *
- * Text and imported SVGs ride inside <foreignObject> (real HTML/SVG), so the
- * output renders faithfully in browsers and embeds cleanly in HTML. (Editors
- * like Illustrator that ignore <foreignObject> won't show that text — a known
- * tradeoff of HTML-accurate text; a <text>-based path can be added later.)
- */
-function loadNaturalImageSize(url: string): Promise<NaturalImageSize | null> {
+   
+                                                                              
+                                                                                
+                                                                          
+  
+                                                                             
+                                                                             
+                                                                              
+                                                                           
+   
+const loadNaturalImageSize = (url: string):Promise<NaturalImageSize | null> => {
   return new Promise((resolve) => {
     const img = new Image()
     img.onload = () => {
@@ -24,9 +24,9 @@ function loadNaturalImageSize(url: string): Promise<NaturalImageSize | null> {
     img.onerror = () => resolve(null)
     img.src = url
   })
-}
+};
 
-async function loadCroppedImageSizes(doc: DesignDocument): Promise<Record<string, NaturalImageSize>> {
+const loadCroppedImageSizes = async (doc: DesignDocument):Promise<Record<string, NaturalImageSize>> => {
   const urls = new Set(
     doc.layers
       .filter(
@@ -43,13 +43,13 @@ async function loadCroppedImageSizes(doc: DesignDocument): Promise<Record<string
   return Object.fromEntries(
     entries.filter((entry): entry is [string, NaturalImageSize] => Boolean(entry[1])),
   )
-}
+};
 
-export async function buildSvgMarkup(doc: DesignDocument): Promise<string> {
-  // Shader backgrounds have no vector form — capture each to a still and embed
-  // it as an <image>. (Everything else is real vector.) Cropped image layers need
-  // natural dimensions before static markup render, because React effects don't
-  // run inside renderToStaticMarkup.
+export const buildSvgMarkup = async (doc: DesignDocument):Promise<string> => {
+                                                                               
+                                                                                  
+                                                                                
+                                     
   const fw = doc.format?.width ?? 1200
   const fh = doc.format?.height ?? 627
   const [canvases, imageSizes] = await Promise.all([
@@ -65,13 +65,13 @@ export async function buildSvgMarkup(doc: DesignDocument): Promise<string> {
     createElement(SvgScene, { doc, zoom: 1, standalone: true, shaderStills, imageSizes }),
   )
   return `<?xml version="1.0" encoding="UTF-8"?>\n${body}\n`
-}
+};
 
-function safeFileName(name: string): string {
+const safeFileName = (name: string):string => {
   return (name || 'design').trim().replace(/[^a-z0-9-_]+/gi, '-').replace(/^-+|-+$/g, '') || 'design'
-}
+};
 
-export async function exportSvgAndDownload(doc: DesignDocument): Promise<void> {
+export const exportSvgAndDownload = async (doc: DesignDocument):Promise<void> => {
   const markup = await buildSvgMarkup(doc)
   const blob = new Blob([markup], { type: 'image/svg+xml;charset=utf-8' })
   const url = URL.createObjectURL(blob)
@@ -80,4 +80,4 @@ export async function exportSvgAndDownload(doc: DesignDocument): Promise<void> {
   a.download = `${safeFileName(doc.name)}.svg`
   a.click()
   URL.revokeObjectURL(url)
-}
+};

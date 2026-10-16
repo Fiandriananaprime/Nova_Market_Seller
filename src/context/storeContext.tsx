@@ -1,23 +1,13 @@
 import {
-  createContext,
-  useContext,
   useEffect,
   useState,
   type ReactNode,
 } from "react"
 import { getSellerStores } from "@/service/store"
 import type { Store } from "@/type/store"
+import { StoreContext } from "./storeContextValue"
 
-interface StoreContextType {
-  stores: Store[]
-  selectedStore: Store | null
-  loading: boolean
-  selectStore: (storeId: string) => void
-}
-
-const StoreContext = createContext<StoreContextType | undefined>(undefined)
-
-export function StoreProvider({ children }: { children: ReactNode }) {
+export const StoreProvider = ({ children }: { children: ReactNode }) => {
   const [stores, setStores] = useState<Store[]>([])
   const [selectedStore, setSelectedStore] = useState<Store | null>(null)
   const [loading, setLoading] = useState(true)
@@ -67,14 +57,4 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       {children}
     </StoreContext.Provider>
   )
-}
-
-export function useStore() {
-  const context = useContext(StoreContext)
-
-  if (!context) {
-    throw new Error("useStore must be used inside StoreProvider")
-  }
-
-  return context
 }

@@ -2,7 +2,7 @@ import { useDesignStore } from '@/features/product-studio/canvas/store/useDesign
 import { SliderField } from '@/features/product-studio/canvas/components/controls/SliderField'
 import type { GradientLayer, GradientType, GradientColorStop } from '@/features/product-studio/canvas/types/design'
 
-// Saturated OKLCH gradient presets
+                                   
 const GRADIENT_PRESETS: Array<{
   name: string
   stops: GradientColorStop[]
@@ -89,7 +89,7 @@ interface Props {
   layer: GradientLayer
 }
 
-export function GradientPropertiesPanel({ layer }: Props) {
+export const GradientPropertiesPanel = ({ layer }: Props) => {
   const updateLayer = useDesignStore((s) => s.updateLayer)
   const pushSnapshot = useDesignStore((s) => s.pushSnapshot)
 
@@ -99,7 +99,7 @@ export function GradientPropertiesPanel({ layer }: Props) {
         Gradient
       </div>
 
-      {/* Presets */}
+      
       <div className="space-y-1.5">
         <label className="text-[13px] text-muted-foreground font-normal">Presets</label>
         <div className="grid grid-cols-4 gap-1.5">
@@ -125,7 +125,7 @@ export function GradientPropertiesPanel({ layer }: Props) {
         </div>
       </div>
 
-      {/* Type */}
+      
       <div className="space-y-1.5">
         <label className="text-[13px] text-muted-foreground font-normal">Type</label>
         <div className="flex gap-1">
@@ -149,7 +149,7 @@ export function GradientPropertiesPanel({ layer }: Props) {
         </div>
       </div>
 
-      {/* Angle */}
+      
       <SliderField
         label="Angle"
         value={layer.angle}
@@ -161,7 +161,7 @@ export function GradientPropertiesPanel({ layer }: Props) {
         onChange={(angle) => updateLayer<GradientLayer>(layer.id, { angle })}
       />
 
-      {/* Grain */}
+      
       <SliderField
         label="Grain"
         value={layer.grain}
@@ -172,7 +172,7 @@ export function GradientPropertiesPanel({ layer }: Props) {
         onChange={(grain) => updateLayer<GradientLayer>(layer.id, { grain })}
       />
 
-      {/* Color stops */}
+      
       <div className="space-y-2">
         <div className="flex items-center justify-between">
           <label className="text-[13px] text-muted-foreground font-normal">Color Stops</label>
@@ -249,7 +249,7 @@ export function GradientPropertiesPanel({ layer }: Props) {
         ))}
       </div>
 
-      {/* Border radius */}
+      
       <div className="space-y-1.5">
         <label className="text-[13px] text-muted-foreground font-normal">Corner Radius</label>
         <div className="flex gap-1 flex-wrap">
@@ -276,9 +276,9 @@ export function GradientPropertiesPanel({ layer }: Props) {
       </div>
     </div>
   )
-}
+};
 
-function presetToCss(preset: typeof GRADIENT_PRESETS[0]): string {
+const presetToCss = (preset: typeof GRADIENT_PRESETS[0]):string => {
   const stops = preset.stops
     .map((s) => `oklch(${s.oklchL} ${s.oklchC} ${s.oklchH}) ${s.position * 100}%`)
     .join(', ')
@@ -286,4 +286,4 @@ function presetToCss(preset: typeof GRADIENT_PRESETS[0]): string {
   if (preset.type === 'radial') return `radial-gradient(circle, ${stops})`
   if (preset.type === 'conic') return `conic-gradient(from ${preset.angle}deg, ${stops})`
   return `linear-gradient(${preset.angle}deg, ${stops})`
-}
+};

@@ -8,7 +8,7 @@ interface CommentPinsProps {
   zoom: number
 }
 
-export function CommentPins({ zoom }: CommentPinsProps) {
+export const CommentPins = ({ zoom }: CommentPinsProps) => {
   const tool = useDesignStore((s) => s.tool)
   const isCommentMode = tool === 'comment'
 
@@ -17,7 +17,7 @@ export function CommentPins({ zoom }: CommentPinsProps) {
   const addComment = useProjectStore((s) => s.addComment)
   const resolveComment = useProjectStore((s) => s.resolveComment)
 
-  // Find the first design in the active project (current canvas = first design)
+                                                                                
   const activeProject = activeProjectId
     ? projects.find((p) => p.id === activeProjectId)
     : null
@@ -29,7 +29,7 @@ export function CommentPins({ zoom }: CommentPinsProps) {
   const [newText, setNewText] = useState('')
   const inputRef = useRef<HTMLInputElement>(null)
 
-  // Focus new pin input
+                        
   useEffect(() => {
     if (newPinPos && inputRef.current) {
       inputRef.current.focus()
@@ -39,7 +39,7 @@ export function CommentPins({ zoom }: CommentPinsProps) {
   const handleCanvasClick = (e: React.MouseEvent) => {
     if (!isCommentMode) return
 
-    // Ignore clicks on pins themselves
+                                       
     if ((e.target as HTMLElement).closest('[data-comment-pin]')) return
 
     const rect = e.currentTarget.getBoundingClientRect()
@@ -55,7 +55,7 @@ export function CommentPins({ zoom }: CommentPinsProps) {
     if (!newText.trim() || !newPinPos) return
 
     if (!activeProjectId) {
-      // Auto-create a project if none exists
+                                             
       const pid = useProjectStore.getState().createProject('My Project')
       const designStore = useDesignStore.getState()
       const did = useProjectStore.getState().addDesign(pid, designStore.document)
@@ -64,7 +64,7 @@ export function CommentPins({ zoom }: CommentPinsProps) {
     } else if (firstDesign) {
       addComment(activeProjectId, firstDesign.id, newText.trim(), 'You', newPinPos.x, newPinPos.y)
     } else {
-      // Project exists but no design — add one
+                                               
       const designStore = useDesignStore.getState()
       const did = useProjectStore.getState().addDesign(activeProjectId, designStore.document)
       addComment(activeProjectId, did, newText.trim(), 'You', newPinPos.x, newPinPos.y)
@@ -80,7 +80,7 @@ export function CommentPins({ zoom }: CommentPinsProps) {
     setActivePinId(null)
   }
 
-  // Only render when there are comments or in comment mode
+                                                           
   if (!isCommentMode && comments.length === 0) return null
 
   return (
@@ -88,7 +88,7 @@ export function CommentPins({ zoom }: CommentPinsProps) {
       className="absolute inset-0 pointer-events-none"
       style={{ zIndex: 50 }}
     >
-      {/* Click catcher for comment mode */}
+      
       {isCommentMode && (
         <div
           className="absolute inset-0 pointer-events-auto"
@@ -97,7 +97,7 @@ export function CommentPins({ zoom }: CommentPinsProps) {
         />
       )}
 
-      {/* Existing comment pins */}
+      
       {comments.map((comment, index) => {
         if (comment.pinX == null || comment.pinY == null) return null
         const isActive = activePinId === comment.id
@@ -113,7 +113,7 @@ export function CommentPins({ zoom }: CommentPinsProps) {
               top: comment.pinY * zoom - 14,
             }}
           >
-            {/* Pin marker */}
+            
             <button
               aria-label={`Comment ${index + 1}`}
               className={`
@@ -132,7 +132,7 @@ export function CommentPins({ zoom }: CommentPinsProps) {
               {index + 1}
             </button>
 
-            {/* Comment popover */}
+            
             {isActive && (
               <div
                 className="absolute top-8 left-0 bg-card border border-border rounded-[7px] shadow-[0_8px_30px_-4px_rgba(17,17,17,0.12)] p-3 min-w-[200px] max-w-[280px] z-50"
@@ -168,7 +168,7 @@ export function CommentPins({ zoom }: CommentPinsProps) {
         )
       })}
 
-      {/* New pin being placed */}
+      
       {newPinPos && (
         <div
           data-comment-pin
@@ -218,4 +218,4 @@ export function CommentPins({ zoom }: CommentPinsProps) {
       )}
     </div>
   )
-}
+};

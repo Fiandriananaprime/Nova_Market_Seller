@@ -20,16 +20,16 @@ import { useEffect } from 'react'
 import { useDesignStore } from '@/features/product-studio/canvas/store/useDesignStore'
 import { useWorkspaceStore } from '@/features/product-studio/canvas/store/useWorkspaceStore'
 
-function EditorView() {
+const EditorView = () => {
   useKeyboardShortcuts()
-  // Ensure tool is select on mount (prevents stale tool state from blocking interaction)
+                                                                                         
   useEffect(() => { useDesignStore.getState().setTool('select') }, [])
 
-  // Keep the visible canvas in sync with the active frame. Adding, duplicating,
-  // or AI-generating a frame all set `activeFrameId` but don't themselves load
-  // the frame into the design store the canvas renders — so without this the
-  // new frame never appears. Subscribing to `activeFrameId` makes every path
-  // that switches frames reflect on the canvas through one bridge.
+                                                                                
+                                                                               
+                                                                             
+                                                                             
+                                                                   
   useEffect(() => {
     const loadActiveFrame = (frameId: string | null) => {
       if (!frameId) return
@@ -73,21 +73,20 @@ function EditorView() {
       <SettingsModal />
     </div>
   )
-}
+};
 
-export default function App() {
+const App = () => {
   const route = useRouterStore((s) => s.route)
 
-  // Sync navigation with a parent /studio host when embedded (no-op standalone).
+                                                                                 
   useStudioBridge()
 
-  // Expose the command bus to a parent window / agent harness (and window.tela).
+                                                                                 
   useEffect(() => installAgentRpc(), [])
 
   return (
     <TooltipProvider>
-      {/* vaul scales this wrapper back (and rounds its corners) when a sheet opens,
-          revealing the dark #root behind it — the iOS "page pushed back" depth. */}
+      
       <div data-vaul-drawer-wrapper="" className="bg-background">
         {route.page === 'library' && <HomePage />}
         {route.page === 'settings' && <SettingsPage />}
@@ -95,4 +94,5 @@ export default function App() {
       </div>
     </TooltipProvider>
   )
-}
+};
+export default App;

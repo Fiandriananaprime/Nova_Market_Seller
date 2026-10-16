@@ -7,22 +7,22 @@ import { useDesignStore } from '@/features/product-studio/canvas/store/useDesign
 import { applyDesignJson, serializeLayersForAI } from '@/features/product-studio/canvas/engine/applyDesignJson'
 
 interface AIStore {
-  // API config — the provider key lives on your own proxy endpoint, never in the
-  // browser (see lib/aiApi.ts); only the model choice is client-side.
+                                                                                 
+                                                                      
   model: string
 
-  // Context for AI generation
+                              
   productName: string
   productDescription: string
   targetAudience: string
   brandVoice: string
   callToAction: string
 
-  // State
+          
   isGenerating: boolean
   lastError: string | null
 
-  // Actions
+            
   setModel: (model: string) => void
   setProductContext: (updates: Partial<Pick<AIStore, 'productName' | 'productDescription' | 'targetAudience' | 'brandVoice' | 'callToAction'>>) => void
   setIsGenerating: (v: boolean) => void
@@ -62,14 +62,14 @@ export const useAIStore = create<AIStore>()(
   ),
 )
 
-// --- AI API call ---
+                      
 
-async function completeCanvasAI(options: {
+const completeCanvasAI = async (options: {
   model: string
   system: string
   prompt: string
   maxTokens: number
-}): Promise<string> {
+}):Promise<string> => {
   const response = await postCanvasAI({
     model: options.model,
     system: options.system,
@@ -79,9 +79,9 @@ async function completeCanvasAI(options: {
   })
   const data = await response.json()
   return data.text ?? ''
-}
+};
 
-export async function generateCopy(options: {
+export const generateCopy = async (options: {
   model: string
   prompt: string
   productContext: {
@@ -91,7 +91,7 @@ export async function generateCopy(options: {
     brandVoice: string
     callToAction: string
   }
-}): Promise<string> {
+}):Promise<string> => {
   const systemPrompt = `You are an expert ad copywriter and marketing strategist. Write compelling, concise ad copy.
 
 Product: ${options.productContext.productName}
@@ -114,9 +114,9 @@ Rules:
     prompt: options.prompt,
     maxTokens: 300,
   })
-}
+};
 
-export async function generateAdDesign(options: {
+export const generateAdDesign = async (options: {
   model: string
   prompt: string
   format: { width: number; height: number; label: string }
@@ -127,7 +127,7 @@ export async function generateAdDesign(options: {
     brandVoice: string
     callToAction: string
   }
-}): Promise<string> {
+}):Promise<string> => {
   const systemPrompt = `You are an expert ad designer. Generate JSON layouts for ads.
 
 Product: ${options.productContext.productName}
@@ -164,13 +164,13 @@ Return ONLY valid JSON array, no markdown, no explanation.`
     prompt: options.prompt,
     maxTokens: 2000,
   })
-}
+};
 
-export async function relayoutForFormat(options: {
+export const relayoutForFormat = async (options: {
   model: string
   layers: unknown[]
   format: { width: number; height: number; label: string }
-}): Promise<string> {
+}):Promise<string> => {
   const systemPrompt = `You are an expert ad designer adapting an existing design to a new canvas size.
 
 You are given a design's existing layers (their content and styling) and must
@@ -200,7 +200,7 @@ Return ONLY the JSON array, no markdown, no explanation.`
     prompt: 'Re-layout the design for the new canvas.',
     maxTokens: 2000,
   })
-}
+};
 
 /**
  * Re-layout the ACTIVE frame's current content for its current format via the
@@ -209,7 +209,7 @@ Return ONLY the JSON array, no markdown, no explanation.`
  * with an AI composition. Returns false if there's no content or parsing fails.
  * Exposed to agents through the command bus (op: relayoutFrame).
  */
-export async function relayoutActiveFrame(): Promise<boolean> {
+export const relayoutActiveFrame = async (): Promise<boolean> => {
   const d = useDesignStore.getState()
   const format = d.document.format
   const layers = serializeLayersForAI(d.document.layers)
@@ -220,4 +220,4 @@ export async function relayoutActiveFrame(): Promise<boolean> {
     format: { width: format.width, height: format.height, label: format.label },
   })
   return applyDesignJson(result)
-}
+};

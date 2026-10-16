@@ -5,7 +5,7 @@ import { getBrandColor } from '@/features/product-studio/canvas/brand/palette'
 import { SHADER_KINDS, SHADER_PALETTES, createShaderFill, FRAME_STEP_MS } from '@/features/product-studio/canvas/engine/shaders'
 import type { BackgroundLayer, BackgroundFill, GradientStop, BrandColor, ShaderFill } from '@/features/product-studio/canvas/types/design'
 
-export function BackgroundPanel() {
+export const BackgroundPanel = () => {
   const layers = useDesignStore((s) => s.document.layers)
   const updateLayer = useDesignStore((s) => s.updateLayer)
   const pushSnapshot = useDesignStore((s) => s.pushSnapshot)
@@ -36,7 +36,7 @@ export function BackgroundPanel() {
     } else if (type === 'shader') {
       updateLayer<BackgroundLayer>(bgLayer.id, { fill: createShaderFill() })
     } else if (type === 'image') {
-      // Trigger file upload
+                            
       const input = document.createElement('input')
       input.type = 'file'
       input.accept = 'image/*'
@@ -67,7 +67,7 @@ export function BackgroundPanel() {
         Background
       </div>
 
-      {/* Fill type selector */}
+      
       <div className="flex gap-1">
         {(['solid', 'gradient', 'image', 'shader'] as const).map((type) => (
           <button
@@ -85,7 +85,7 @@ export function BackgroundPanel() {
         ))}
       </div>
 
-      {/* Solid fill */}
+      
       {fill.type === 'solid' && (
         <BrandColorPicker
           label="Fill Color"
@@ -99,10 +99,10 @@ export function BackgroundPanel() {
         />
       )}
 
-      {/* Gradient fill */}
+      
       {fill.type === 'gradient' && (
         <div className="space-y-3">
-          {/* Gradient type */}
+          
           <div className="flex gap-1">
             {(['linear', 'radial'] as const).map((gt) => (
               <button
@@ -125,7 +125,7 @@ export function BackgroundPanel() {
             ))}
           </div>
 
-          {/* Angle (linear only) */}
+          
           {fill.gradientType === 'linear' && (
             <SliderField
               label="Angle"
@@ -143,7 +143,7 @@ export function BackgroundPanel() {
             />
           )}
 
-          {/* Gradient stops */}
+          
           <div className="space-y-2">
             <div className="text-[11px] uppercase tracking-[0.12em] text-muted-foreground/60 font-medium">
               Stops
@@ -187,7 +187,7 @@ export function BackgroundPanel() {
         </div>
       )}
 
-      {/* Image fill controls */}
+      
       {fill.type === 'image' && (
         <div className="space-y-3">
           <label
@@ -239,10 +239,10 @@ export function BackgroundPanel() {
         </div>
       )}
 
-      {/* Shader fill controls */}
+      
       {fill.type === 'shader' && (
         <div className="space-y-3">
-          {/* Shader kind */}
+          
           <div className="space-y-1.5">
             <div className="text-[11px] uppercase tracking-[0.12em] text-muted-foreground/60 font-medium">
               Style
@@ -266,7 +266,7 @@ export function BackgroundPanel() {
             </div>
           </div>
 
-          {/* Brand palettes */}
+          
           <div className="space-y-1.5">
             <div className="text-[11px] uppercase tracking-[0.12em] text-muted-foreground/60 font-medium">
               Palette
@@ -341,7 +341,7 @@ export function BackgroundPanel() {
             onChange={(v) => updateShader({ frame: v * FRAME_STEP_MS })}
           />
 
-          {/* Live motion speed (preview only) */}
+          
           <SliderField
             label="Preview motion"
             value={fill.speed}
@@ -358,7 +358,7 @@ export function BackgroundPanel() {
         </div>
       )}
 
-      {/* Opacity */}
+      
       <SliderField
         label="Opacity"
         value={bgLayer.opacity}
@@ -370,9 +370,9 @@ export function BackgroundPanel() {
       />
     </div>
   )
-}
+};
 
-function GradientStopEditor({
+const GradientStopEditor = ({
   stop,
   index,
   onChange,
@@ -382,7 +382,7 @@ function GradientStopEditor({
   index: number
   onChange: (stop: GradientStop) => void
   onRemove?: () => void
-}) {
+}) => {
   return (
     <div className="space-y-2 p-2 bg-muted/30 rounded-[5px]">
       <div className="flex items-center justify-between">
@@ -411,4 +411,4 @@ function GradientStopEditor({
       />
     </div>
   )
-}
+};

@@ -1,10 +1,8 @@
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import { useTranslation } from "react-i18next"
 import {
   AreaChart,
   Area,
-  BarChart,
-  Bar,
   PieChart,
   Pie,
   Cell,
@@ -19,18 +17,11 @@ import {
   ShoppingBag,
   Eye,
   Percent,
-  Sparkles,
-  ArrowUpRight,
-  Filter,
   Download,
 } from "lucide-react"
-import {
-  revenueSeries,
-  topProducts,
-  categoryBreakdown,
-  metrics,
-  formatMGA,
-} from "@/hook/mock"
+import { formatMGA } from "@/hook/format"
+import { getSellerAnalytics } from "@/service/analytics"
+import type { SellerAnalytics } from "@/type/analytics"
 import {
   PageHeader,
   KpiCard,
@@ -38,7 +29,6 @@ import {
   CardHeader,
   CardTitle,
   CardBody,
-  Badge,
   Button,
   Toast,
 } from "@/components/ui"
@@ -66,12 +56,18 @@ const PERIOD_OPTIONS = [
 
 const DONUT_COLORS = ["#2563EB", "#10B981", "#8B5CF6", "#F59E0B", "#06B6D4", "#EC4899"]
 
-function CustomTooltip({ active, payload, label }: any) {
+interface CustomTooltipProps {
+  active?: boolean
+  payload?: Array<{ name?: string; color?: string; value?: number }>
+  label?: string | number
+}
+
+const CustomTooltip = ({ active, payload, label }: CustomTooltipProps) => {
   if (!active || !payload?.length) return null
   return (
     <div className="bg-card/95 backdrop-blur-md border border-border rounded-xl p-3 shadow-xl text-xs">
       <p className="font-semibold text-foreground mb-1.5">{label}</p>
-      {payload.map((p: any) => (
+      {payload.map((p) => (
         <div key={p.name} className="flex items-center justify-between gap-4 py-0.5">
           <span className="text-muted-foreground flex items-center gap-1.5">
             <span
@@ -81,30 +77,46 @@ function CustomTooltip({ active, payload, label }: any) {
             {p.name === "revenue" ? "Revenus" : "Commandes"}
           </span>
           <span className="font-bold text-foreground tabular-nums">
-            {p.name === "revenue" ? formatMGA(p.value) : `${p.value} commandes`}
+            {typeof p.value !== "number"
+              ? "—"
+              : p.name === "revenue"
+                ? formatMGA(p.value)
+                : `${p.value} commandes`}
           </span>
         </div>
       ))}
     </div>
   )
-}
+};
 
-export default function Analytics() {
+const Analytics = () => {
   const { t } = useTranslation()
   const [period, setPeriod] = useState("12m")
+  const [analytics, setAnalytics] = useState<SellerAnalytics | null>(null)
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
   const [toast, setToast] = useState<string | null>(null)
+
+  useEffect(() => {
+    let active = true
+    setLoading(true)
+    setError(null)
+    getSellerAnalytics(period).then((result) => {
+      if (active) setAnalytics(result)
+    }).catch(() => {
+      if (active) setError("Les analyses n’ont pas pu être chargées. Vérifiez votre connexion puis réessayez.")
+    }).finally(() => {
+      if (active) setLoading(false)
+    })
+    return () => { active = false }
+  }, [period])
 
   const showToast = (msg: string) => {
     setToast(msg)
     setTimeout(() => setToast(null), 3000)
   }
 
-  const slicedData =
-    period === "7d"
-      ? revenueSeries.slice(-2)
-      : period === "30d"
-      ? revenueSeries.slice(-4)
-      : revenueSeries
+  const slicedData = analytics?.revenueSeries ?? []
 
   const handleExport = () => {
     const csvContent =
@@ -122,7 +134,7 @@ export default function Analytics() {
 
   return (
     <div className="p-6 md:p-8 space-y-6 animate-fade-in max-w-7xl mx-auto">
-      {/* Page Header */}
+      
       <PageHeader
         title={t("nav.analytics")}
         subtitle="Analyses financières, comportementales et indicateurs de croissance"
@@ -148,6 +160,7 @@ export default function Analytics() {
               variant="outline"
               size="sm"
               onClick={handleExport}
+              disabled={loading || !analytics || Boolean(error)}
               className="gap-1.5"
             >
               <Download size={13} />
@@ -156,13 +169,15 @@ export default function Analytics() {
           </div>
         }
       />
+      {error && <div role="alert" className="rounded-xl border border-rose-300 bg-rose-50 px-4 py-3 text-sm text-rose-900 dark:border-rose-900 dark:bg-rose-950/30 dark:text-rose-100">{error}</div>}
+      {loading && <div role="status" aria-live="polite" className="rounded-2xl border border-border bg-card p-8 text-center text-sm text-muted-foreground">Chargement des analyses…</div>}
 
-      {/* KPI Cards */}
-      <div data-tour="analytics-kpis" className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+      
+      {!loading && !error && analytics && <><div data-tour="analytics-kpis" className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         <KpiCard
           label="Chiffre d'affaires"
-          value={formatMGA(metrics.revenue)}
-          change={metrics.revenueChange}
+          value={formatMGA(analytics.metrics.revenue)}
+          change={analytics.metrics.revenueChange}
           icon={<TrendingUp size={18} />}
           accent
           subtitle="Cumul période"
@@ -170,32 +185,32 @@ export default function Analytics() {
 
         <KpiCard
           label="Commandes validées"
-          value={metrics.orders.toString()}
-          change={metrics.ordersChange}
+          value={analytics.metrics.orders.toString()}
+          change={analytics.metrics.ordersChange}
           icon={<ShoppingBag size={18} />}
           subtitle="Volume traité"
         />
 
         <KpiCard
           label="Visites boutique"
-          value={metrics.storeViews.toLocaleString()}
-          change={8.3}
+          value={analytics.metrics.storeViews.toLocaleString()}
+          change={analytics.metrics.storeViewsChange}
           icon={<Eye size={18} />}
           subtitle="Trafic entrant"
         />
 
         <KpiCard
           label="Taux de conversion"
-          value={`${metrics.conversionRate}%`}
-          change={0.4}
+          value={`${analytics.metrics.conversionRate}%`}
+          change={analytics.metrics.conversionRateChange}
           icon={<Percent size={18} />}
           subtitle="Visites → Achats"
         />
       </div>
 
-      {/* Main Charts Row */}
+      
       <div data-tour="analytics-charts" className="grid lg:grid-cols-3 gap-6">
-        {/* Revenue & Volume Area Chart */}
+        
         <Card className="lg:col-span-2">
           <CardHeader>
             <div>
@@ -262,7 +277,7 @@ export default function Analytics() {
           </CardBody>
         </Card>
 
-        {/* Category Share Donut Chart */}
+        
         <Card className="flex flex-col">
           <CardHeader>
             <div>
@@ -278,7 +293,7 @@ export default function Analytics() {
               <ResponsiveContainer width="100%" height="100%">
                 <PieChart>
                   <Pie
-                    data={categoryBreakdown}
+                    data={analytics.categoryBreakdown}
                     dataKey="percentage"
                     nameKey="name"
                     cx="50%"
@@ -287,7 +302,7 @@ export default function Analytics() {
                     outerRadius={65}
                     paddingAngle={3}
                   >
-                    {categoryBreakdown.map((_, index) => (
+                    {analytics.categoryBreakdown.map((_, index) => (
                       <Cell
                         key={`cell-${index}`}
                         fill={DONUT_COLORS[index % DONUT_COLORS.length]}
@@ -299,9 +314,9 @@ export default function Analytics() {
               </ResponsiveContainer>
             </div>
 
-            {/* Legend list */}
+            
             <div className="space-y-2 pt-2 border-t border-border/60">
-              {categoryBreakdown.map((cat, idx) => (
+              {analytics.categoryBreakdown.map((cat, idx) => (
                 <div
                   key={cat.name}
                   className="flex items-center justify-between text-xs"
@@ -322,9 +337,11 @@ export default function Analytics() {
           </CardBody>
         </Card>
       </div>
+      </>}
 
-      {/* Toast Feedback */}
+      
       {toast && <Toast message={toast} onDismiss={() => setToast(null)} />}
     </div>
   )
-}
+};
+export default Analytics;

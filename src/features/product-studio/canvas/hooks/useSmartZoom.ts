@@ -4,18 +4,17 @@ import type { AdFormat } from '@/features/product-studio/canvas/types/design'
 
 const FIT_RATIO = 0.9
 
-export function calcFitZoom(
+export const calcFitZoom = (
   containerWidth: number,
   containerHeight: number,
-  format: AdFormat,
-): number {
+  format: AdFormat,):number => {
   if (containerWidth <= 0 || containerHeight <= 0) return 0.5
   const scaleX = (containerWidth * FIT_RATIO) / format.width
   const scaleY = (containerHeight * FIT_RATIO) / format.height
   return Math.min(scaleX, scaleY, 3)
-}
+};
 
-export function useSmartZoom(containerRef: React.RefObject<HTMLDivElement | null>) {
+export const useSmartZoom = (containerRef: React.RefObject<HTMLDivElement | null>) => {
   const animRef = useRef<number>(0)
   const prevFormatRef = useRef<string | null>(null)
 
@@ -92,7 +91,7 @@ export function useSmartZoom(containerRef: React.RefObject<HTMLDivElement | null
     smoothPanTo(0, 0, 200)
   }, [smoothPanTo])
 
-  // Fit on mount
+                 
   useEffect(() => {
     const timer = setTimeout(() => {
       fitToView()
@@ -101,7 +100,7 @@ export function useSmartZoom(containerRef: React.RefObject<HTMLDivElement | null
     return () => clearTimeout(timer)
   }, [fitToView])
 
-  // Watch for format changes and auto-fit
+                                          
   useEffect(() => {
     const unsub = useDesignStore.subscribe((state) => {
       const currentId = state.document.format.id
@@ -116,19 +115,19 @@ export function useSmartZoom(containerRef: React.RefObject<HTMLDivElement | null
     return unsub
   }, [getContainerSize, smoothZoomTo, smoothPanTo])
 
-  // Wheel handler — pinch-to-zoom AND two-finger pan
+                                                     
   const handleWheel = useCallback(
     (e: React.WheelEvent) => {
       e.preventDefault()
 
       if (e.ctrlKey) {
-        // Pinch-to-zoom (trackpad sends ctrlKey for pinch gestures)
+                                                                    
         const currentZoom = useDesignStore.getState().zoom
         const factor = e.deltaY > 0 ? 0.97 : 1.03
         const newZoom = Math.max(0.1, Math.min(4, currentZoom * factor))
         useDesignStore.getState().setZoom(newZoom)
       } else {
-        // Two-finger scroll = pan
+                                  
         const pan = useDesignStore.getState().panOffset
         useDesignStore.getState().setPanOffset({
           x: pan.x - e.deltaX,
@@ -156,4 +155,4 @@ export function useSmartZoom(containerRef: React.RefObject<HTMLDivElement | null
     zoomIn,
     zoomOut,
   }
-}
+};

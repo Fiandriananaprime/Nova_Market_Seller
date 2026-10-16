@@ -1,5 +1,6 @@
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import { useNavigate } from "react-router"
+import { motion, useReducedMotion } from "motion/react"
 import {
   Check,
   Minus,
@@ -20,9 +21,17 @@ import {
   Info,
   ExternalLink,
 } from "lucide-react"
-import { PageHeader, Badge, Button, Toast, Card, CardBody } from "@/components/ui"
+import { PageHeader, Badge, Toast, Card, CardBody } from "@/components/ui"
+import {
+  cancelSubscription,
+  checkoutSubscription,
+  getSubscription,
+  getSubscriptionPlans,
+  updateSubscription,
+} from "@/service/seller"
+import type { SubscriptionPlan } from "@/type/seller"
 
-// ─── Types ────────────────────────────────────────────────────────────────────
+                                                                                 
 
 type PlanId = "free" | "pro" | "max"
 
@@ -30,7 +39,7 @@ interface Plan {
   id: PlanId
   name: string
   tagline: string
-  price: number // Ar/month, 0 = gratuit
+  price: number                         
   priceLabel: string
   description: string
   badge?: string
@@ -42,11 +51,7 @@ interface Plan {
   cta: (current: PlanId) => { label: string; action: "current" | "upgrade" | "downgrade" | "contact"; disabled: boolean }
 }
 
-// ─── Mock subscription state ──────────────────────────────────────────────────
-
-const CURRENT_PLAN: PlanId = "free" // ← change to "pro" or "max" to preview other states
-
-// ─── Plan definitions ─────────────────────────────────────────────────────────
+                                                                                 
 
 const PLANS: Plan[] = [
   {
@@ -143,6 +148,21 @@ const PLANS: Plan[] = [
   },
 ]
 
+const mergePlans = (availablePlans: SubscriptionPlan[]):Plan[] => {
+  return availablePlans.flatMap((available) => {
+    const template = PLANS.find((plan) => plan.id === available.id.toLowerCase())
+    if (!template) return []
+    const price = available.price ?? template.price
+    return [{
+      ...template,
+      name: available.name ?? template.name,
+      price,
+      priceLabel: price === 0 ? "Gratuit" : `${price.toLocaleString("fr-MG")} Ar`,
+      description: typeof available.description === "string" ? available.description : template.description,
+    }]
+  })
+};
+
 // ─── Comparison table ─────────────────────────────────────────────────────────
 
 interface FeatureRow {
@@ -234,7 +254,7 @@ const COMPARISON_GROUPS: FeatureGroup[] = [
 
 // ─── Cell renderer ────────────────────────────────────────────────────────────
 
-function FeatureCell({ value, planId }: { value: string | boolean; planId: PlanId }) {
+const FeatureCell = ({ value, planId }: { value: string | boolean; planId: PlanId }) => {
   if (value === true) {
     return (
       <div className="flex justify-center">
@@ -264,26 +284,37 @@ function FeatureCell({ value, planId }: { value: string | boolean; planId: PlanI
       {value}
     </span>
   )
-}
+};
 
 // ─── Plan Card ────────────────────────────────────────────────────────────────
 
-function PlanCard({
+const PlanCard = ({
   plan,
   currentPlan,
   onAction,
+  index,
 }: {
   plan: Plan
-  currentPlan: PlanId
+  currentPlan: PlanId | null
   onAction: (plan: Plan, action: string) => void
-}) {
+  index: number
+}) => {
   const Icon = plan.icon
-  const cta = plan.cta(currentPlan)
+  const cta = currentPlan ? plan.cta(currentPlan) : { label: "Chargement…", action: "current" as const, disabled: true }
   const isCurrent = currentPlan === plan.id
   const isHighlighted = plan.id === "pro"
+  const shouldReduceMotion = useReducedMotion()
 
   return (
-    <div
+    <motion.div
+      initial={shouldReduceMotion ? false : { opacity: 0, y: 18 }}
+      animate={{ opacity: 1, y: 0 }}
+      whileHover={
+        shouldReduceMotion
+          ? undefined
+          : { y: -4, transition: { duration: 0.18, delay: 0 } }
+      }
+      transition={{ duration: 0.4, delay: index * 0.09, ease: "easeOut" }}
       className={`relative flex flex-col rounded-2xl border bg-card transition-all duration-200 ${plan.borderClass} ${
         isHighlighted
           ? "shadow-lg shadow-primary/8 ring-1 ring-primary/20 scale-[1.01]"
@@ -292,7 +323,7 @@ function PlanCard({
           : "shadow-xs"
       }`}
     >
-      {/* Popular / Premium badge */}
+      
       {plan.badge && (
         <div className="absolute -top-3 left-1/2 -translate-x-1/2">
           <span className={`inline-flex items-center gap-1 px-3 py-1 rounded-full text-[10px] font-bold border ${plan.badgeColor}`}>
@@ -303,7 +334,7 @@ function PlanCard({
       )}
 
       <div className="p-6 flex flex-col flex-1 gap-5">
-        {/* Header */}
+        
         <div className="space-y-3">
           <div className="flex items-center justify-between">
             <div className={`w-9 h-9 rounded-xl flex items-center justify-center ${
@@ -326,7 +357,7 @@ function PlanCard({
             <p className="text-xs text-muted-foreground mt-0.5">{plan.tagline}</p>
           </div>
 
-          {/* Pricing */}
+          
           <div className="flex items-baseline gap-1.5">
             {plan.price === 0 ? (
               <span className="font-display font-extrabold text-3xl text-foreground">Gratuit</span>
@@ -342,10 +373,10 @@ function PlanCard({
           <p className="text-xs text-muted-foreground leading-relaxed">{plan.description}</p>
         </div>
 
-        {/* Divider */}
+        
         <div className="h-px bg-border/60" />
 
-        {/* Features */}
+        
         <ul className="space-y-2.5 flex-1">
           {plan.features.map((f, i) => {
             const isHeader = f.endsWith(", plus :")
@@ -373,7 +404,7 @@ function PlanCard({
           })}
         </ul>
 
-        {/* CTA */}
+        
         <button
           type="button"
           disabled={cta.disabled}
@@ -396,49 +427,86 @@ function PlanCard({
           </span>
         </button>
       </div>
-    </div>
+    </motion.div>
   )
-}
+};
 
 // ─── Main Page ────────────────────────────────────────────────────────────────
 
-export default function Subscription() {
+const Subscription = () => {
   const navigate = useNavigate()
   const [toast, setToast] = useState<string | null>(null)
   const [expandedGroup, setExpandedGroup] = useState<string | null>(null)
   const [showFullTable, setShowFullTable] = useState(false)
+  const [currentPlan, setCurrentPlan] = useState<PlanId | null>(null)
+  const [plans, setPlans] = useState<Plan[]>([])
+  const [loading, setLoading] = useState(true)
+  const [saving, setSaving] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+
+  useEffect(() => {
+    Promise.all([getSubscription(), getSubscriptionPlans()])
+      .then(([subscription, availablePlans]) => {
+        const selected = subscription.plan ?? subscription.planId
+        setCurrentPlan(typeof selected === "string" && ["free", "pro", "max"].includes(selected.toLowerCase())
+          ? selected.toLowerCase() as PlanId
+          : null)
+        setPlans(mergePlans(availablePlans))
+      })
+      .catch(() => setError("Impossible de charger l'abonnement et les offres."))
+      .finally(() => setLoading(false))
+  }, [])
 
   function showToast(msg: string) {
     setToast(msg)
     setTimeout(() => setToast(null), 3500)
   }
 
-  function handlePlanAction(plan: Plan, action: string) {
+  async function handlePlanAction(plan: Plan, action: string) {
     if (action === "current") return
-    if (action === "upgrade") {
-      showToast(`Mise à niveau vers ${plan.name} — intégration de paiement à connecter.`)
-    } else if (action === "downgrade") {
-      showToast(`Rétrogradation vers ${plan.name} — confirmation requise.`)
-    } else if (action === "contact") {
+    if (action === "contact") {
       showToast("Contactez le support Nova Market pour cette opération.")
+      return
+    }
+    setSaving(true)
+    setError(null)
+    try {
+      if (action === "upgrade") {
+        const checkout = await checkoutSubscription({ plan: plan.id })
+        if (checkout.checkoutUrl) window.location.assign(checkout.checkoutUrl)
+        else showToast("Votre demande de paiement a été créée.")
+      } else {
+        const updated = await updateSubscription({ plan: plan.id })
+        const selected = updated.plan
+        if (typeof selected === "string" && ["free", "pro", "max"].includes(selected.toLowerCase())) {
+          setCurrentPlan(selected.toLowerCase() as PlanId)
+        } else {
+          setCurrentPlan(plan.id)
+        }
+        showToast(`Abonnement mis à jour vers ${plan.name}.`)
+      }
+    } catch {
+      setError("Impossible de modifier l'abonnement. Réessayez.")
+    } finally {
+      setSaving(false)
     }
   }
 
-  const currentPlanDef = PLANS.find((p) => p.id === CURRENT_PLAN)!
+  const currentPlanDef = plans.find((p) => p.id === currentPlan)
 
   const visibleGroups = showFullTable ? COMPARISON_GROUPS : COMPARISON_GROUPS.slice(0, 4)
 
   return (
     <div className="p-4 md:p-8 space-y-10 animate-fade-in max-w-screen-xl mx-auto pb-16">
-      {/* ── Page Header ──────────────────────────────────────────── */}
+      
       <PageHeader
         title="Plans & Abonnement"
         subtitle="Choisissez le plan adapté à la taille et aux ambitions de votre boutique"
-        badge={
+        badge={currentPlanDef ? (
           <Badge variant="primary" dot>
             Plan actuel : {currentPlanDef.name}
           </Badge>
-        }
+        ) : undefined}
         actions={
           <button
             type="button"
@@ -451,25 +519,28 @@ export default function Subscription() {
         }
       />
 
-      {/* ── Current plan banner (if Pro or Max) ─────────────────── */}
-      {CURRENT_PLAN !== "free" && (
+      
+      {loading && <p role="status" className="text-sm text-muted-foreground">Chargement des offres…</p>}
+      {error && <p role="alert" className="rounded-xl border border-destructive/30 bg-destructive/5 p-3 text-sm text-destructive">{error}</p>}
+      {!loading && plans.length === 0 && !error && <p className="rounded-xl border border-dashed border-border p-4 text-sm text-muted-foreground">Aucune offre disponible.</p>}
+      {currentPlanDef && currentPlan !== "free" && (
         <div className={`rounded-2xl border p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 ${
-          CURRENT_PLAN === "max"
+          currentPlan === "max"
             ? "border-amber-400/30 bg-amber-500/5"
             : "border-primary/20 bg-primary/5"
         }`}>
           <div className="flex items-center gap-3">
             <div className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 ${
-              CURRENT_PLAN === "max" ? "bg-amber-500/10" : "bg-primary/10"
+              currentPlan === "max" ? "bg-amber-500/10" : "bg-primary/10"
             }`}>
-              {CURRENT_PLAN === "max" ? <Crown size={17} className="text-amber-500" /> : <Zap size={17} className="text-primary" />}
+              {currentPlan === "max" ? <Crown size={17} className="text-amber-500" /> : <Zap size={17} className="text-primary" />}
             </div>
             <div>
               <p className="font-display font-bold text-sm text-foreground">
                 Vous êtes sur le plan {currentPlanDef.name}
               </p>
               <p className="text-xs text-muted-foreground mt-0.5">
-                Prochain renouvellement : données de facturation à connecter via l'API backend
+                Votre abonnement actif est géré par le service Nova Market.
               </p>
             </div>
           </div>
@@ -480,7 +551,21 @@ export default function Subscription() {
             </span>
             <button
               type="button"
-              onClick={() => showToast("Gestion de l'abonnement — connexion API à implémenter.")}
+              disabled={saving}
+              onClick={async () => {
+                if (!window.confirm("Annuler votre abonnement ?")) return
+                setSaving(true)
+                setError(null)
+                try {
+                  await cancelSubscription()
+                  setCurrentPlan("free")
+                  showToast("Abonnement annulé.")
+                } catch {
+                  setError("Impossible d'annuler l'abonnement. Réessayez.")
+                } finally {
+                  setSaving(false)
+                }
+              }}
               className="text-xs font-semibold text-muted-foreground hover:text-foreground flex items-center gap-1 transition-colors cursor-pointer px-3 py-1.5 rounded-lg border border-border hover:bg-muted"
             >
               Gérer l'abonnement
@@ -490,27 +575,28 @@ export default function Subscription() {
         </div>
       )}
 
-      {/* ── Pricing Cards ────────────────────────────────────────── */}
+      
       <section>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-5 mt-2">
-          {PLANS.map((plan) => (
+          {plans.map((plan, index) => (
             <PlanCard
               key={plan.id}
               plan={plan}
-              currentPlan={CURRENT_PLAN}
+              currentPlan={currentPlan}
               onAction={handlePlanAction}
+              index={index}
             />
           ))}
         </div>
 
-        {/* Disclaimer */}
+        
         <p className="text-center text-[11px] text-muted-foreground mt-5 flex items-center justify-center gap-1.5">
           <Info size={12} />
           Les prix sont en Ariary malgache (Ar). Paiement via Mobile Money (MVola, Orange Money, Airtel Money) ou BNI Madagascar. Les améliorations de visibilité augmentent l'éligibilité aux mises en avant sans garantie de placement.
         </p>
       </section>
 
-      {/* ── Comparison Table ─────────────────────────────────────── */}
+      
       <section className="space-y-4">
         <div className="flex items-center justify-between">
           <div>
@@ -520,7 +606,7 @@ export default function Subscription() {
         </div>
 
         <Card className="overflow-hidden border-border/80">
-          {/* Sticky header row */}
+          
           <div className="overflow-x-auto">
             <table className="w-full min-w-[560px]">
               <thead>
@@ -528,7 +614,7 @@ export default function Subscription() {
                   <th className="text-left py-3.5 px-5 text-xs font-bold text-muted-foreground uppercase tracking-wider w-[40%]">
                     Fonctionnalité
                   </th>
-                  {PLANS.map((plan) => (
+                  {plans.map((plan) => (
                     <th key={plan.id} className="py-3.5 px-4 text-center w-[20%]">
                       <div className="flex flex-col items-center gap-1">
                         <span className={`text-sm font-extrabold ${
@@ -541,7 +627,7 @@ export default function Subscription() {
                         <span className="text-[10px] text-muted-foreground font-medium">
                           {plan.price === 0 ? "Gratuit" : `${plan.price.toLocaleString("fr-MG")} Ar`}
                         </span>
-                        {CURRENT_PLAN === plan.id && (
+                        {currentPlan === plan.id && (
                           <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
                             Actuel
                           </span>
@@ -557,7 +643,7 @@ export default function Subscription() {
                   const isExpanded = expandedGroup === group.title
                   return (
                     <>
-                      {/* Group header */}
+                      
                       <tr
                         key={`group-${group.title}`}
                         className="border-b border-border/40 bg-muted/20 cursor-pointer hover:bg-muted/40 transition-colors"
@@ -579,7 +665,7 @@ export default function Subscription() {
                           </div>
                         </td>
                       </tr>
-                      {/* Feature rows — always show on desktop, toggle on mobile */}
+                      
                       {group.rows.map((row, ri) => (
                         <tr
                           key={`row-${group.title}-${ri}`}
@@ -618,7 +704,7 @@ export default function Subscription() {
             </table>
           </div>
 
-          {/* Show more / less */}
+          
           {COMPARISON_GROUPS.length > 4 && (
             <div className="border-t border-border/40 bg-muted/20 px-5 py-3 flex justify-center">
               <button
@@ -643,9 +729,9 @@ export default function Subscription() {
         </Card>
       </section>
 
-      {/* ── FAQ / Bottom CTA strip ────────────────────────────────── */}
+      
       <section className="grid grid-cols-1 md:grid-cols-2 gap-5">
-        {/* FAQ */}
+        
         <Card>
           <CardBody className="space-y-4">
             <h3 className="font-display font-bold text-sm text-foreground flex items-center gap-2">
@@ -680,9 +766,9 @@ export default function Subscription() {
           </CardBody>
         </Card>
 
-        {/* Upgrade CTA */}
+        
         <div className="flex flex-col gap-4">
-          {CURRENT_PLAN === "free" && (
+          {currentPlan === "free" && (
             <div className="rounded-2xl border border-primary/25 bg-gradient-to-br from-primary/5 to-card p-6 space-y-4 flex flex-col justify-between flex-1">
               <div className="space-y-2">
                 <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center">
@@ -697,7 +783,10 @@ export default function Subscription() {
               </div>
               <button
                 type="button"
-                onClick={() => handlePlanAction(PLANS[1], "upgrade")}
+                onClick={() => {
+                  const proPlan = plans.find((plan) => plan.id === "pro")
+                  if (proPlan) void handlePlanAction(proPlan, "upgrade")
+                }}
                 className="w-full py-2.5 px-4 rounded-xl text-sm font-bold bg-primary hover:bg-primary/90 text-white shadow-sm shadow-primary/20 transition-all flex items-center justify-center gap-2 cursor-pointer active:scale-[0.98]"
               >
                 <ArrowRight size={14} />
@@ -706,7 +795,7 @@ export default function Subscription() {
             </div>
           )}
 
-          {/* Enterprise contact */}
+          
           <div className="rounded-2xl border border-border/60 bg-muted/20 p-5 space-y-3">
             <div className="flex items-center gap-2">
               <Building2 size={15} className="text-muted-foreground" />
@@ -727,8 +816,9 @@ export default function Subscription() {
         </div>
       </section>
 
-      {/* Toast */}
-      {toast && <Toast message={toast} onClose={() => setToast(null)} />}
+      
+      {toast && <Toast message={toast} onDismiss={() => setToast(null)} />}
     </div>
   )
-}
+};
+export default Subscription

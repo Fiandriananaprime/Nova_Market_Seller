@@ -9,13 +9,13 @@ interface DeliveryTrajectoryProps {
   onSelect: (record: DeliveryRecord) => void
 }
 
-/**
- * Renders the logistics route trajectory for a delivery:
- * 1. Traveled Path: Solid polyline from initial depot to current courier position.
- * 2. Remaining Path: Dashed animated polyline from current courier to customer destination.
- * 3. Destination Drop-off Pin: Dedicated custom marker at final delivery destination coordinates.
- * 4. Origin Depot Pin: Subtle hub marker at start coordinates.
- */
+   
+                                                         
+                                                                                   
+                                                                                            
+                                                                                                  
+                                                               
+   
 export const DeliveryTrajectory: React.FC<DeliveryTrajectoryProps> = ({
   delivery,
   isSelected,
@@ -23,22 +23,22 @@ export const DeliveryTrajectory: React.FC<DeliveryTrajectoryProps> = ({
 }) => {
   const { initialCoordinates, coordinates, targetCoordinates, status } = delivery
 
-  // Colors based on status
+                           
   const themeColor = useMemo(() => {
     switch (status) {
       case "delayed":
-        return "#E11D48" // Rose
+        return "#E11D48"        
       case "awaiting_dispatch":
-        return "#D97706" // Amber
+        return "#D97706"         
       case "delivered":
-        return "#059669" // Emerald
+        return "#059669"           
       case "in_transit":
       default:
-        return "#0077B6" // Nova Primary Blue
+        return "#0077B6"                     
     }
   }, [status])
 
-  // Destination custom marker icon
+                                   
   const destinationIcon = useMemo(() => {
     const isSpecial = isSelected
     const glow = isSpecial ? `0 0 0 4px rgba(0, 119, 182, 0.35), 0 8px 20px rgba(0,0,0,0.25)` : "0 4px 12px rgba(0,0,0,0.18)"
@@ -135,7 +135,7 @@ export const DeliveryTrajectory: React.FC<DeliveryTrajectoryProps> = ({
 
   return (
     <>
-      {/* ── 1. Traveled Polyline (Solid line) ── */}
+      
       {status !== "awaiting_dispatch" && (
         <Polyline
           positions={traveledPositions}
@@ -150,7 +150,7 @@ export const DeliveryTrajectory: React.FC<DeliveryTrajectoryProps> = ({
         />
       )}
 
-      {/* ── 2. Remaining Itinerary Polyline (Dashed line) ── */}
+      
       {status !== "delivered" && (
         <Polyline
           positions={remainingPositions}
@@ -166,7 +166,7 @@ export const DeliveryTrajectory: React.FC<DeliveryTrajectoryProps> = ({
         />
       )}
 
-      {/* ── 3. Origin Depot Hub Pin ── */}
+      
       <Marker
         position={[initialCoordinates.lat, initialCoordinates.lng]}
         icon={originIcon}
@@ -185,7 +185,7 @@ export const DeliveryTrajectory: React.FC<DeliveryTrajectoryProps> = ({
         </Popup>
       </Marker>
 
-      {/* ── 4. Destination Drop-off Pin ── */}
+      
       <Marker
         position={[targetCoordinates.lat, targetCoordinates.lng]}
         icon={destinationIcon}

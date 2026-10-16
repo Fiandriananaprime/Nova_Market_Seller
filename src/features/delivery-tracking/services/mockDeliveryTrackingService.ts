@@ -2,7 +2,6 @@ import type {
   DeliveryRecord,
   DeliveryStats,
 } from "../types/deliveryTracking.types"
-import type { IDeliveryTrackingService } from "./deliveryTrackingService"
 
 const INITIAL_MOCK_DELIVERIES: DeliveryRecord[] = [
   {
@@ -418,11 +417,11 @@ const INITIAL_MOCK_DELIVERIES: DeliveryRecord[] = [
   },
 ]
 
-export class MockDeliveryTrackingService implements IDeliveryTrackingService {
+export class MockDeliveryTrackingService {
   private deliveries: DeliveryRecord[] = [...INITIAL_MOCK_DELIVERIES]
 
   async getDeliveries(): Promise<DeliveryRecord[]> {
-    // Simulate brief network latency
+                                     
     await new Promise((resolve) => setTimeout(resolve, 150))
     return JSON.parse(JSON.stringify(this.deliveries))
   }
@@ -437,11 +436,14 @@ export class MockDeliveryTrackingService implements IDeliveryTrackingService {
     await new Promise((resolve) => setTimeout(resolve, 80))
     const inTransit = this.deliveries.filter((d) => d.status === "in_transit").length
     const awaitingDispatch = this.deliveries.filter((d) => d.status === "awaiting_dispatch").length
-    const deliveredToday = this.deliveries.filter((d) => d.status === "delivered").length
+    const today = new Date().toDateString()
+    const deliveredToday = this.deliveries.filter((d) =>
+      d.status === "delivered" && d.deliveredAt && new Date(d.deliveredAt).toDateString() === today,
+    ).length
     const delayed = this.deliveries.filter((d) => d.status === "delayed" || d.isDelayed).length
 
     return {
-      totalActive: inTransit + awaitingDispatch + delayed,
+      totalActive: this.deliveries.filter((d) => d.status !== "delivered").length,
       awaitingDispatch,
       inTransit,
       deliveredToday,
@@ -449,10 +451,10 @@ export class MockDeliveryTrackingService implements IDeliveryTrackingService {
     }
   }
 
-  /**
-   * Smoothly nudges active in-transit and delayed vehicles towards their destination target,
-   * simulating realistic GPS telemetry updates.
-   */
+     
+                                                                                             
+                                                
+     
   simulateMovement(records: DeliveryRecord[]): DeliveryRecord[] {
     return records.map((record) => {
       if (record.status !== "in_transit" && record.status !== "delayed") {
@@ -462,7 +464,7 @@ export class MockDeliveryTrackingService implements IDeliveryTrackingService {
       const { lat: curLat, lng: curLng } = record.coordinates
       const { lat: targetLat, lng: targetLng } = record.targetCoordinates
 
-      // Subtle step towards destination with slight organic jitter
+                                                                   
       const stepFactor = record.status === "delayed" ? 0.0003 : 0.0008
       const dLat = (targetLat - curLat) * 0.05 + (Math.random() - 0.5) * stepFactor
       const dLng = (targetLng - curLng) * 0.05 + (Math.random() - 0.5) * stepFactor
@@ -470,7 +472,7 @@ export class MockDeliveryTrackingService implements IDeliveryTrackingService {
       const nextLat = curLat + dLat
       const nextLng = curLng + dLng
 
-      // Compute rough heading in degrees
+                                         
       const angle = (Math.atan2(dLng, dLat) * 180) / Math.PI
       const normalizedHeading = (angle + 360) % 360
 

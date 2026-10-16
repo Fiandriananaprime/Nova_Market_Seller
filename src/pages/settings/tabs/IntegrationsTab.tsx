@@ -1,4 +1,4 @@
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import {
   Webhook,
   Key,
@@ -18,58 +18,65 @@ import {
   Save,
 } from "lucide-react"
 import { Card, CardHeader, CardTitle, CardBody, Button, Badge } from "@/components/ui"
+import {
+  createSellerWebhook,
+  deleteSellerWebhook,
+  getSellerApiKeys,
+  getSellerIntegrations,
+  getSellerWebhooks,
+  rotateSellerApiKey,
+  testSellerWebhook,
+  updateSellerIntegrations,
+  updateSellerWebhook,
+} from "@/service/seller"
+import type { ApiKey, SellerWebhook } from "@/type/seller"
 
 interface IntegrationsTabProps {
   showToast?: (msg: string) => void
   onShowToast?: (msg: string) => void
 }
 
-interface WebhookItem {
-  id: string
-  url: string
-  events: string[]
-  active: boolean
-  lastTrigger?: string
-}
+type WebhookItem = SellerWebhook & { active: boolean; events: NonNullable<SellerWebhook["events"]> }
 
-export function IntegrationsTab({ showToast, onShowToast }: IntegrationsTabProps) {
+export const IntegrationsTab = ({ showToast, onShowToast }: IntegrationsTabProps) => {
   const triggerToast = showToast || onShowToast || (() => {})
   const [showSecretKey, setShowSecretKey] = useState(false)
   const [copiedKey, setCopiedKey] = useState<string | null>(null)
-  
-  const [apiKey] = useState({
-    publicKey: "pk_live_nova_mkt_992a71bf4890c28e91",
-    secretKey: "sk_live_nova_sec_8719fbc4102948bbca17304da0",
-    createdDate: "01/10/2026",
-  })
-
-  const [webhooks, setWebhooks] = useState<WebhookItem[]>([
-    {
-      id: "wh_1",
-      url: "https://api.mon-erp-madagascar.mg/webhooks/nova-orders",
-      events: ["order.paid", "delivery.delivered"],
-      active: true,
-      lastTrigger: "Il y a 23 min (200 OK)",
-    },
-    {
-      id: "wh_2",
-      url: "https://stock.entrepot-tana.mg/sync/low-stock",
-      events: ["inventory.low"],
-      active: true,
-      lastTrigger: "Hier 14:10 (200 OK)",
-    },
-  ])
-
+  const [apiKey, setApiKey] = useState<ApiKey>({})
+  const [webhooks, setWebhooks] = useState<WebhookItem[]>([])
   const [newWebhookUrl, setNewWebhookUrl] = useState("")
   const [showNewWebhookModal, setShowNewWebhookModal] = useState(false)
+  const [loading, setLoading] = useState(true)
+  const [saving, setSaving] = useState(false)
+  const [error, setError] = useState<string | null>(null)
 
-  // Channels sync
+                  
   const [channels, setChannels] = useState({
-    whatsappCatalog: true,
-    facebookShop: true,
+    whatsappCatalog: false,
+    facebookShop: false,
     odooErp: false,
     wooCommerce: false,
   })
+
+  useEffect(() => {
+    Promise.all([getSellerApiKeys(), getSellerWebhooks(), getSellerIntegrations()])
+      .then(([keys, hookList, integrationPrefs]) => {
+        setApiKey(Array.isArray(keys) ? keys[0] ?? {} : keys)
+        setWebhooks(hookList.map((webhook) => ({
+          ...webhook,
+          active: webhook.active ?? webhook.enabled ?? false,
+          events: webhook.events ?? [],
+        })))
+        setChannels((current) => ({
+          whatsappCatalog: typeof integrationPrefs.whatsappCatalog === "boolean" ? integrationPrefs.whatsappCatalog : current.whatsappCatalog,
+          facebookShop: typeof integrationPrefs.facebookShop === "boolean" ? integrationPrefs.facebookShop : current.facebookShop,
+          odooErp: typeof integrationPrefs.odooErp === "boolean" ? integrationPrefs.odooErp : current.odooErp,
+          wooCommerce: typeof integrationPrefs.wooCommerce === "boolean" ? integrationPrefs.wooCommerce : current.wooCommerce,
+        }))
+      })
+      .catch(() => setError("Impossible de charger les intégrations et les clés API."))
+      .finally(() => setLoading(false))
+  }, [])
 
   const copyToClipboard = (text: string, label: string) => {
     navigator.clipboard.writeText(text)
@@ -78,46 +85,99 @@ export function IntegrationsTab({ showToast, onShowToast }: IntegrationsTabProps
     setTimeout(() => setCopiedKey(null), 2500)
   }
 
-  const handleRegenerateKey = () => {
+  const handleRegenerateKey = async () => {
     if (confirm("Attention : Régénérer votre clé secrète invalidera immédiatement toutes les intégrations en cours. Continuer ?")) {
-      triggerToast("Nouvelle clé d'API générée avec succès")
+      setSaving(true)
+      setError(null)
+      try {
+        setApiKey(await rotateSellerApiKey())
+        triggerToast("Clé API régénérée.")
+      } catch {
+        setError("Impossible de régénérer la clé API.")
+      } finally {
+        setSaving(false)
+      }
     }
   }
 
-  const handleTestWebhook = (url: string) => {
-    triggerToast(`Ping de test envoyé vers ${url} : Statut 200 OK`)
+  const handleTestWebhook = async (webhook: WebhookItem) => {
+    try {
+      const result = await testSellerWebhook(webhook.id)
+      triggerToast(result.message ?? `Test envoyé : ${result.status ?? "résultat reçu"}.`)
+    } catch {
+      setError(`Le test du webhook ${webhook.url} a échoué.`)
+    }
   }
 
-  const handleAddWebhook = () => {
+  const handleAddWebhook = async () => {
     if (!newWebhookUrl.trim()) return
-    const newWh: WebhookItem = {
-      id: `wh_${Date.now()}`,
-      url: newWebhookUrl.trim(),
-      events: ["order.paid"],
-      active: true,
-      lastTrigger: "Jamais déclenché",
+    setSaving(true)
+    setError(null)
+    try {
+      const webhook = await createSellerWebhook({ url: newWebhookUrl.trim(), events: ["order.paid"] })
+      setWebhooks((current) => [...current, { ...webhook, active: webhook.active ?? webhook.enabled ?? true, events: webhook.events ?? [] }])
+      setNewWebhookUrl("")
+      setShowNewWebhookModal(false)
+      triggerToast("Endpoint webhook ajouté.")
+    } catch {
+      setError("Impossible d'ajouter cet endpoint webhook.")
+    } finally {
+      setSaving(false)
     }
-    setWebhooks([...webhooks, newWh])
-    setNewWebhookUrl("")
-    setShowNewWebhookModal(false)
-    triggerToast("Endpoint de webhook ajouté")
   }
 
-  const handleDeleteWebhook = (id: string) => {
-    setWebhooks(webhooks.filter((w) => w.id !== id))
-    triggerToast("Webhook supprimé")
+  const handleDeleteWebhook = async (id: string) => {
+    try {
+      await deleteSellerWebhook(id)
+      setWebhooks((current) => current.filter((webhook) => webhook.id !== id))
+      triggerToast("Webhook supprimé.")
+    } catch {
+      setError("Impossible de supprimer ce webhook.")
+    }
+  }
+
+  const handleToggleWebhook = async (webhook: WebhookItem) => {
+    try {
+      const updated = await updateSellerWebhook(webhook.id, { active: !webhook.active })
+      setWebhooks((current) => current.map((item) => item.id === webhook.id
+        ? { ...updated, active: updated.active ?? updated.enabled ?? !webhook.active, events: updated.events ?? item.events }
+        : item))
+    } catch {
+      setError("Impossible de modifier ce webhook.")
+    }
+  }
+
+  const saveChannels = async () => {
+    setSaving(true)
+    setError(null)
+    try {
+      const updated = await updateSellerIntegrations(channels)
+      setChannels((current) => ({
+        whatsappCatalog: typeof updated.whatsappCatalog === "boolean" ? updated.whatsappCatalog : current.whatsappCatalog,
+        facebookShop: typeof updated.facebookShop === "boolean" ? updated.facebookShop : current.facebookShop,
+        odooErp: typeof updated.odooErp === "boolean" ? updated.odooErp : current.odooErp,
+        wooCommerce: typeof updated.wooCommerce === "boolean" ? updated.wooCommerce : current.wooCommerce,
+      }))
+      triggerToast("Paramètres des intégrations enregistrés.")
+    } catch {
+      setError("Impossible d'enregistrer les intégrations.")
+    } finally {
+      setSaving(false)
+    }
   }
 
   return (
     <div className="space-y-6">
-      {/* 21. Clés d'API Marchand */}
+      {loading && <p role="status" className="text-xs text-muted-foreground">Chargement des intégrations…</p>}
+      {error && <p role="alert" className="rounded-xl border border-destructive/30 bg-destructive/5 p-3 text-xs text-destructive">{error}</p>}
+      
       <Card>
         <CardHeader>
           <div className="flex items-center gap-2">
             <Key size={18} className="text-primary" />
             <CardTitle>21. Clés d'API Nova Market Développeur</CardTitle>
           </div>
-          <Button variant="outline" size="sm" onClick={handleRegenerateKey}>
+          <Button variant="outline" size="sm" onClick={() => void handleRegenerateKey()} loading={saving} disabled={loading || saving}>
             <RefreshCw size={13} className="mr-1" />
             Régénérer la clé secrète
           </Button>
@@ -128,7 +188,7 @@ export function IntegrationsTab({ showToast, onShowToast }: IntegrationsTabProps
           </p>
 
           <div className="space-y-3">
-            {/* Clé publique */}
+            
             <div>
               <label className="text-xs font-semibold text-foreground mb-1 block">
                 Clé Publique (Publishable Key)
@@ -136,20 +196,20 @@ export function IntegrationsTab({ showToast, onShowToast }: IntegrationsTabProps
               <div className="flex items-center gap-2">
                 <input
                   readOnly
-                  value={apiKey.publicKey}
+                  value={apiKey.publicKey ?? ""}
                   className="w-full px-3.5 py-2 text-xs font-mono rounded-xl border border-border bg-muted/40 text-foreground focus:outline-none"
                 />
                 <Button
                   variant="outline"
                   size="sm"
-                  onClick={() => copyToClipboard(apiKey.publicKey, "Clé Publique")}
+                  onClick={() => copyToClipboard(apiKey.publicKey ?? "", "Clé Publique")}
                 >
                   {copiedKey === "Clé Publique" ? <Check size={14} className="text-emerald-500" /> : <Copy size={14} />}
                 </Button>
               </div>
             </div>
 
-            {/* Clé secrète */}
+            
             <div>
               <label className="text-xs font-semibold text-foreground mb-1 block">
                 Clé Secrète (Secret Key) - Ne jamais divulguer côté client
@@ -158,7 +218,7 @@ export function IntegrationsTab({ showToast, onShowToast }: IntegrationsTabProps
                 <input
                   readOnly
                   type={showSecretKey ? "text" : "password"}
-                  value={apiKey.secretKey}
+                  value={apiKey.secretKey ?? ""}
                   className="w-full px-3.5 py-2 text-xs font-mono rounded-xl border border-border bg-muted/40 text-foreground focus:outline-none"
                 />
                 <Button
@@ -171,7 +231,7 @@ export function IntegrationsTab({ showToast, onShowToast }: IntegrationsTabProps
                 <Button
                   variant="outline"
                   size="sm"
-                  onClick={() => copyToClipboard(apiKey.secretKey, "Clé Secrète")}
+                  onClick={() => copyToClipboard(apiKey.secretKey ?? "", "Clé Secrète")}
                 >
                   {copiedKey === "Clé Secrète" ? <Check size={14} className="text-emerald-500" /> : <Copy size={14} />}
                 </Button>
@@ -192,7 +252,7 @@ export function IntegrationsTab({ showToast, onShowToast }: IntegrationsTabProps
         </CardBody>
       </Card>
 
-      {/* Webhooks sortants */}
+      
       <Card>
         <CardHeader>
           <div className="flex items-center gap-2">
@@ -221,7 +281,7 @@ export function IntegrationsTab({ showToast, onShowToast }: IntegrationsTabProps
                   className="flex-1 px-3.5 py-2 text-xs rounded-xl border border-border bg-card text-foreground focus:outline-none"
                 />
                 <div className="flex gap-2">
-                  <Button variant="primary" size="sm" onClick={handleAddWebhook}>
+                  <Button variant="primary" size="sm" onClick={() => void handleAddWebhook()} loading={saving} disabled={saving}>
                     Ajouter
                   </Button>
                   <Button variant="ghost" size="sm" onClick={() => setShowNewWebhookModal(false)}>
@@ -233,6 +293,7 @@ export function IntegrationsTab({ showToast, onShowToast }: IntegrationsTabProps
           )}
 
           <div className="space-y-3">
+            {!loading && webhooks.length === 0 && <p className="rounded-xl border border-dashed border-border p-4 text-center text-xs text-muted-foreground">Aucun webhook configuré.</p>}
             {webhooks.map((wh) => (
               <div
                 key={wh.id}
@@ -257,7 +318,7 @@ export function IntegrationsTab({ showToast, onShowToast }: IntegrationsTabProps
                       </span>
                     ))}
                     <span className="text-[11px] text-muted-foreground">
-                      • {wh.lastTrigger}
+                      • {wh.lastTrigger ?? "Aucun déclenchement"}
                     </span>
                   </div>
                 </div>
@@ -266,7 +327,14 @@ export function IntegrationsTab({ showToast, onShowToast }: IntegrationsTabProps
                   <Button
                     variant="outline"
                     size="sm"
-                    onClick={() => handleTestWebhook(wh.url)}
+                    onClick={() => void handleToggleWebhook(wh)}
+                  >
+                    {wh.active ? "Mettre en pause" : "Activer"}
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => void handleTestWebhook(wh)}
                   >
                     <Send size={12} className="mr-1" />
                     Tester (Ping)
@@ -275,7 +343,7 @@ export function IntegrationsTab({ showToast, onShowToast }: IntegrationsTabProps
                     variant="ghost"
                     size="sm"
                     className="text-rose-500 hover:text-rose-600 hover:bg-rose-500/10"
-                    onClick={() => handleDeleteWebhook(wh.id)}
+                    onClick={() => void handleDeleteWebhook(wh.id)}
                   >
                     <Trash2 size={14} />
                   </Button>
@@ -286,7 +354,7 @@ export function IntegrationsTab({ showToast, onShowToast }: IntegrationsTabProps
         </CardBody>
       </Card>
 
-      {/* Connecteurs E-commerce & Canaux de vente */}
+      
       <Card>
         <CardHeader>
           <div className="flex items-center gap-2">
@@ -296,14 +364,16 @@ export function IntegrationsTab({ showToast, onShowToast }: IntegrationsTabProps
           <Button
             variant="primary"
             size="sm"
-            onClick={() => onShowToast("Paramètres des canaux synchronisés")}
+            onClick={() => void saveChannels()}
+            loading={saving}
+            disabled={loading || saving}
           >
             <Save size={14} className="mr-1" />
             Sauvegarder
           </Button>
         </CardHeader>
         <CardBody className="space-y-3.5">
-          {/* WhatsApp Catalog */}
+          
           <div className="p-4 rounded-xl border border-border bg-card flex items-center justify-between">
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 rounded-xl bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 flex items-center justify-center font-bold">
@@ -327,7 +397,7 @@ export function IntegrationsTab({ showToast, onShowToast }: IntegrationsTabProps
             />
           </div>
 
-          {/* Facebook Shop / Instagram */}
+          
           <div className="p-4 rounded-xl border border-border bg-card flex items-center justify-between">
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 rounded-xl bg-blue-500/15 text-blue-600 dark:text-blue-400 flex items-center justify-center font-bold">
@@ -351,7 +421,7 @@ export function IntegrationsTab({ showToast, onShowToast }: IntegrationsTabProps
             />
           </div>
 
-          {/* Odoo / Sage ERP */}
+          
           <div className="p-4 rounded-xl border border-border bg-card flex items-center justify-between">
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 rounded-xl bg-purple-500/15 text-purple-600 dark:text-purple-400 flex items-center justify-center font-bold">
@@ -378,4 +448,4 @@ export function IntegrationsTab({ showToast, onShowToast }: IntegrationsTabProps
       </Card>
     </div>
   )
-}
+};

@@ -6,16 +6,16 @@ import { useUIStore } from '@/features/product-studio/canvas/store/useUIStore'
 import { getBrandColor } from '@/features/product-studio/canvas/brand/palette'
 import type { Layer, ShapeLayer } from '@/features/product-studio/canvas/types/design'
 
-// Clipboard for copy/paste (in-memory, same session)
+                                                     
 let clipboard: Layer[] = []
-// Separate clipboard for a copied frame (id), pasted as a whole new frame.
+                                                                           
 let frameClipboard: string | null = null
-// Style-only clipboard (⌘⌥C / ⌘⌥V) — visual props, no geometry or content.
+                                                                           
 let styleClipboard: Record<string, unknown> | null = null
 
-// Which fields count as "style" per layer type. Deliberately excludes geometry
-// (x/y/w/h/rotation), identity, and content so pasting style never moves or
-// retypes a layer. `common` applies to every layer type.
+                                                                               
+                                                                            
+                                                         
 const STYLE_KEYS: Record<string, readonly string[]> = {
   common: ['opacity', 'shadow', 'blur', 'flipH', 'flipV'],
   shape: ['fill', 'stroke', 'borderRadius'],
@@ -25,7 +25,7 @@ const STYLE_KEYS: Record<string, readonly string[]> = {
   gradient: ['gradientType', 'angle', 'stops', 'grain', 'borderRadius'],
 }
 
-function pickStyle(layer: Layer): Record<string, unknown> {
+const pickStyle = (layer: Layer):Record<string, unknown> => {
   const keys = [...STYLE_KEYS.common, ...(STYLE_KEYS[layer.type] ?? [])]
   const out: Record<string, unknown> = {}
   for (const k of keys) {
@@ -33,25 +33,24 @@ function pickStyle(layer: Layer): Record<string, unknown> {
     if (v !== undefined) out[k] = structuredClone(v)
   }
   return out
-}
+};
 
-// Only the style keys valid for the target's own type (so a text colour never
-// lands on a shape, etc.); `common` keys always apply.
-function styleFor(target: Layer, style: Record<string, unknown>): Record<string, unknown> {
+                                                                              
+                                                       
+const styleFor = (target: Layer, style: Record<string, unknown>):Record<string, unknown> => {
   const allowed = new Set([...STYLE_KEYS.common, ...(STYLE_KEYS[target.type] ?? [])])
   const out: Record<string, unknown> = {}
   for (const [k, v] of Object.entries(style)) if (allowed.has(k)) out[k] = structuredClone(v)
   return out
-}
+};
 
-// Build layer specs (sans id/zIndex) for pasting or duplicating a set of source
-// layers. Copies are offset +20/+20 and get FRESH group ids so they never merge
-// back into the source's group: a multi-layer set that shared a groupId becomes
-// its own new group; a single copy is left ungrouped.
-function buildCopies(
+                                                                                
+                                                                                
+                                                                                
+                                                      
+const buildCopies = (
   sources: Layer[],
-  nameSuffix = '',
-): Array<Record<string, unknown>> {
+  nameSuffix = '',):Array<Record<string, unknown>> => {
   const single = sources.length === 1
   const groupIdMap = new Map<string, string>()
   return sources.map((layer) => {
@@ -72,9 +71,9 @@ function buildCopies(
       groupId,
     }
   })
-}
+};
 
-export function useKeyboardShortcuts() {
+export const useKeyboardShortcuts = () => {
   const spaceHeld = useRef(false)
 
   useEffect(() => {
@@ -462,4 +461,4 @@ export function useKeyboardShortcuts() {
       window.removeEventListener('keyup', upHandler)
     }
   }, [])
-}
+};

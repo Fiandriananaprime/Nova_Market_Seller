@@ -9,18 +9,18 @@ interface Props {
   layer: SvgLayer
 }
 
-export function SvgPropertiesPanel({ layer }: Props) {
+export const SvgPropertiesPanel = ({ layer }: Props) => {
   const updateLayer = useDesignStore((s) => s.updateLayer)
   const pushSnapshot = useDesignStore((s) => s.pushSnapshot)
 
-  // Distinct source colours + their paint role (fill/stroke), recomputed only
-  // when the artwork itself changes.
+                                                                              
+                                     
   const roles = useMemo(() => extractSvgColorRoles(layer.svgContent), [layer.svgContent])
   const hasStroke = useMemo(() => svgHasStroke(layer.svgContent), [layer.svgContent])
   const colors = roles.map((r) => r.color)
   const overrides = layer.colorOverrides ?? {}
 
-  // Which detected colour the picker below is editing.
+                                                       
   const [selected, setSelected] = useState<string | null>(colors[0] ?? null)
   const activeOriginal = selected && colors.includes(selected) ? selected : (colors[0] ?? null)
 
@@ -118,7 +118,7 @@ export function SvgPropertiesPanel({ layer }: Props) {
       {strokeColors.length > 0 && <ColorGroup label="Stroke">{strokeColors.map(swatch)}</ColorGroup>}
       {otherColors.length > 0 && <ColorGroup label="Other">{otherColors.map(swatch)}</ColorGroup>}
 
-      {/* Palette for the selected colour. */}
+      
       {activeOriginal && (
         <BrandColorPicker
           label="Recolour selected"
@@ -130,21 +130,21 @@ export function SvgPropertiesPanel({ layer }: Props) {
       {strokeWidthField}
     </div>
   )
-}
+};
 
-function ColorGroup({ label, children }: { label: string; children: ReactNode }) {
+const ColorGroup = ({ label, children }: { label: string; children: ReactNode }) => {
   return (
     <div className="space-y-1.5">
       <div className="text-[11px] text-muted-foreground/60">{label}</div>
       <div className="flex flex-wrap gap-1.5">{children}</div>
     </div>
   )
-}
+};
 
-function Header({ count }: { count?: number }) {
+const Header = ({ count }: { count?: number }) => {
   return (
     <div className="text-[11px] uppercase tracking-[0.12em] text-muted-foreground/60 font-medium">
       {count != null ? `SVG · ${count} colour${count === 1 ? '' : 's'}` : 'SVG'}
     </div>
   )
-}
+};

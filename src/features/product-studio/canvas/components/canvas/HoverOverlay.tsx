@@ -3,19 +3,19 @@ import { useCoarsePointer } from '@/features/product-studio/canvas/hooks/useCoar
 import { getDrawPath } from '@/features/product-studio/canvas/engine/freehand'
 import type { DrawLayer } from '@/features/product-studio/canvas/types/design'
 
-const HOVER = '#2563eb' // brand-primary — same hue as selection, softer treatment
+const HOVER = '#2563eb'                                                           
 
 interface Props {
   zoom: number
 }
 
-/**
- * A hover highlight for the layer under the cursor, so it's obvious what a click
- * will select — especially for freehand strokes, whose thin ink is otherwise
- * hard to target. Desktop only (there is no hover on touch). The highlight is a
- * soft brand-coloured glow, distinct from the crisp solid ring of a *selection*.
- */
-export function HoverOverlay({ zoom }: Props) {
+   
+                                                                                 
+                                                                             
+                                                                                
+                                                                                 
+   
+export const HoverOverlay = ({ zoom }: Props) => {
   const hoveredLayerId = useDesignStore((s) => s.hoveredLayerId)
   const selectedLayerIds = useDesignStore((s) => s.selectedLayerIds)
   const layers = useDesignStore((s) => s.document.layers)
@@ -65,4 +65,4 @@ export function HoverOverlay({ zoom }: Props) {
       )}
     </svg>
   )
-}
+};

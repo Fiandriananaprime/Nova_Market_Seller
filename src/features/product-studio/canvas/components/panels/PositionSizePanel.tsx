@@ -4,21 +4,21 @@ import { ScalarInput } from '@/features/product-studio/canvas/components/control
 import { Lock, Unlock, FlipHorizontal2, FlipVertical2 } from 'lucide-react'
 import type { Layer, TextLayer } from '@/features/product-studio/canvas/types/design'
 
-// A muted "Hug" tag shown on an auto-sized text axis, Figma-style — the field
-// still shows the computed size, the tag marks that the axis hugs its content.
-function HugTag() {
+                                                                              
+                                                                               
+const HugTag = () => {
   return (
     <span className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 text-[11px] font-medium text-muted-foreground/70">
       Hug
     </span>
   )
-}
+};
 
 interface Props {
   layer: Layer
 }
 
-export function PositionSizePanel({ layer }: Props) {
+export const PositionSizePanel = ({ layer }: Props) => {
   const updateLayer = useDesignStore((s) => s.updateLayer)
   const pushSnapshot = useDesignStore((s) => s.pushSnapshot)
 
@@ -26,7 +26,7 @@ export function PositionSizePanel({ layer }: Props) {
 
   const locked = layer.aspectRatioLocked ?? false
 
-  // Text auto-sizing drives the axes: auto-width hugs both, auto-height hugs H.
+                                                                                
   const sizing = layer.type === 'text' ? (layer as TextLayer).textSizing ?? 'fixed' : 'fixed'
   const wHug = sizing === 'auto-width'
   const hHug = sizing === 'auto-width' || sizing === 'auto-height'
@@ -37,7 +37,7 @@ export function PositionSizePanel({ layer }: Props) {
         Position & Size
       </div>
 
-      {/* Position */}
+      
       <div className="grid grid-cols-2 gap-2">
         <div className="space-y-1">
           <label className="text-[12px] text-muted-foreground">X</label>
@@ -51,7 +51,7 @@ export function PositionSizePanel({ layer }: Props) {
         </div>
       </div>
 
-      {/* Size with aspect ratio lock */}
+      
       <div className="flex items-end gap-2">
         <div className="flex-1 space-y-1">
           <label className="text-[12px] text-muted-foreground">W</label>
@@ -69,7 +69,7 @@ export function PositionSizePanel({ layer }: Props) {
           </div>
         </div>
 
-        {/* Lock toggle */}
+        
         <button
           className={`
             p-1.5 rounded-[5px] transition-colors cursor-pointer mb-0.5
@@ -102,7 +102,7 @@ export function PositionSizePanel({ layer }: Props) {
         </div>
       </div>
 
-      {/* Flip */}
+      
       <div className="flex gap-2">
         {([
           ['flipH', 'Flip horizontal', FlipHorizontal2] as const,
@@ -128,7 +128,7 @@ export function PositionSizePanel({ layer }: Props) {
         })}
       </div>
 
-      {/* Rotation */}
+      
       <SliderField
         label="Rotation"
         value={layer.rotation}
@@ -140,7 +140,7 @@ export function PositionSizePanel({ layer }: Props) {
         onChange={(rotation) => updateLayer(layer.id, { rotation })}
       />
 
-      {/* Opacity */}
+      
       <SliderField
         label="Opacity"
         value={layer.opacity}
@@ -152,4 +152,4 @@ export function PositionSizePanel({ layer }: Props) {
       />
     </div>
   )
-}
+};

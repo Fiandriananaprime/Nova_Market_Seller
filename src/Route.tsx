@@ -5,7 +5,7 @@ import ProtectedRoute from "./components/ProtectedRoute"
 import Shell from "./components/Shell"
 import Login from "./pages/Login"
 
-// Lazy load pages
+                  
 const Dashboard = lazy(() => import("./pages/Dashboard"))
 const Subscription = lazy(() => import("./pages/Subscription"))
 const AiAutomation = lazy(() => import("./pages/AiAutomation"))
@@ -21,18 +21,18 @@ const Analytics = lazy(() => import("./pages/Analytics"))
 const Settings = lazy(() => import("./pages/Settings"))
 const DeliveryTracking = lazy(() => import("./features/delivery-tracking/pages/DeliveryTrackingPage"))
 
-function Loading() {
+const Loading = () => {
   return <div>Loading...</div>
-}
+};
 
-export default function AppRoutes() {
+const AppRoutes = () => {
   return (
     <Suspense fallback={<Loading />}>
       <Routes>
-        {/* Public */}
+        
         <Route path="/login" element={<Login />} />
 
-        {/* Protected */}
+        
         <Route element={<ProtectedRoute />}>
           <Route element={<Shell />}>
             <Route path="/" element={<Dashboard />} />
@@ -52,12 +52,13 @@ export default function AppRoutes() {
           </Route>
         </Route>
 
-        {/* Default */}
+        
         <Route path="/" element={<Navigate to="/dashboard" replace />} />
 
-        {/* 404 */}
+        
         <Route path="*" element={<Navigate to="/dashboard" replace />} />
       </Routes>
     </Suspense>
   )
-}
+};
+export default AppRoutes;

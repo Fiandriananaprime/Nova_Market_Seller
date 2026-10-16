@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react'
 
-export function useCanvasSize<T extends HTMLElement>(): [React.RefObject<T | null>, { width: number; height: number }] {
+export const useCanvasSize = <T extends HTMLElement>(): [React.RefObject<T | null>, { width: number; height: number }] => {
   const ref = useRef<T>(null)
   const [size, setSize] = useState({ width: 800, height: 600 })
 
@@ -23,4 +23,4 @@ export function useCanvasSize<T extends HTMLElement>(): [React.RefObject<T | nul
   }, [])
 
   return [ref, size]
-}
+};

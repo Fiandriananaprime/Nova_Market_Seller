@@ -4,7 +4,7 @@ import { applyDesignJson } from '@/features/product-studio/canvas/engine/applyDe
 import { useDesignStore } from '@/features/product-studio/canvas/store/useDesignStore'
 import { useWorkspaceStore } from '@/features/product-studio/canvas/store/useWorkspaceStore'
 import { useUIStore } from '@/features/product-studio/canvas/store/useUIStore'
-import { getBrandColor } from '@/features/product-studio/canvas/brand/palette'
+
 import {
   Sparkles,
   ChevronDown,
@@ -16,7 +16,7 @@ import {
   Scissors,
   X,
 } from 'lucide-react'
-import type { TextLayer, ShapeLayer, BackgroundLayer } from '@/features/product-studio/canvas/types/design'
+
 
 type StyleApproach = 'variety' | 'minimal' | 'bold' | 'corporate' | 'playful'
 
@@ -36,7 +36,7 @@ const STYLE_PROMPTS: Record<StyleApproach, string> = {
   playful: 'Use a playful design approach: dynamic layout, rounded shapes, warm accent colors (ember-500, brand-accent), friendly tone.',
 }
 
-function buildPromptForVersion(userPrompt: string, style: StyleApproach, versionIndex: number, totalVersions: number): string {
+const buildPromptForVersion = (userPrompt: string, style: StyleApproach, versionIndex: number, totalVersions: number):string => {
   const base = userPrompt.trim() || 'Design a compelling ad for this product.'
   const styleInstruction = STYLE_PROMPTS[style]
 
@@ -51,10 +51,10 @@ function buildPromptForVersion(userPrompt: string, style: StyleApproach, version
   }
 
   return `${base}\n\n${styleInstruction}\nThis is version ${versionIndex + 1} of ${totalVersions}. Vary the layout and copy while keeping the same style.`
-}
+};
 
 
-export function AIAdBuilder() {
+export const AIAdBuilder = () => {
   const rightPanel = useUIStore((s) => s.rightPanel)
   const isVisible = rightPanel === 'ai'
 
@@ -123,7 +123,7 @@ export function AIAdBuilder() {
   return (
     <div className="absolute bottom-14 left-1/2 -translate-x-1/2 z-40 w-[560px] max-w-[calc(100vw-2rem)]">
       <div className="bg-card border border-border rounded-[10px] shadow-[0_8px_30px_-4px_rgba(17,17,17,0.15)] overflow-hidden">
-        {/* Error display */}
+        
         {error && (
           <div className="px-4 py-2 bg-destructive/10 text-destructive text-[12px] flex items-center justify-between">
             <span>{error}</span>
@@ -133,7 +133,7 @@ export function AIAdBuilder() {
           </div>
         )}
 
-        {/* Progress display */}
+        
         {progress && (
           <div className="px-4 py-2 bg-primary/5 text-primary text-[12px] flex items-center gap-2">
             <Loader2 className="w-3.5 h-3.5 animate-spin" />
@@ -141,9 +141,9 @@ export function AIAdBuilder() {
           </div>
         )}
 
-        {/* Main input row */}
+        
         <div className="flex items-center gap-2 p-2.5">
-          {/* Hamburger menu */}
+          
           <div className="relative">
             <button
               aria-label="More actions"
@@ -177,7 +177,7 @@ export function AIAdBuilder() {
             )}
           </div>
 
-          {/* Prompt input */}
+          
           <input
             className="flex-1 px-3 py-2 text-[13px] bg-muted/30 border-none rounded-[6px] outline-none focus:bg-muted/50 transition-colors placeholder:text-muted-foreground/50"
             placeholder="Describe the ad you want..."
@@ -192,7 +192,7 @@ export function AIAdBuilder() {
             disabled={isGenerating}
           />
 
-          {/* Version count dropdown */}
+          
           <div className="relative">
             <button
               className="flex items-center gap-1 px-2.5 py-2 text-[12px] text-muted-foreground bg-muted/30 rounded-[6px] hover:bg-muted/50 transition-colors cursor-pointer min-w-[48px] justify-center"
@@ -219,7 +219,7 @@ export function AIAdBuilder() {
             )}
           </div>
 
-          {/* Style dropdown */}
+          
           <div className="relative">
             <button
               className="flex items-center gap-1 px-2.5 py-2 text-[12px] text-muted-foreground bg-muted/30 rounded-[6px] hover:bg-muted/50 transition-colors cursor-pointer"
@@ -246,7 +246,7 @@ export function AIAdBuilder() {
             )}
           </div>
 
-          {/* Generate button */}
+          
           <button
             className="flex items-center gap-1.5 px-4 py-2 bg-primary text-primary-foreground text-[13px] font-medium rounded-[6px] hover:bg-primary/90 transition-[color,background-color,transform] active:scale-[0.96] cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed shrink-0"
             onClick={handleGenerate}
@@ -263,4 +263,4 @@ export function AIAdBuilder() {
       </div>
     </div>
   )
-}
+};

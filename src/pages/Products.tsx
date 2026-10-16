@@ -1,9 +1,8 @@
-import { useCallback, useEffect, useState } from "react"
+import { lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState } from "react"
 import { createPortal } from "react-dom"
 import { useNavigate, useSearchParams } from "react-router"
 import { useTranslation } from "react-i18next"
 import {
-  Search,
   Plus,
   Edit2,
   Trash2,
@@ -13,13 +12,11 @@ import {
   LayoutGrid,
   Table as TableIcon,
   Star,
-  CheckCircle2,
-  AlertTriangle,
-  UploadCloud,
   X,
-  ExternalLink,
 } from "lucide-react"
-import { products, formatMGA, type Product, type ProductStatus } from "@/hook/mock"
+import { formatMGA } from "@/hook/format"
+import { createProduct, deleteProduct, getAllProducts, getCategories, getCategoryById, getProductById, submitProductForReview, updateProduct, updateProductStatus, uploadProductImage } from "@/service/product"
+import type { Category, CategoryDetails, Product as ApiProduct, ProductInput, ProductSpecs, productModerationStatus, productStatus } from "@/type/product"
 import {
   PageHeader,
   Button,
@@ -30,71 +27,352 @@ import {
   ConfirmModal,
   Toast,
   Card,
-  Stars,
   Badge,
   ViewToggle,
   ProductImage,
 } from "@/components/ui"
-import NovaMarketStudio from "@/features/product-studio/NovaMarketStudio"
+import type { StudioImage } from "@/features/product-studio/NovaMarketStudio"
 
-const DEFAULT_CATEGORIES = [
-  "Électronique",
-  "Informatique",
-  "Audio",
-  "Mode & Chaussures",
-  "Maison & Déco",
-  "Artisanat Malagasy",
-]
+const NovaMarketStudio = lazy(() => import("@/features/product-studio/NovaMarketStudio"))
 
-interface ProductFormModalProps {
-  product?: Product
-  onSave: (p: Partial<Product>) => void
-  onClose: () => void
-  categories?: string[]
+interface ProductRow {
+  id: string
+  name: string
+  sku: string
+  category: string
+  categoryId: string
+  price: number
+  stock: number
+  sold: number
+  rating: number
+  reviewsCount: number
+  status: productStatus
+  moderationStatus?: productModerationStatus
+  image: string
+  images: string[]
+  specs?: ProductSpecs
+  createdAt: string
 }
 
-function ProductFormModal({ product, onSave, onClose, categories = DEFAULT_CATEGORIES }: ProductFormModalProps) {
-  const [editorOpen, setEditorOpen] = useState(false)
+const toProductRow = (product: ApiProduct):ProductRow => {
+  const images = product.images?.map((image) => image.url) ?? []
+  return {
+    id: product.id,
+    name: product.name,
+    sku: product.sku ?? "",
+    category: product.categoryName ?? product.categoryId,
+    categoryId: product.categoryId,
+    price: product.price,
+    stock: product.stock,
+    sold: product.soldCount ?? 0,
+    rating: product.rating ?? 0,
+    reviewsCount: product.reviewsCount ?? 0,
+    status: product.status,
+    moderationStatus: product.moderationStatus,
+    image: images.find((_, index) => product.images?.[index]?.isDefault) ?? images[0] ?? "",
+    images,
+    specs: product.specs,
+    createdAt: product.createdAt,
+  }
+};
+
+const studioDataUrlToFile = (image: StudioImage):File => {
+  const [metadata, content] = image.image.split(",", 2)
+  const mimeType = metadata?.match(/^data:(image\/[^;]+);base64$/)?.[1]
+  if (!mimeType || !content) throw new Error("The edited image is not a valid data URL")
+  const bytes = Uint8Array.from(atob(content), (character) => character.charCodeAt(0))
+  const extension = mimeType.split("/")[1]?.replace("jpeg", "jpg") ?? "png"
+  return new File([bytes], `${image.name}.${extension}`, { type: mimeType })
+};
+
+const isValidDraftInput = (input: ProductInput, price: string, stock: string):boolean => {
+  const validImageUrls = (input.images ?? []).every(({ url }) => {
+    try {
+      const parsed = new URL(url)
+      return parsed.protocol === "https:" || parsed.protocol === "http:"
+    } catch {
+      return false
+    }
+  })
+  return input.name.trim().length > 0
+    && input.categoryId.length > 0
+    && price.trim().length > 0
+    && Number.isFinite(input.price)
+    && input.price >= 0
+    && stock.trim().length > 0
+    && Number.isInteger(input.stock)
+    && input.stock >= 0
+    && validImageUrls
+};
+
+interface ProductFormModalProps {
+  product?: ProductRow
+  onSave: (p: ProductInput) => Promise<void>
+  onAutoSave: (input: ProductInput, id?: string) => Promise<ApiProduct>
+  onSubmitReview: (id: string) => Promise<void>
+  onClose: () => void
+  categories: Category[]
+}
+
+const ProductFormModal = ({ product, onSave, onAutoSave, onSubmitReview, onClose, categories }: ProductFormModalProps) => {
+  const isDraft = !product || product.moderationStatus === "draft" || product.moderationStatus === "rejected"
+  const [draftId, setDraftId] = useState(isDraft ? product?.id : undefined)
+  const [saving, setSaving] = useState(false)
+  const [autoSaveStatus, setAutoSaveStatus] = useState<"waiting" | "saving" | "saved" | "error">("waiting")
+  const [saveError, setSaveError] = useState<string | null>(null)
+  const [uploadingImages, setUploadingImages] = useState(false)
+  const [showImageStudio, setShowImageStudio] = useState(false)
+  const [categoryDetails, setCategoryDetails] = useState<CategoryDetails | null>(null)
+  const [categoryDetailsLoading, setCategoryDetailsLoading] = useState(false)
+  const [categoryDetailsError, setCategoryDetailsError] = useState<string | null>(null)
+  const [categoryRetry, setCategoryRetry] = useState(0)
+  const studioUploadCacheRef = useRef(new Map<string, string>())
+  const draftIdRef = useRef(draftId)
+  const revisionRef = useRef(0)
+  const firstRenderRef = useRef(true)
+  const initialIsDraftRef = useRef(
+    product?.moderationStatus === "draft" || product?.moderationStatus === "rejected",
+  )
+  const saveQueueRef = useRef<Promise<void>>(Promise.resolve())
+  const lastSavedPayloadRef = useRef<string | null>(null)
   const [form, setForm] = useState({
     name: product?.name ?? "",
     sku: product?.sku ?? "",
-    category: product?.category ?? categories[0] ?? "Électronique",
+    categoryId: product?.categoryId ?? categories[0]?.id ?? "",
     price: product?.price?.toString() ?? "",
     stock: product?.stock?.toString() ?? "",
-    status: (product?.status ?? "active") as ProductStatus,
-    image:
-      product?.image ??
-      "https://images.unsplash.com/photo-1596040033229-a9821ebd058d?auto=format&fit=crop&q=80&w=400",
-    images: product?.images?.length ? product.images : [product?.image ?? "https://images.unsplash.com/photo-1596040033229-a9821ebd058d?auto=format&fit=crop&q=80&w=400"],
+    status: (product?.status ?? "inactive") as productStatus,
+    image: product?.image ?? "",
+    images: product?.images ?? [],
+    specs: product?.specs ?? {},
   })
-  const applyEditedImages = useCallback((items: { image: string }[]) => setForm((current) => {
-    const images = items.map((item) => item.image)
-    return { ...current, image: images[0] ?? current.image, images }
-  }), [])
-  const closeEditor = useCallback(() => setEditorOpen(false), [])
 
-  const addImages = (files: FileList | null) => {
-    if (!files?.length) return
-    const readers = Array.from(files).map((file) => new Promise<string>((resolve, reject) => {
-      const reader = new FileReader()
-      reader.onload = () => typeof reader.result === "string" ? resolve(reader.result) : reject(new Error("Image illisible"))
-      reader.onerror = () => reject(new Error("Image illisible"))
-      reader.readAsDataURL(file)
-    }))
-    void Promise.all(readers).then((added) => setForm((current) => {
-      const images = [...current.images, ...added]
-      return { ...current, images, image: current.image || images[0] }
-    }))
+  useEffect(() => {
+    if (!form.categoryId && categories[0]) {
+      setForm((current) => ({ ...current, categoryId: categories[0].id }))
+    }
+  }, [categories, form.categoryId])
+
+  useEffect(() => {
+    if (!form.categoryId) return
+    let active = true
+    setCategoryDetails(null)
+    setCategoryDetailsLoading(true)
+    setCategoryDetailsError(null)
+    getCategoryById(form.categoryId)
+      .then((details) => {
+        if (active) setCategoryDetails(details)
+      })
+      .catch((error: unknown) => {
+        console.error("[ProductFormModal] Error loading category attributes:", error)
+        if (active) setCategoryDetailsError("Les caractéristiques de cette catégorie n’ont pas pu être chargées.")
+      })
+      .finally(() => {
+        if (active) setCategoryDetailsLoading(false)
+      })
+    return () => { active = false }
+  }, [form.categoryId, categoryRetry])
+
+  const categoryAttributes = useMemo(
+    () => categoryDetails?.id === form.categoryId ? categoryDetails.attributes : [],
+    [categoryDetails, form.categoryId],
+  )
+  const requiredAttributes = categoryAttributes.filter((attribute) => attribute.required)
+  const requiredAttributesComplete = requiredAttributes.every(
+    (attribute) => Boolean(form.specs[attribute.key]?.trim()),
+  )
+
+  const buildInput = useCallback((): ProductInput => {
+    const specs = categoryAttributes.reduce<ProductSpecs>((values, { key }) => {
+      const value = form.specs[key]?.trim()
+      if (value) values[key] = value
+      return values
+    }, {})
+    return {
+      name: form.name,
+      sku: form.sku || undefined,
+      categoryId: form.categoryId,
+      price: Number(form.price),
+      stock: Number(form.stock),
+      status: form.status,
+      images: (form.image ? [form.image, ...form.images.filter((url) => url !== form.image)] : form.images)
+        .filter(Boolean)
+        .map((url, index) => ({ url, isDefault: index === 0 })),
+      ...(Object.keys(specs).length > 0 ? { specs } : {}),
+    }
+  }, [categoryAttributes, form])
+
+  const initialBuildInputRef = useRef(buildInput)
+
+  useEffect(() => {
+    if (initialIsDraftRef.current) {
+      lastSavedPayloadRef.current = JSON.stringify(initialBuildInputRef.current())
+    }
+  }, [])
+
+  useEffect(() => {
+    if (!isDraft) return
+    if (firstRenderRef.current) {
+      firstRenderRef.current = false
+      return
+    }
+    if (categoryDetailsLoading || categoryDetailsError || !categoryDetails || categoryDetails.id !== form.categoryId) {
+      setAutoSaveStatus("waiting")
+      return
+    }
+
+    const input = buildInput()
+    if (!isValidDraftInput(input, form.price, form.stock)) {
+      setAutoSaveStatus("waiting")
+      return
+    }
+
+    const revision = ++revisionRef.current
+    setAutoSaveStatus("waiting")
+    setSaveError(null)
+    const timeoutId = window.setTimeout(() => {
+      saveQueueRef.current = saveQueueRef.current.then(async () => {
+        if (revision !== revisionRef.current) return
+        setAutoSaveStatus("saving")
+        try {
+          const savedProduct = await onAutoSave(input, draftIdRef.current)
+          draftIdRef.current = savedProduct.id
+          lastSavedPayloadRef.current = JSON.stringify(input)
+          setDraftId(savedProduct.id)
+          if (revision === revisionRef.current) setAutoSaveStatus("saved")
+        } catch {
+          if (revision === revisionRef.current) {
+            setAutoSaveStatus("error")
+            setSaveError("Le brouillon n’a pas pu être sauvegardé automatiquement.")
+          }
+        }
+      })
+    }, 700)
+
+    return () => window.clearTimeout(timeoutId)
+  }, [buildInput, categoryDetails, categoryDetailsError, categoryDetailsLoading, isDraft, onAutoSave, form])
+
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault()
+    if (isDraft) return
+    if (categoryDetailsLoading || categoryDetailsError || categoryDetails?.id !== form.categoryId || !requiredAttributesComplete) {
+      setSaveError("Chargez la catégorie et renseignez toutes ses caractéristiques obligatoires avant l’enregistrement.")
+      return
+    }
+    setSaving(true)
+    setSaveError(null)
+    try {
+      await onSave(buildInput())
+    } catch {
+      setSaveError("Le produit n’a pas pu être enregistré. Vérifiez les informations et réessayez.")
+    } finally {
+      setSaving(false)
+    }
   }
 
-  function handleSubmit(e: React.FormEvent) {
-    e.preventDefault()
-    onSave({
-      ...form,
-      images: form.images.length ? form.images : [form.image],
-      price: Number(form.price) || 0,
-      stock: Number(form.stock) || 0,
-    })
+  async function handleSubmitReview() {
+    if (!draftId || autoSaveStatus !== "saved") return
+    if (categoryDetailsLoading || categoryDetailsError || categoryDetails?.id !== form.categoryId || !requiredAttributesComplete) {
+      setSaveError("Chargez la catégorie et renseignez toutes ses caractéristiques obligatoires avant la soumission.")
+      return
+    }
+    setSaving(true)
+    setSaveError(null)
+    try {
+      await saveQueueRef.current
+      const input = buildInput()
+      if (lastSavedPayloadRef.current !== JSON.stringify(input)) {
+        const savedProduct = await onAutoSave(input, draftIdRef.current)
+        draftIdRef.current = savedProduct.id
+        lastSavedPayloadRef.current = JSON.stringify(input)
+      }
+      await onSubmitReview(draftId)
+      onClose()
+    } catch {
+      setSaveError("Le brouillon n’a pas pu être soumis à la revue.")
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  async function handleImageFiles(files: FileList | null) {
+    if (!files?.length) return
+    setUploadingImages(true)
+    setSaveError(null)
+    try {
+      const uploaded = await Promise.all(Array.from(files).map(uploadProductImage))
+      setForm((current) => {
+        const images = [...current.images, ...uploaded.map(({ url }) => url)]
+        return { ...current, images, image: current.image || images[0] || "" }
+      })
+    } catch (error: unknown) {
+      console.error("[ProductFormModal] Error uploading product image:", error)
+      setSaveError("Une ou plusieurs photos n’ont pas pu être envoyées. Vérifiez le format et réessayez.")
+    } finally {
+      setUploadingImages(false)
+    }
+  }
+
+  async function handleStudioApply(images: StudioImage[]) {
+    setUploadingImages(true)
+    setSaveError(null)
+    try {
+      const urls = await Promise.all(images.map(async (image) => {
+        if (!image.image.startsWith("data:")) return image.image
+        const cachedUrl = studioUploadCacheRef.current.get(image.image)
+        if (cachedUrl) return cachedUrl
+        const { url } = await uploadProductImage(studioDataUrlToFile(image))
+        studioUploadCacheRef.current.set(image.image, url)
+        return url
+      }))
+      setForm((current) => ({
+        ...current,
+        images: urls,
+        image: urls[0] ?? "",
+      }))
+    } catch (error: unknown) {
+      console.error("[ProductFormModal] Error uploading edited product image:", error)
+      setSaveError("Les photos modifiées n’ont pas pu être envoyées. Réessayez depuis le Studio photo.")
+    } finally {
+      setUploadingImages(false)
+    }
+  }
+
+  async function handleClose() {
+    if (uploadingImages) {
+      setSaveError("Attendez la fin de l’envoi des photos avant de fermer.")
+      return
+    }
+    if (!isDraft) {
+      onClose()
+      return
+    }
+
+    const input = buildInput()
+    if (!isValidDraftInput(input, form.price, form.stock)) {
+      onClose()
+      return
+    }
+    if (categoryDetailsLoading || categoryDetailsError || categoryDetails?.id !== form.categoryId) {
+      setSaveError("Attendez le chargement des caractéristiques de la catégorie avant de fermer le brouillon.")
+      return
+    }
+
+    setSaving(true)
+    setSaveError(null)
+    try {
+      await saveQueueRef.current
+      if (lastSavedPayloadRef.current !== JSON.stringify(input)) {
+        const savedProduct = await onAutoSave(input, draftIdRef.current)
+        draftIdRef.current = savedProduct.id
+        lastSavedPayloadRef.current = JSON.stringify(input)
+      }
+    } catch {
+      setSaveError("Le brouillon n’a pas pu être sauvegardé. Vous pouvez réessayer avant de fermer.")
+      return
+    } finally {
+      setSaving(false)
+    }
     onClose()
   }
 
@@ -102,7 +380,7 @@ function ProductFormModal({ product, onSave, onClose, categories = DEFAULT_CATEG
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
       <div
         className="fixed inset-0 bg-foreground/40 backdrop-blur-xs animate-fade-in"
-        onClick={onClose}
+        onClick={() => void handleClose()}
       />
       <div className="relative bg-card rounded-3xl border border-border w-full max-w-xl shadow-2xl z-10 overflow-hidden animate-slide-down max-h-[90vh] flex flex-col">
         <div className="flex items-center justify-between px-6 py-4 border-b border-border bg-muted/30">
@@ -115,7 +393,7 @@ function ProductFormModal({ product, onSave, onClose, categories = DEFAULT_CATEG
             </p>
           </div>
           <button
-            onClick={onClose}
+            onClick={() => void handleClose()}
             className="p-1.5 rounded-lg text-muted-foreground hover:bg-muted"
           >
             <X size={18} />
@@ -123,38 +401,64 @@ function ProductFormModal({ product, onSave, onClose, categories = DEFAULT_CATEG
         </div>
 
         <form onSubmit={handleSubmit} className="p-6 space-y-5 overflow-y-auto flex-1">
-          {/* Image preview & upload */}
           <div className="flex flex-col gap-4 rounded-2xl border border-border/80 bg-muted/40 p-4 sm:flex-row sm:items-center">
             <ProductImage
               src={form.image}
-              alt="Preview"
+              alt="Aperçu de la photo principale"
               className="w-16 h-16 rounded-xl object-cover border border-border shrink-0 bg-card"
             />
-            <div className="space-y-1 flex-1">
-              <label className="text-xs font-semibold text-foreground block">
-                Photo du produit
-              </label>
-              <input
-                type="text"
-                value={form.image}
-                  onChange={(e) => setForm((current) => ({ ...current, image: e.target.value, images: [e.target.value, ...current.images.slice(1)] }))}
-                className="w-full px-3 py-1.5 text-xs rounded-lg border border-border bg-card text-foreground"
-                placeholder="https://images.unsplash.com/..."
-              />
-              <div className="mt-2 flex flex-wrap gap-2">
-                <label className="inline-flex min-h-10 cursor-pointer items-center rounded-lg border border-border bg-card px-3 text-xs font-semibold text-foreground hover:border-primary/40">
-                  Importer des photos
-                  <input type="file" accept="image/*" className="sr-only" onChange={(event) => {
-                    addImages(event.currentTarget.files)
-                    event.currentTarget.value = ""
-                  }} multiple />
-                </label>
-                <Button type="button" size="sm" variant="primary" onClick={() => setEditorOpen(true)}>Ouvrir le studio photo</Button>
+            <div className="min-w-0 flex-1 space-y-3">
+              <div>
+                <p className="text-xs font-semibold text-foreground">Photos du produit</p>
+                <p className="text-xs text-muted-foreground">Les fichiers sont envoyés au stockage avant d’être associés au produit.</p>
               </div>
-              {form.images.length > 1 && <div className="mt-3 flex gap-2 overflow-x-auto pb-1">
-                {form.images.map((src, index) => <button key={`${index}-${src.slice(0, 24)}`} type="button" onClick={() => setForm((current) => ({ ...current, image: src, images: [src, ...current.images.filter((_, itemIndex) => itemIndex !== index)] }))} className={`h-14 w-14 shrink-0 overflow-hidden rounded-lg border-2 ${form.image === src ? "border-primary" : "border-border"}`} aria-label={`Choisir la photo ${index + 1}`}>
-                  <ProductImage src={src} alt={`Photo ${index + 1}`} className="h-full w-full object-cover" />
-                </button>)}
+              <div className="flex flex-wrap gap-2">
+                <label className={`inline-flex min-h-9 cursor-pointer items-center rounded-lg border border-border bg-card px-3 text-xs font-semibold text-foreground hover:bg-muted ${uploadingImages ? "pointer-events-none opacity-50" : ""}`}>
+                  {uploadingImages ? "Envoi…" : "Importer des photos"}
+                  <input
+                    type="file"
+                    accept="image/*"
+                    multiple
+                    disabled={uploadingImages}
+                    className="sr-only"
+                    onChange={(event) => {
+                      void handleImageFiles(event.currentTarget.files)
+                      event.currentTarget.value = ""
+                    }}
+                  />
+                </label>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  disabled={uploadingImages || form.images.length === 0}
+                  onClick={() => setShowImageStudio(true)}
+                >
+                  Ouvrir le Studio photo
+                </Button>
+              </div>
+              {form.images.length > 0 && <div className="flex gap-2 overflow-x-auto pb-1">
+                {form.images.map((src, index) => <div key={`${index}-${src.slice(0, 24)}`} className="relative h-14 w-14 shrink-0">
+                  <button
+                    type="button"
+                    onClick={() => setForm((current) => ({ ...current, image: src }))}
+                    className={`h-full w-full overflow-hidden rounded-lg border-2 ${form.image === src ? "border-primary" : "border-border"}`}
+                    aria-label={`Choisir la photo ${index + 1} comme photo principale`}
+                  >
+                    <ProductImage src={src} alt={`Photo ${index + 1}`} className="h-full w-full object-cover" />
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setForm((current) => {
+                      const images = current.images.filter((_, itemIndex) => itemIndex !== index)
+                      return { ...current, images, image: current.image === src ? images[0] ?? "" : current.image }
+                    })}
+                    className="absolute -right-1.5 -top-1.5 flex h-5 w-5 items-center justify-center rounded-full bg-foreground text-background"
+                    aria-label={`Supprimer la photo ${index + 1}`}
+                  >
+                    <X size={12} />
+                  </button>
+                </div>)}
               </div>}
             </div>
           </div>
@@ -191,17 +495,52 @@ function ProductFormModal({ product, onSave, onClose, categories = DEFAULT_CATEG
                   Catégorie *
                 </label>
                 <select
-                  value={form.category}
-                  onChange={(e) => setForm({ ...form, category: e.target.value })}
+                  value={form.categoryId}
+                  onChange={(e) => setForm((current) => ({ ...current, categoryId: e.target.value }))}
                   className="w-full px-3.5 py-2 text-sm rounded-xl border border-border bg-card text-foreground focus:outline-none focus:ring-2 focus:ring-primary/20 cursor-pointer"
                 >
-                  {categories.map((c) => (
-                    <option key={c} value={c}>
-                      {c}
+                  {categories.map((category) => (
+                    <option key={category.id} value={category.id}>
+                      {category.name}
                     </option>
                   ))}
                 </select>
               </div>
+            </div>
+
+            <div className="space-y-3">
+              <div>
+                <p className="text-xs font-semibold text-foreground">Caractéristiques de la catégorie</p>
+                <p className="text-xs text-muted-foreground">Les champs requis sont fournis par la catégorie sélectionnée.</p>
+              </div>
+              {categoryDetailsLoading && <p role="status" className="text-xs text-muted-foreground">Chargement des caractéristiques…</p>}
+              {categoryDetailsError && (
+                <div role="alert" className="flex items-center justify-between gap-3 rounded-lg border border-rose-300 bg-rose-50 px-3 py-2 text-xs text-rose-900">
+                  <span>{categoryDetailsError}</span>
+                  <Button type="button" size="sm" variant="outline" onClick={() => setCategoryRetry((retry) => retry + 1)}>
+                    Réessayer
+                  </Button>
+                </div>
+              )}
+              {categoryAttributes.map((attribute) => (
+                <div key={attribute.key}>
+                  <label className="mb-1 block text-xs font-semibold text-foreground">
+                    {attribute.label}{attribute.required ? " *" : ""}
+                  </label>
+                  <input
+                    required={attribute.required}
+                    value={form.specs[attribute.key] ?? ""}
+                    onChange={(event) => setForm((current) => ({
+                      ...current,
+                      specs: { ...current.specs, [attribute.key]: event.target.value },
+                    }))}
+                    className="w-full rounded-xl border border-border bg-card px-3.5 py-2 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary/20"
+                  />
+                </div>
+              ))}
+              {!categoryDetailsLoading && !categoryDetailsError && categoryDetails && categoryAttributes.length === 0 && (
+                <p className="text-xs text-muted-foreground">Aucune caractéristique supplémentaire pour cette catégorie.</p>
+              )}
             </div>
 
             <div className="grid grid-cols-2 gap-4">
@@ -243,7 +582,7 @@ function ProductFormModal({ product, onSave, onClose, categories = DEFAULT_CATEG
               <select
                 value={form.status}
                 onChange={(e) =>
-                  setForm({ ...form, status: e.target.value as ProductStatus })
+                  setForm({ ...form, status: e.target.value as productStatus })
                 }
                 className="w-full px-3.5 py-2 text-sm rounded-xl border border-border bg-card text-foreground focus:outline-none cursor-pointer"
               >
@@ -253,117 +592,218 @@ function ProductFormModal({ product, onSave, onClose, categories = DEFAULT_CATEG
             </div>
           </div>
 
+          {saveError && <div role="alert" className="rounded-xl border border-rose-300 bg-rose-50 px-3 py-2 text-sm text-rose-900">{saveError}</div>}
+          {isDraft && <p role="status" className="text-xs text-muted-foreground">
+            {autoSaveStatus === "saving" ? "Sauvegarde du brouillon…" : autoSaveStatus === "saved" ? "Brouillon sauvegardé automatiquement" : autoSaveStatus === "error" ? "Échec de la sauvegarde automatique. Modifiez un champ pour réessayer." : "Le brouillon sera sauvegardé dès que les champs requis seront remplis."}
+          </p>}
           <div className="flex items-center justify-end gap-3 pt-4 border-t border-border">
-            <Button variant="outline" size="md" onClick={onClose}>
-              Annuler
+            <Button type="button" variant="outline" size="md" disabled={saving || uploadingImages} onClick={() => void handleClose()}>
+              {isDraft ? "Fermer" : "Annuler"}
             </Button>
-            <Button variant="primary" size="md" type="submit">
-              {product ? "Enregistrer" : "Créer le produit"}
-            </Button>
+            {isDraft ? (
+            <Button variant="primary" size="md" type="button" disabled={saving || uploadingImages || categoryDetailsLoading || Boolean(categoryDetailsError) || categoryDetails?.id !== form.categoryId || !requiredAttributesComplete || !draftId || autoSaveStatus !== "saved"} onClick={() => void handleSubmitReview()}>
+                {saving ? "Soumission…" : "Soumettre à la revue"}
+              </Button>
+            ) : (
+            <Button variant="primary" size="md" type="submit" disabled={saving || uploadingImages || categoryDetailsLoading || Boolean(categoryDetailsError) || categoryDetails?.id !== form.categoryId || !requiredAttributesComplete}>
+                {saving ? "Enregistrement…" : "Enregistrer"}
+              </Button>
+            )}
           </div>
         </form>
       </div>
-      {editorOpen && <NovaMarketStudio images={form.images.length ? form.images : [form.image]} name={form.name || "Photo produit"} onClose={closeEditor} onApply={applyEditedImages} />}
+      {showImageStudio && (
+        <Suspense fallback={<div role="status" className="fixed inset-0 z-[70] flex items-center justify-center bg-background text-sm text-muted-foreground">Chargement du Studio photo…</div>}>
+          <NovaMarketStudio
+            images={form.images}
+            name={form.name}
+            onApply={(images) => void handleStudioApply(images)}
+            onClose={() => setShowImageStudio(false)}
+          />
+        </Suspense>
+      )}
     </div>
   ), document.body)
 }
 
-export default function Products() {
+const Products = () => {
   const { t } = useTranslation()
   const navigate = useNavigate()
   const [searchParams, setSearchParams] = useSearchParams()
   const [search, setSearch] = useState("")
   const [categoryFilter, setCategoryFilter] = useState("Toutes")
+  const [showDrafts, setShowDrafts] = useState(false)
   const [viewMode, setViewMode] = useState<"grid" | "table">("grid")
   const [page, setPage] = useState(1)
-  const [localProducts, setLocalProducts] = useState<Product[]>(products)
+  const [localProducts, setLocalProducts] = useState<ProductRow[]>([])
+  const [categories, setCategories] = useState<Category[]>([])
+  const [totalProducts, setTotalProducts] = useState(0)
+  const [loading, setLoading] = useState(true)
+  const [loadingMore, setLoadingMore] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+  const [categoryError, setCategoryError] = useState<string | null>(null)
   const [showForm, setShowForm] = useState(false)
-  const [editProduct, setEditProduct] = useState<Product | undefined>()
+  const [editProduct, setEditProduct] = useState<ProductRow | undefined>()
   const [deleteTargetId, setDeleteTargetId] = useState<string | null>(null)
   const [toast, setToast] = useState<string | null>(null)
+  const [deleteLoading, setDeleteLoading] = useState(false)
+
+  const PAGE_SIZE = 8
+  const productQueryKey = `${search}\u0000${categoryFilter}\u0000${showDrafts}`
+  const productQueryKeyRef = useRef(productQueryKey)
+
+  useEffect(() => {
+    productQueryKeyRef.current = productQueryKey
+  }, [productQueryKey])
+
+  const availableCategories = [{ id: "Toutes", name: "Toutes" }, ...categories]
+
+  const loadProducts = useCallback(async () => {
+    setLoading(true)
+    setError(null)
+    try {
+      const result = await getAllProducts(
+        page,
+        PAGE_SIZE,
+        undefined,
+        showDrafts ? "draft" : undefined,
+        search || undefined,
+        categoryFilter === "Toutes" ? undefined : categoryFilter,
+      )
+      setLocalProducts(result.data.map(toProductRow))
+      setTotalProducts(result.meta.total)
+      return true
+    } catch {
+      setError("Les produits n’ont pas pu être chargés. Vérifiez votre connexion puis réessayez.")
+      return false
+    } finally {
+      setLoading(false)
+    }
+  }, [page, search, categoryFilter, showDrafts])
+
+  useEffect(() => { void loadProducts() }, [loadProducts])
+
+  const loadMoreProducts = async () => {
+    if (loadingMore || localProducts.length >= totalProducts) return
+    const queryKey = productQueryKey
+    const nextPage = page + 1
+    setLoadingMore(true)
+    setError(null)
+    try {
+      const result = await getAllProducts(
+        nextPage,
+        PAGE_SIZE,
+        undefined,
+        showDrafts ? "draft" : undefined,
+        search || undefined,
+        categoryFilter === "Toutes" ? undefined : categoryFilter,
+      )
+      if (productQueryKeyRef.current !== queryKey) return
+      setLocalProducts((current) => [...current, ...result.data.map(toProductRow)])
+      setTotalProducts(result.meta.total)
+      setPage(nextPage)
+    } catch {
+      if (productQueryKeyRef.current === queryKey) {
+        setError("Les produits suivants n’ont pas pu être chargés. Réessayez.")
+      }
+    } finally {
+      setLoadingMore(false)
+    }
+  }
+
+  useEffect(() => {
+    getCategories()
+      .then(setCategories)
+      .catch(() => setCategoryError("Les catégories n’ont pas pu être chargées."))
+  }, [])
+
+  useEffect(() => {
+    if (showDrafts) setViewMode("table")
+  }, [showDrafts])
 
   useEffect(() => {
     const productId = searchParams.get("edit")
     if (!productId) return
-    const product = localProducts.find((item) => item.id === productId)
-    if (product) {
-      setEditProduct(product)
+    let active = true
+    getProductById(productId).then((product) => {
+      if (!active) return
+      setEditProduct(toProductRow(product))
       setShowForm(true)
       setSearchParams({}, { replace: true })
-    }
-  }, [localProducts, searchParams, setSearchParams])
-
-  const PAGE_SIZE = 8
-
-  const availableCategories = [
-    "Toutes",
-    ...Array.from(new Set(localProducts.map((p) => p.category))).filter(Boolean),
-  ]
+    }).catch(() => {
+      if (active) setError("Le produit à modifier n’a pas pu être chargé.")
+    })
+    return () => { active = false }
+  }, [searchParams, setSearchParams])
 
   const showNotification = (msg: string) => {
     setToast(msg)
     setTimeout(() => setToast(null), 3000)
   }
 
-  // Filter
-  const filtered = localProducts.filter((p) => {
-    const matchSearch =
-      p.name.toLowerCase().includes(search.toLowerCase()) ||
-      p.sku.toLowerCase().includes(search.toLowerCase())
-    const matchCat = categoryFilter === "Toutes" || p.category === categoryFilter
-    return matchSearch && matchCat
-  })
+  const filtered = localProducts
+  const paginated = localProducts
 
-  const paginated = filtered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE)
-
-  function handleSaveProduct(data: Partial<Product>) {
-    if (editProduct) {
-      setLocalProducts((prev) =>
-        prev.map((p) => (p.id === editProduct.id ? ({ ...p, ...data } as Product) : p))
-      )
-      showNotification("Produit mis à jour avec succès")
-    } else {
-      const newProd: Product = {
-        id: `PRD-${Date.now()}`,
-        name: data.name ?? "Nouveau produit",
-        sku: data.sku ?? "SKU-AUTO",
-        category: data.category ?? "Épices & Aromates",
-        price: data.price ?? 10000,
-        stock: data.stock ?? 10,
-        sold: 0,
-        rating: 5.0,
-        reviewsCount: 0,
-        status: data.status ?? "active",
-        image:
-          data.image ??
-          "https://images.unsplash.com/photo-1596040033229-a9821ebd058d?auto=format&fit=crop&q=80&w=400",
-        images: data.images ?? [data.image ?? "https://images.unsplash.com/photo-1596040033229-a9821ebd058d?auto=format&fit=crop&q=80&w=400"],
-        createdAt: new Date().toISOString(),
+  const handleAutoSaveProduct = useCallback(async (data: ProductInput, id?: string) => {
+    const saved = id ? await updateProduct(id, data) : await createProduct(data)
+    const savedRow = toProductRow(saved)
+    setLocalProducts((current) => {
+      const index = current.findIndex((product) => product.id === saved.id)
+      if (index >= 0) {
+        return current.map((product) => product.id === saved.id ? savedRow : product)
       }
-      setLocalProducts([newProd, ...localProducts])
-      showNotification("Nouveau produit ajouté au catalogue")
+      if (page !== 1 || (showDrafts && saved.moderationStatus !== "draft")) return current
+      if (categoryFilter !== "Toutes" && saved.categoryId !== categoryFilter) return current
+      if (search && !saved.name.toLowerCase().includes(search.toLowerCase())) return current
+      return [savedRow, ...current].slice(0, PAGE_SIZE)
+    })
+    if (!id) setTotalProducts((total) => total + 1)
+    return saved
+  }, [page, showDrafts, categoryFilter, search])
+
+  async function handleSaveProduct(data: ProductInput) {
+    if (editProduct) await updateProduct(editProduct.id, data)
+    setShowForm(false)
+    setEditProduct(undefined)
+    showNotification("Produit mis à jour avec succès")
+    await loadProducts()
+  }
+
+  async function handleSubmitReview(id: string) {
+    await submitProductForReview(id)
+    showNotification("Produit soumis à la revue")
+    await loadProducts()
+  }
+
+  async function handleDeleteProduct(id: string) {
+    setDeleteLoading(true)
+    setError(null)
+    try {
+      await deleteProduct(id)
+      setDeleteTargetId(null)
+      await loadProducts()
+      showNotification("Produit retiré du catalogue")
+    } catch {
+      setError("Le produit n’a pas pu être supprimé. Réessayez.")
+    } finally {
+      setDeleteLoading(false)
     }
   }
 
-  function handleDeleteProduct(id: string) {
-    setLocalProducts((prev) => prev.filter((p) => p.id !== id))
-    setDeleteTargetId(null)
-    showNotification("Produit retiré du catalogue")
-  }
-
-  function handleToggleStatus(id: string) {
-    setLocalProducts((prev) =>
-      prev.map((p) =>
-        p.id === id
-          ? { ...p, status: p.status === "active" ? "inactive" : "active" }
-          : p
-      )
-    )
+  async function handleToggleStatus(product: ProductRow) {
+    setError(null)
+    try {
+      const currentProduct = await getProductById(product.id)
+      await updateProductStatus(currentProduct, product.status === "active" ? "inactive" : "active")
+      await loadProducts()
+    } catch {
+      setError("Le statut du produit n’a pas pu être modifié.")
+    }
   }
 
   return (
     <div className="p-6 md:p-8 space-y-6 animate-fade-in max-w-7xl mx-auto">
-      {/* Header and Controls */}
+      
       <PageHeader
         title={t("products.title")}
         subtitle={t("products.subtitle")}
@@ -377,7 +817,7 @@ export default function Products() {
             <ViewToggle
               data-tour="products-view-toggle"
               value={viewMode}
-              onChange={setViewMode}
+              onChange={(mode) => { setViewMode(mode); setPage(1) }}
               options={[
                 { value: "grid", label: t("products.viewGrid"), icon: <LayoutGrid size={14} /> },
                 { value: "table", label: t("products.viewTable"), icon: <TableIcon size={14} /> },
@@ -399,8 +839,11 @@ export default function Products() {
           </div>
         }
       />
+      {error && <div role="alert" className="rounded-xl border border-rose-300 bg-rose-50 px-4 py-3 text-sm text-rose-900 dark:border-rose-900 dark:bg-rose-950/30 dark:text-rose-100">{error}</div>}
+      {categoryError && <div role="alert" className="rounded-xl border border-rose-300 bg-rose-50 px-4 py-3 text-sm text-rose-900 dark:border-rose-900 dark:bg-rose-950/30 dark:text-rose-100">{categoryError}</div>}
+      {loading && <div role="status" aria-live="polite" className="rounded-2xl border border-border bg-card p-8 text-center text-sm text-muted-foreground">Chargement des produits…</div>}
 
-      {/* Filter and Search Bar */}
+      
       <div data-tour="products-search" className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-card p-3 rounded-2xl border border-border/80 shadow-xs">
         <SearchInput
           value={search}
@@ -409,26 +852,44 @@ export default function Products() {
           className="max-w-md w-full"
         />
 
-        {/* Category tabs */}
+        <div className="flex items-center gap-2">
+          <button
+            type="button"
+            aria-pressed={!showDrafts}
+            onClick={() => { setShowDrafts(false); setCategoryFilter("Toutes"); setPage(1) }}
+            className={`rounded-xl px-3 py-1.5 text-xs font-semibold ${!showDrafts ? "bg-primary text-white" : "text-muted-foreground hover:bg-muted"}`}
+          >
+            Tous
+          </button>
+          <button
+            type="button"
+            aria-pressed={showDrafts}
+            onClick={() => { setShowDrafts(true); setCategoryFilter("Toutes"); setPage(1) }}
+            className={`rounded-xl px-3 py-1.5 text-xs font-semibold ${showDrafts ? "bg-primary text-white" : "text-muted-foreground hover:bg-muted"}`}
+          >
+            Brouillons
+          </button>
+        </div>
+
         <div data-tour="products-categories" className="flex items-center gap-1.5 overflow-x-auto pb-1 sm:pb-0">
-          {availableCategories.map((cat) => (
+          {availableCategories.map((category) => (
             <button
-              key={cat}
-              onClick={() => { setCategoryFilter(cat); setPage(1); }}
+              key={category.id}
+              onClick={() => { setCategoryFilter(category.id); setPage(1); }}
               className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition-all cursor-pointer whitespace-nowrap ${
-                categoryFilter === cat
+                categoryFilter === category.id
                   ? "bg-primary text-white shadow-xs"
                   : "text-muted-foreground hover:bg-muted hover:text-foreground"
               }`}
             >
-              {cat}
+              {category.name}
             </button>
           ))}
         </div>
       </div>
 
-      {/* VIEW 1: Visual Product Cards Showcase */}
-      {viewMode === "grid" ? (
+      
+      {loading ? null : viewMode === "grid" ? (
         filtered.length === 0 ? (
           <Card>
             <EmptyState
@@ -457,7 +918,7 @@ export default function Products() {
                   key={product.id}
                   className="group bg-card rounded-2xl border border-border/80 overflow-hidden shadow-xs hover:border-primary/40 hover:shadow-lg transition-all duration-200 flex flex-col justify-between"
                 >
-                  {/* Image container */}
+                  
                   <div className="relative aspect-4/3 overflow-hidden bg-muted">
                     <ProductImage
                       src={product.image}
@@ -476,7 +937,7 @@ export default function Products() {
                     </div>
                   </div>
 
-                  {/* Card Details */}
+                  
                   <div className="p-4 space-y-3 flex-1 flex flex-col justify-between">
                     <div>
                       <div className="flex items-center justify-between text-xs text-muted-foreground mb-1">
@@ -516,7 +977,7 @@ export default function Products() {
                       </div>
                     </div>
 
-                    {/* Quick action buttons */}
+                    
                     <div className="pt-2 flex items-center gap-2">
                       <Button
                         size="sm"
@@ -535,13 +996,15 @@ export default function Products() {
                         <Eye size={13} />
                       </Button>
 
-                      <button
-                        title={product.status === "active" ? "Désactiver" : "Activer"}
-                        onClick={() => handleToggleStatus(product.id)}
-                        className="p-2 rounded-lg border border-border hover:bg-muted text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
-                      >
-                        {product.status === "active" ? <EyeOff size={14} /> : <Eye size={14} />}
-                      </button>
+                      {product.moderationStatus === "approved" && (
+                        <button
+                          title={product.status === "active" ? "Désactiver" : "Activer"}
+                          onClick={() => void handleToggleStatus(product)}
+                          className="p-2 rounded-lg border border-border hover:bg-muted text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
+                        >
+                          {product.status === "active" ? <EyeOff size={14} /> : <Eye size={14} />}
+                        </button>
+                      )}
 
                       <button
                         title="Supprimer"
@@ -556,14 +1019,19 @@ export default function Products() {
               ))}
             </div>
 
-            <div className="mt-6">
-              <Pagination
-                page={page}
-                total={filtered.length}
-                pageSize={PAGE_SIZE}
-                onChange={setPage}
-              />
-            </div>
+            {localProducts.length < totalProducts && (
+              <div className="mt-6 flex justify-center">
+                <Button
+                  variant="outline"
+                  size="md"
+                  loading={loadingMore}
+                  disabled={loadingMore}
+                  onClick={() => void loadMoreProducts()}
+                >
+                  Charger plus de produits
+                </Button>
+              </div>
+            )}
           </div>
         )
       ) : (
@@ -596,6 +1064,8 @@ export default function Products() {
                             {product.name}
                           </p>
                           <ProductStatusBadge status={product.status} />
+                          {product.moderationStatus === "draft" && <Badge variant="neutral">Brouillon</Badge>}
+                          {product.moderationStatus === "pending" && <Badge variant="warning">En revue</Badge>}
                         </div>
 
                         <p className="text-xs text-muted-foreground mt-0.5">
@@ -615,6 +1085,11 @@ export default function Products() {
                       </div>
 
                       <div className="flex items-center gap-2">
+                        {product.moderationStatus === "draft" && (
+                          <Button size="sm" variant="primary" onClick={() => void handleSubmitReview(product.id)}>
+                            Soumettre à la revue
+                          </Button>
+                        )}
                         <Button
                           size="sm"
                           variant="outline"
@@ -645,7 +1120,7 @@ export default function Products() {
 
               <Pagination
                 page={page}
-                total={filtered.length}
+                total={totalProducts}
                 pageSize={PAGE_SIZE}
                 onChange={setPage}
               />
@@ -654,30 +1129,33 @@ export default function Products() {
         </Card>
       )}
 
-      {/* Product Form Modal */}
+      
       {showForm && (
         <ProductFormModal
           product={editProduct}
-          categories={availableCategories.filter((c) => c !== "Toutes")}
+          categories={categories}
+          onAutoSave={handleAutoSaveProduct}
+          onSubmitReview={handleSubmitReview}
           onSave={handleSaveProduct}
-          onClose={() => setShowForm(false)}
+          onClose={() => { setShowForm(false); setEditProduct(undefined) }}
         />
       )}
 
-      {/* Delete Confirmation Modal */}
+      
       {deleteTargetId && (
         <ConfirmModal
           title="Supprimer ce produit ?"
           message="Cette action retirera le produit de votre vitrine. Cette opération est irréversible."
           danger
-          confirmLabel="Oui, supprimer"
-          onConfirm={() => handleDeleteProduct(deleteTargetId)}
+          confirmLabel={deleteLoading ? "Suppression…" : "Oui, supprimer"}
+          onConfirm={() => void handleDeleteProduct(deleteTargetId)}
           onCancel={() => setDeleteTargetId(null)}
         />
       )}
 
-      {/* Toast alert */}
+      
       {toast && <Toast message={toast} onDismiss={() => setToast(null)} />}
     </div>
   )
-}
+};
+export default Products

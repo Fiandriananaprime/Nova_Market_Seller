@@ -1,24 +1,24 @@
-/**
- * Deterministic, on-brand OKLCH wash for library cards.
- *
- * Seeded off the card's id, so the gradient is varied but LOCKED to that
- * file/folder — same id → same gradient on every load.
- *
- * Design: each card is a *single hue band*, not a mix of clashing colours. We
- * pick one anchor hue, then build a light→deep ramp of that same hue (a "light
- * and a darker blue" + a soft near-white neutral), with a few degrees of hue
- * torsion for richness and a consistent, gamut-safe chroma. Interpolating in
- * OKLCH keeps the transitions clean — no muddy grey/brown midpoints — and the
- * layered radial blobs give a soft, premium mesh look with one richer focal
- * glow. Emitted as `oklch()` for the P3 gamut on capable displays.
- *
- * Why single-band: OKLCH hue arcs read best under ~30–90°; pulling colours from
- * opposite sides of the wheel (complementary / triad) is what made the old
- * random-harmony version look muddy.
- */
+   
+                                                        
+  
+                                                                         
+                                                       
+  
+                                                                              
+                                                                               
+                                                                             
+                                                                             
+                                                                              
+                                                                            
+                                                                   
+  
+                                                                                
+                                                                           
+                                     
+   
 
-// --- seeded PRNG (FNV-1a → mulberry32) ---
-function makeRng(seed: string): () => number {
+                                            
+const makeRng = (seed: string):() => number => {
   let h = 2166136261
   for (let i = 0; i < seed.length; i++) {
     h ^= seed.charCodeAt(i)
@@ -31,22 +31,22 @@ function makeRng(seed: string): () => number {
     t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t
     return ((t ^ (t >>> 14)) >>> 0) / 4294967296
   }
-}
+};
 
-// Curated anchor hues (OKLCH degrees) — tasteful bands that each read cleanly on
-// their own. Weighted toward blues/indigo, with a few warm and
-// cool alternates so cards vary without any single card mixing bands.
+                                                                                 
+                                                               
+                                                                      
 const ANCHOR_HUES = [
-  255, // indigo-blue (brand)
-  238, // blue
-  262, // periwinkle
-  210, // sky
-  195, // teal
-  158, // green
-  92, // gold/amber (brand)
-  38, // coral/ember (brand)
-  350, // rose
-  300, // violet
+  255,                       
+  238,        
+  262,              
+  210,       
+  195,        
+  158,         
+  92,                      
+  38,                       
+  350,        
+  300,          
 ]
 
 const okl = (l: number, c: number, h: number) =>
@@ -63,7 +63,7 @@ const LAYOUTS: { focal: [number, number]; mid: [number, number]; light: [number,
 ]
 
 /** CSS `background`: a soft single-band OKLCH wash with a richer focal glow. */
-export function cardGradient(seed: string): string {
+export const cardGradient = (seed: string):string => {
   const rng = makeRng(seed)
 
   // Anchor hue + a small per-card jitter so two cards on the same band still differ.
@@ -98,4 +98,4 @@ export function cardGradient(seed: string): string {
     // Base: near-white neutral → soft tint, so the card never goes flat.
     `linear-gradient(${L.angle}deg, ${neutral}, ${tint})`,
   ].join(', ')
-}
+};

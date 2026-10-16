@@ -10,7 +10,7 @@ import { SettingsModal } from '@/features/product-studio/canvas/components/panel
 import { TemplateBrowser } from '@/features/product-studio/canvas/components/panels/TemplateBrowser'
 import { renderThumbnail } from '@/features/product-studio/canvas/engine/thumbnail'
 import { generateFileName } from '@/features/product-studio/canvas/lib/fileName'
-import type { DesignDocument } from '@/features/product-studio/canvas/types/design'
+import type { BackgroundLayer, DesignDocument } from '@/features/product-studio/canvas/types/design'
 import { getBrandColor } from '@/features/product-studio/canvas/brand/palette'
 import { BRAND } from '@/features/product-studio/canvas/brand/brand.config'
 import { Button } from '@/features/product-studio/canvas/components/ui/button'
@@ -27,9 +27,7 @@ import {
   Trash2,
   Pencil,
   Copy,
-  MoreHorizontal,
   Clock,
-  Archive,
   Settings,
   Sparkles,
   FolderInput,
@@ -41,7 +39,7 @@ import { useIsMobile } from '@/features/product-studio/canvas/hooks/useIsMobile'
 import { Drawer, DrawerContent, DrawerTitle, DrawerClose } from '@/features/product-studio/canvas/components/ui/drawer'
 import type { DesignFile, DesignFrame, Folder } from '@/features/product-studio/canvas/types/fileSystem'
 
-// dataTransfer MIME for dragging a file card onto a folder (desktop).
+                                                                      
 const FILE_DND = 'application/tela-file'
 import type { Frame } from '@/features/product-studio/canvas/types/workspace'
 import type { Layer } from '@/features/product-studio/canvas/types/design'
@@ -49,10 +47,10 @@ import type { Layer } from '@/features/product-studio/canvas/types/design'
 type FilterTab = 'all' | 'recents' | 'archived'
 type ViewMode = 'grid' | 'list'
 
-// A file's DesignFrame is a subset of a workspace Frame — it has no
-// backgroundColor / locked / visible. Fill those in (deriving the colour from
-// the frame's solid fill) so loaded file pages satisfy the workspace model.
-function frameFromDesignFrame(df: DesignFrame): Frame {
+                                                                    
+                                                                              
+                                                                            
+const frameFromDesignFrame = (df: DesignFrame):Frame => {
   return {
     ...df,
     backgroundColor:
@@ -60,9 +58,9 @@ function frameFromDesignFrame(df: DesignFrame): Frame {
     locked: false,
     visible: true,
   }
-}
+};
 
-export function HomePage() {
+export const HomePage = () => {
   const files = useFileStore((s) => s.files)
   const folders = useFileStore((s) => s.folders)
   const createFile = useFileStore((s) => s.createFile)
@@ -81,13 +79,13 @@ export function HomePage() {
   const [editingId, setEditingId] = useState<string | null>(null)
   const [editValue, setEditValue] = useState('')
   const [activeFolderId, setActiveFolderId] = useState<string | null>(null)
-  // Delete is confirmed through a modal rather than firing immediately.
+                                                                        
   const [pendingDelete, setPendingDelete] = useState<{ kind: 'file' | 'folder'; id: string; name: string } | null>(null)
   const [movingFileId, setMovingFileId] = useState<string | null>(null)
   const [ctxMenu, setCtxMenu] = useState<{ x: number; y: number; items: CtxItem[] } | null>(null)
   const [templatesOpen, setTemplatesOpen] = useState(false)
 
-  // Build the right-click menu for a file / folder and open it at the cursor.
+                                                                              
   const openFileMenu = (e: React.MouseEvent, file: DesignFile) => {
     e.preventDefault()
     const items: CtxItem[] = file.isScratchpad
@@ -124,7 +122,7 @@ export function HomePage() {
     setPendingDelete(null)
   }
 
-  // Filter and sort files
+                          
   const visibleFiles = useMemo(() => {
     let result = files.filter((f) => f.folderId === activeFolderId)
     if (searchQuery) {
@@ -134,7 +132,7 @@ export function HomePage() {
     if (filter === 'recents') {
       result = [...result].sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime())
     }
-    // Scratchpad always first
+                              
     return result.sort((a, b) => (a.isScratchpad ? -1 : b.isScratchpad ? 1 : 0))
   }, [files, searchQuery, filter, activeFolderId])
 
@@ -146,7 +144,7 @@ export function HomePage() {
     const file = useFileStore.getState().getFile(fileId)
     if (!file) return
 
-    // Load file's pages into workspace store
+                                             
     const pages = file.pages.map((page) => ({
       id: page.id,
       name: page.name,
@@ -165,7 +163,7 @@ export function HomePage() {
       activeFileId: fileId,
     }))
 
-    // Load first frame into design store for editing
+                                                     
     const firstFrame = file.pages[0]?.frames[0]
     if (firstFrame) {
       useDesignStore.getState().loadFromFrame({
@@ -179,19 +177,21 @@ export function HomePage() {
       useWorkspaceStore.setState({ activeFrameId: firstFrame.id })
     }
 
-    // The editor title is the file's name (loadFromFrame set it to the frame's).
+                                                                                 
     useDesignStore.getState().setDocumentName(file.name)
     navigate({ page: 'editor-standalone' })
   }
 
-  // Picking a template creates a real file from it (so it lives in the library),
-  // then opens it — rather than an unsaved in-editor doc.
+                                                                                 
+                                                          
   const createFromTemplate = (doc: DesignDocument) => {
     const id = createFile(generateFileName(files.map((f) => f.name)), activeFolderId)
-    const bg = doc.layers.find((l) => l.type === 'background') as { fill?: unknown } | undefined
+    const bg = doc.layers.find((layer): layer is BackgroundLayer => layer.type === 'background')
     const frame = {
       id: nanoid(),
       name: doc.name || 'Frame 1',
+      x: 0,
+      y: 0,
       width: doc.format.width,
       height: doc.format.height,
       format: doc.format,
@@ -214,9 +214,9 @@ export function HomePage() {
 
   return (
     <div className="h-dvh flex bg-background">
-      {/* Left sidebar (desktop) */}
+      
       <aside className="hidden md:flex w-[220px] bg-card border-r border-border flex-col shrink-0">
-        {/* User */}
+        
         <div className="px-4 py-4 border-b border-border">
           <div className="flex items-center gap-2.5">
             <div className="w-7 h-7 rounded-full bg-[#0f172a] flex items-center justify-center">
@@ -228,7 +228,7 @@ export function HomePage() {
           </div>
         </div>
 
-        {/* Navigation */}
+        
         <nav className="flex-1 px-2 py-3 space-y-0.5">
           <NavItem
             icon={FileText}
@@ -249,7 +249,7 @@ export function HomePage() {
             onClick={() => setTemplatesOpen(true)}
           />
 
-          {/* Folders */}
+          
           {folders.length > 0 && (
             <div className="pt-4">
               <div className="px-3 mb-1 text-[11px] uppercase tracking-[0.12em] text-muted-foreground/50 font-medium">
@@ -270,7 +270,7 @@ export function HomePage() {
           )}
         </nav>
 
-        {/* Bottom */}
+        
         <div className="px-3 py-3 border-t border-border">
           <button
             className="w-full flex items-center gap-2 px-3 py-2 text-[13px] text-muted-foreground hover:text-foreground hover:bg-muted/50 rounded-[5px] transition-colors cursor-pointer"
@@ -282,9 +282,9 @@ export function HomePage() {
         </div>
       </aside>
 
-      {/* Main content */}
+      
       <main className="flex-1 overflow-y-auto">
-        {/* Mobile top bar — brand + nav pills + settings (replaces the sidebar) */}
+        
         <div className="md:hidden sticky top-0 z-10 bg-background/90 backdrop-blur border-b border-border">
           <div className="flex items-center justify-between px-4 h-14">
             <div className="flex items-center gap-2">
@@ -320,14 +320,14 @@ export function HomePage() {
           </div>
         </div>
 
-        {/* Header */}
+        
         <div className="px-4 md:px-8 pt-4 md:pt-8 pb-4">
           <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between mb-6">
             <h1 className="text-[22px] md:text-[28px] font-semibold text-foreground tracking-tight">
               {activeFolderId ? folders.find((f) => f.id === activeFolderId)?.name ?? 'Files' : 'Files'}
             </h1>
             <div className="flex items-center gap-2">
-              {/* Filters (desktop) */}
+              
               <div className="hidden md:flex gap-0.5 bg-muted/30 rounded-[5px] p-0.5">
                 {(['all', 'recents'] as const).map((tab) => (
                   <button
@@ -340,7 +340,7 @@ export function HomePage() {
                 ))}
               </div>
 
-              {/* View toggle (desktop) */}
+              
               <div className="hidden md:flex gap-0.5 bg-muted/30 rounded-[5px] p-0.5">
                 <button aria-label="Grid view" className={`p-1.5 rounded-[4px] ${viewMode === 'grid' ? 'bg-white shadow-sm' : ''} cursor-pointer`} onClick={() => setViewMode('grid')}>
                   <LayoutGrid className="w-4 h-4 text-muted-foreground" />
@@ -350,7 +350,7 @@ export function HomePage() {
                 </button>
               </div>
 
-              {/* Search */}
+              
               <div className="relative flex-1 md:flex-none md:w-[200px]">
                 <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground/40" />
                 <Input
@@ -361,7 +361,7 @@ export function HomePage() {
                 />
               </div>
 
-              {/* New file */}
+              
               <Button size="sm" className="h-10 md:h-8 rounded-[5px] gap-1.5 shrink-0" onClick={() => {
                 const id = createFile(generateFileName(files.map((f) => f.name)), activeFolderId)
                 handleOpenFile(id)
@@ -375,13 +375,13 @@ export function HomePage() {
         </div>
 
         <div className="px-8 pb-8">
-          {/* First-run welcome (dismissible, shown once). */}
+          
           <FirstRunWelcome
             onNewFile={() => { const id = createFile(generateFileName(files.map((f) => f.name)), activeFolderId); handleOpenFile(id) }}
             onTemplates={() => setTemplatesOpen(true)}
           />
 
-          {/* Folders row */}
+          
           {visibleFolders.length > 0 && (
             <div className="mb-6">
               <div className="flex items-center gap-2 mb-3">
@@ -414,7 +414,7 @@ export function HomePage() {
             </div>
           )}
 
-          {/* New folder button (when none exist and at root) */}
+          
           {visibleFolders.length === 0 && !activeFolderId && (
             <div className="mb-4">
               <button
@@ -426,7 +426,7 @@ export function HomePage() {
             </div>
           )}
 
-          {/* Files grid */}
+          
           {viewMode === 'grid' ? (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
               {visibleFiles.map((file) => (
@@ -494,28 +494,28 @@ export function HomePage() {
         onClose={() => setMovingFileId(null)}
       />
 
-      {/* Settings — a bottom sheet on mobile (opened by the top-bar gear), a modal on desktop. */}
+      
       <SettingsModal />
 
-      {/* Right-click menu for files / folders. */}
+      
       <LibraryContextMenu menu={ctxMenu} onClose={() => setCtxMenu(null)} />
 
-      {/* Templates — picking one creates a new file from it. */}
+      
       {templatesOpen && <TemplateBrowser onClose={() => setTemplatesOpen(false)} onPick={createFromTemplate} />}
     </div>
   )
-}
+};
 
 // Move a file to a folder (or the top level). A bottom sheet on mobile, a
 // compact centred modal on desktop — same list either way.
-function MoveToFolderPicker({
+const MoveToFolderPicker = ({
   file, folders, onMove, onClose,
 }: {
   file: DesignFile | null
   folders: Folder[]
   onMove: (folderId: string | null) => void
   onClose: () => void
-}) {
+}) => {
   const isMobile = useIsMobile()
   if (!file) return null
 
@@ -557,9 +557,9 @@ function MoveToFolderPicker({
       </div>
     </div>
   )
-}
+};
 
-function MoveRow({ label, icon: Icon, active, onClick }: { label: string; icon: React.ElementType; active: boolean; onClick: () => void }) {
+const MoveRow = ({ label, icon: Icon, active, onClick }: { label: string; icon: React.ElementType; active: boolean; onClick: () => void }) => {
   return (
     <button
       className={`w-full flex items-center gap-2.5 px-4 h-11 text-[14px] transition-colors ${active ? 'text-primary font-medium' : 'text-foreground hover:bg-muted/50'}`}
@@ -571,11 +571,11 @@ function MoveRow({ label, icon: Icon, active, onClick }: { label: string; icon: 
       {active && <Check className="w-4 h-4 text-primary" />}
     </button>
   )
-}
+};
 
 // --- Sub-components ---
 
-function NavItem({
+const NavItem = ({
   icon: Icon,
   label,
   active,
@@ -589,7 +589,7 @@ function NavItem({
   onClick: () => void
   onDelete?: () => void
   onDropFile?: (fileId: string) => void
-}) {
+}) => {
   const [dragOver, setDragOver] = useState(false)
   return (
     <button
@@ -615,11 +615,11 @@ function NavItem({
       )}
     </button>
   )
-}
+};
 
 // A folder tile in the main view. Renameable inline (double-click the name, the
 // hover pencil, or right-click), consistent with how file cards rename.
-function FolderCard({
+const FolderCard = ({
   folder,
   isEditing,
   editValue,
@@ -641,7 +641,7 @@ function FolderCard({
   onEditValueChange: (v: string) => void
   onDelete: () => void
   onContextMenu?: (e: React.MouseEvent) => void
-}) {
+}) => {
   return (
     <div
       className="group relative flex items-center gap-2.5 px-4 py-3 bg-card border border-border rounded-[7px] hover:shadow-[var(--shadow-subtle)] transition-shadow cursor-pointer min-w-[180px]"
@@ -688,9 +688,9 @@ function FolderCard({
       )}
     </div>
   )
-}
+};
 
-function FileCard({
+const FileCard = ({
   file,
   editingId,
   editValue,
@@ -718,7 +718,7 @@ function FileCard({
   onMove: () => void
   onContextMenu?: (e: React.MouseEvent) => void
   timeAgo: (d: string) => string
-}) {
+}) => {
   const isEditing = editingId === file.id
 
   // Generate a thumbnail from the first frame, plus the frame's background colour
@@ -736,8 +736,8 @@ function FileCard({
         layers: firstFrame.layers,
         createdAt: file.createdAt,
         updatedAt: file.updatedAt,
-      }
-      return { thumb: renderThumbnail(doc as any, 400, 280), bg }
+      } satisfies DesignDocument
+      return { thumb: renderThumbnail(doc, 400, 280), bg }
     } catch { return { thumb: null, bg } }
   }, [file])
 
@@ -749,8 +749,7 @@ function FileCard({
       draggable={!file.isScratchpad && !isEditing}
       onDragStart={(e) => { e.dataTransfer.setData(FILE_DND, file.id); e.dataTransfer.effectAllowed = 'move' }}
     >
-      {/* Thumbnail — contained (never cropped) on the frame's own background so
-          the whole design reads, edge-to-edge and clipped to the rounded card. */}
+      
       <div className="aspect-[4/3] relative overflow-hidden" style={{ background: bg }}>
         {thumb ? (
           <img src={thumb} alt="" className="w-full h-full object-contain" />
@@ -760,7 +759,7 @@ function FileCard({
           <div className="w-full h-full" style={{ background: cardGradient(file.id) }} />
         )}
 
-        {/* Hover actions */}
+        
         {!file.isScratchpad && (
           <div className="absolute top-2 right-2 flex gap-1 opacity-0 group-hover:opacity-100 max-md:opacity-100 transition-opacity">
             <button aria-label="Rename" className="p-1.5 bg-white/90 rounded-[5px] shadow-sm hover:bg-white cursor-pointer" onClick={(e) => { e.stopPropagation(); onStartEdit() }} title="Rename">
@@ -779,7 +778,7 @@ function FileCard({
         )}
       </div>
 
-      {/* Info */}
+      
       <div className="px-3 py-2.5">
         {isEditing ? (
           <input
@@ -804,9 +803,9 @@ function FileCard({
       </div>
     </div>
   )
-}
+};
 
-function FileListRow({
+const FileListRow = ({
   file,
   onOpen,
   onDuplicate,
@@ -822,7 +821,7 @@ function FileListRow({
   onMove: () => void
   onContextMenu?: (e: React.MouseEvent) => void
   timeAgo: (d: string) => string
-}) {
+}) => {
   return (
     <div
       className="group flex items-center gap-4 px-4 py-3 rounded-[7px] cursor-pointer hover:bg-muted/30 transition-colors"
@@ -857,13 +856,13 @@ function FileListRow({
       )}
     </div>
   )
-}
+};
 
 // --- Right-click menu -------------------------------------------------------
 
 type CtxItem = { label: string; Icon?: ComponentType<{ className?: string }>; on: () => void; danger?: boolean }
 
-function LibraryContextMenu({ menu, onClose }: { menu: { x: number; y: number; items: CtxItem[] } | null; onClose: () => void }) {
+const LibraryContextMenu = ({ menu, onClose }: { menu: { x: number; y: number; items: CtxItem[] } | null; onClose: () => void }) => {
   useEffect(() => {
     if (!menu) return
     const close = () => onClose()
@@ -906,11 +905,11 @@ function LibraryContextMenu({ menu, onClose }: { menu: { x: number; y: number; i
     </div>,
     document.body,
   )
-}
+};
 
 // --- First-run welcome ------------------------------------------------------
 
-function FirstRunWelcome({ onNewFile, onTemplates }: { onNewFile: () => void; onTemplates: () => void }) {
+const FirstRunWelcome = ({ onNewFile, onTemplates }: { onNewFile: () => void; onTemplates: () => void }) => {
   const [dismissed, setDismissed] = useState(() => {
     try { return localStorage.getItem('tela-welcomed') === '1' } catch { return false }
   })
@@ -924,7 +923,7 @@ function FirstRunWelcome({ onNewFile, onTemplates }: { onNewFile: () => void; on
 
   return (
     <div className="relative mb-6 overflow-hidden rounded-[14px] border border-border bg-card">
-      {/* Brand wash */}
+      
       <div className="pointer-events-none absolute inset-0 opacity-70" style={{ background: cardGradient('tela-welcome') }} />
       <div className="pointer-events-none absolute inset-0 bg-gradient-to-r from-card via-card/85 to-transparent" />
       <div className="relative flex flex-col gap-3 p-5 sm:flex-row sm:items-center sm:justify-between">
@@ -956,4 +955,4 @@ function FirstRunWelcome({ onNewFile, onTemplates }: { onNewFile: () => void; on
       </button>
     </div>
   )
-}
+};

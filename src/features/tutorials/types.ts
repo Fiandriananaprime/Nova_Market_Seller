@@ -1,4 +1,4 @@
-import type { DriveStep } from "driver.js"
+
 
 export type TourId =
   | "onboarding"
@@ -18,7 +18,7 @@ export interface TourStepDefinition {
   descriptionKey: string
   side?: "top" | "right" | "bottom" | "left"
   align?: "start" | "center" | "end"
-  icon?: string // icon identifier for visual variety
+  icon?: string                                      
   badgeKey?: string
 }
 

@@ -4,29 +4,31 @@ import { getBrandColor } from '@/features/product-studio/canvas/brand/palette'
 import {
   Wand2,
   Copy,
-  Loader2,
   Target,
   Plus,
 } from 'lucide-react'
+import LatticeLoader from '@/components/LatticeLoader.jsx'
+import type { AIImageAttachment } from '@/features/product-studio/canvas/components/panels/ai/types'
 import type { TextLayer, ShapeLayer, BackgroundLayer } from '@/features/product-studio/canvas/types/design'
 
 export interface ChatMessage {
   id: string
   role: 'user' | 'assistant'
   content: string
-  /** If the AI produced design JSON, store the parsed layers here */
+                                                                     
   designLayers?: unknown[]
-  /** If copy was generated, mark it for easy apply */
+                                                      
   isCopy?: boolean
-  /** Timestamp */
+  attachments?: AIImageAttachment[]
+                  
   ts: number
 }
 
-// --- Apply design layers to canvas ---
+                                        
 
-function applyDesignLayers(jsonStr: string): boolean {
+const applyDesignLayers = (jsonStr: string):boolean => {
   try {
-    // Extract JSON from markdown code block if present
+                                                       
     const jsonMatch = jsonStr.match(/```json?\s*\n?([\s\S]*?)```/)
     const cleanJson = jsonMatch ? jsonMatch[1].trim() : jsonStr.trim()
     const layers = JSON.parse(cleanJson)
@@ -37,7 +39,7 @@ function applyDesignLayers(jsonStr: string): boolean {
     const format = store.document.format
     store.pushSnapshot()
 
-    // Remove all non-background layers
+                                       
     const existing = store.document.layers.filter((l) => l.type !== 'background')
     for (const l of existing) {
       store.removeLayer(l.id)
@@ -90,11 +92,11 @@ function applyDesignLayers(jsonStr: string): boolean {
   } catch {
     return false
   }
-}
+};
 
-// --- Message bubble ---
+                         
 
-export function MessageBubble({ message }: { message: ChatMessage }) {
+export const MessageBubble = ({ message }: { message: ChatMessage }) => {
   const isUser = message.role === 'user'
   const hasDesignJson = /```json?\s*\n?\[[\s\S]*?\][\s\S]*?```/.test(message.content)
 
@@ -110,19 +112,33 @@ export function MessageBubble({ message }: { message: ChatMessage }) {
         `}
       >
         <MessageContent content={message.content} />
+        {message.attachments && message.attachments.length > 0 && (
+          <div className="mt-2 grid grid-cols-2 gap-2">
+            {message.attachments.map((attachment) => (
+              <img
+                key={attachment.id}
+                src={attachment.dataUrl}
+                alt={attachment.name}
+                title={attachment.name}
+                loading="lazy"
+                className="max-h-36 w-full rounded-md border border-white/20 object-cover"
+              />
+            ))}
+          </div>
+        )}
       </div>
 
-      {/* Action buttons for assistant messages */}
+      
       {!isUser && (
-        <MessageActions content={message.content} hasDesignJson={hasDesignJson} isCopy={message.isCopy} />
+        <MessageActions content={message.content} hasDesignJson={hasDesignJson} />
       )}
     </div>
   )
-}
+};
 
 // --- Render message content with code blocks ---
 
-function MessageContent({ content }: { content: string }) {
+const MessageContent = ({ content }: { content: string }) => {
   // Split on code blocks
   const parts = content.split(/(```[\s\S]*?```)/g)
 
@@ -141,15 +157,15 @@ function MessageContent({ content }: { content: string }) {
       })}
     </div>
   )
-}
+};
 
-// --- Message action buttons ---
+                                 
 
-function MessageActions({ content, hasDesignJson, isCopy }: { content: string; hasDesignJson: boolean; isCopy?: boolean }) {
+const MessageActions = ({ content, hasDesignJson }: { content: string; hasDesignJson: boolean }) => {
   const activeLayerId = useDesignStore((s) => s.activeLayerId)
   const [applied, setApplied] = useState(false)
 
-  // Extract plain text (without code blocks) for copy operations
+                                                                 
   const plainText = content.replace(/```[\s\S]*?```/g, '').trim()
 
   const applyToSelected = () => {
@@ -221,11 +237,11 @@ function MessageActions({ content, hasDesignJson, isCopy }: { content: string; h
       )}
     </div>
   )
-}
+};
 
-// --- Streaming message display ---
+                                    
 
-export function StreamingMessage({ content }: { content: string }) {
+export const StreamingMessage = ({ content }: { content: string }) => {
   return (
     <div className="flex flex-col gap-1">
       <div className="px-3 py-2 rounded-[8px] bg-muted/40 text-[13px] text-foreground leading-relaxed whitespace-pre-wrap">
@@ -234,13 +250,12 @@ export function StreamingMessage({ content }: { content: string }) {
       </div>
     </div>
   )
-}
+};
 
-export function ThinkingIndicator() {
+export const ThinkingIndicator = () => {
   return (
-    <div className="flex items-center gap-2 px-3 py-2">
-      <Loader2 className="w-3.5 h-3.5 animate-spin text-primary" />
-      <span className="text-[12px] text-muted-foreground">Thinking...</span>
+    <div className="px-3 py-2 text-primary">
+      <LatticeLoader />
     </div>
   )
-}
+};

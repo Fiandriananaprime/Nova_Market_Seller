@@ -9,18 +9,18 @@ interface Props {
   min?: number
 }
 
-/**
- * Numeric field that accepts arithmetic — type "100+20", "200/2", "(120-8)/2".
- * Shows the live value; on Enter/blur it evaluates the expression and commits
- * the rounded result. Arrow keys nudge by 1 (10 with Shift), matching the old
- * number-input behaviour we lose by switching to a text field for the maths.
- */
-export function ScalarInput({ value, onCommit, className, min }: Props) {
+   
+                                                                               
+                                                                              
+                                                                              
+                                                                             
+   
+export const ScalarInput = ({ value, onCommit, className, min }: Props) => {
   const [draft, setDraft] = useState(String(Math.round(value)))
   const [editing, setEditing] = useState(false)
-  // Sync the shown value to external updates (e.g. a drag-resize) without an
-  // effect: adjust during render when the incoming value changes and we're not
-  // actively editing (React's "storing info from previous renders" pattern).
+                                                                             
+                                                                               
+                                                                             
   const [lastValue, setLastValue] = useState(value)
   if (!editing && value !== lastValue) {
     setLastValue(value)
@@ -64,4 +64,4 @@ export function ScalarInput({ value, onCommit, className, min }: Props) {
       }}
     />
   )
-}
+};

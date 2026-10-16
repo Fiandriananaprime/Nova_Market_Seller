@@ -6,16 +6,16 @@ import { AD_FORMATS } from '@/features/product-studio/canvas/brand/formats'
 import { getBrandColor } from '@/features/product-studio/canvas/brand/palette'
 import type { FontWeight, LayerConstraints, TextLayer } from '@/features/product-studio/canvas/types/design'
 
-/**
- * The canvas command bus — one typed, introspectable surface for driving the
- * editor. The UI and any agent are both just clients of this: every op maps to
- * a store action or composite, so "can an agent do what a human can?" is true
- * by construction. Commands are plain serializable objects ({ op, ...args }) so
- * they cross the postMessage boundary (see rpc.ts) unchanged.
- *
- * Introspection: `getSchema` returns the full command list with params, so an
- * agent reads its own toolset rather than guessing.
- */
+   
+                                                                             
+                                                                               
+                                                                              
+                                                                                
+                                                              
+  
+                                                                              
+                                                    
+   
 
 export interface CommandResult {
   ok: boolean
@@ -25,7 +25,7 @@ export interface CommandResult {
 
 interface CommandDef {
   description: string
-  /** param name → short description (type + meaning). Drives getSchema. */
+                                                                           
   params: Record<string, string>
   handler: (args: Record<string, unknown>) => unknown | Promise<unknown>
 }
@@ -36,9 +36,9 @@ const formatById = (id: unknown) => {
   return fmt
 }
 
-/** Serializable snapshot an agent reads to understand current state. The active
-    frame's layers come from the design store (the live copy). */
-function snapshot() {
+                                                                                
+                                                                 
+const snapshot = () => {
   const ws = useWorkspaceStore.getState()
   const d = useDesignStore.getState()
   const page = ws.getActivePage()
@@ -57,10 +57,10 @@ function snapshot() {
     return { id: f.id, name: f.name, formatId: f.format.id, width: f.width, height: f.height, active, layers }
   })
   return { activeFrameId: ws.activeFrameId, selection: [...d.selectedLayerIds], frames }
-}
+};
 
 const COMMANDS: Record<string, CommandDef> = {
-  // ── Introspection & query ─────────────────────────────────────────────
+                                                                           
   getSchema: {
     description: 'List every available command with its parameters. Call this first.',
     params: {},
@@ -79,7 +79,7 @@ const COMMANDS: Record<string, CommandDef> = {
     handler: () => AD_FORMATS.map((f) => ({ id: f.id, label: f.label, width: f.width, height: f.height, aspectRatio: f.aspectRatio })),
   },
 
-  // ── Frames ────────────────────────────────────────────────────────────
+                                                                           
   addFrame: {
     description: 'Create a new frame and return its id.',
     params: { formatId: 'string? — format to use (default LinkedIn Feed)', name: 'string? — frame name' },
@@ -134,7 +134,7 @@ const COMMANDS: Record<string, CommandDef> = {
     },
   },
 
-  // ── Layers (operate on the active frame) ──────────────────────────────
+                                                                           
   addText: {
     description: 'Add a text layer to the active frame. Returns its layer id.',
     params: {
@@ -156,7 +156,7 @@ const COMMANDS: Record<string, CommandDef> = {
         ...(a.colorToken ? { color: getBrandColor(a.colorToken as string) } : {}),
       })
       const id = useDesignStore.getState().addLayer(layer)
-      // Hug the box to the text (cap trim) so agent-added text isn't loose.
+                                                                            
       const created = useDesignStore.getState().getLayer(id) as TextLayer | undefined
       if (created) {
         const b = getTextBounds(createMeasureContext(), created)
@@ -240,7 +240,7 @@ const COMMANDS: Record<string, CommandDef> = {
     },
   },
 
-  // ── AI ────────────────────────────────────────────────────────────────
+                                                                           
   relayoutFrame: {
     description: 'AI re-layout: re-compose a frame\'s existing content to fit its current format (call setFrameFormat first to change size). Preserves copy/colours, recomposes positions. Async, uses the LLM.',
     params: { frameId: 'string? — frame to re-layout (default: active frame)' },
@@ -253,9 +253,9 @@ const COMMANDS: Record<string, CommandDef> = {
   },
 }
 
-/** Run one command. Never throws — failures come back as { ok:false, error }.
-    Async because some ops (AI re-layout) await the LLM. */
-export async function dispatch(command: { op: string; [k: string]: unknown }): Promise<CommandResult> {
+                                                                              
+                                                           
+export const dispatch = async (command: { op: string; [k: string]: unknown }):Promise<CommandResult> => {
   const def = command && COMMANDS[command.op]
   if (!def) return { ok: false, error: `Unknown command "${command?.op}". Call { op: "getSchema" } for the list.` }
   try {
@@ -263,8 +263,8 @@ export async function dispatch(command: { op: string; [k: string]: unknown }): P
   } catch (e) {
     return { ok: false, error: e instanceof Error ? e.message : String(e) }
   }
-}
+};
 
-export function getSchema() {
+export const getSchema = () => {
   return COMMANDS.getSchema.handler({})
-}
+};

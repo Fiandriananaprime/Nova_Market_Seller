@@ -8,13 +8,13 @@ import type {
   Layer,
 } from '@/features/product-studio/canvas/types/design'
 
-/**
- * Auto Layout inspector — shown when the selected layer belongs to an Auto
- * Layout group. Edits the config (direction / gap / padding / alignment /
- * sizing); every change reflows the group live through the store. Also exposes a
- * per-child "Fill" toggle for the active member.
- */
-export function AutoLayoutPanel({ groupId, activeLayer }: { groupId: string; activeLayer: Layer }) {
+   
+                                                                           
+                                                                          
+                                                                                 
+                                                 
+   
+export const AutoLayoutPanel = ({ groupId, activeLayer }: { groupId: string; activeLayer: Layer }) => {
   const config = useDesignStore((s) => s.document.autoLayouts?.[groupId])
   const update = useDesignStore((s) => s.updateAutoLayoutConfig)
   const remove = useDesignStore((s) => s.removeAutoLayout)
@@ -41,7 +41,7 @@ export function AutoLayoutPanel({ groupId, activeLayer }: { groupId: string; act
         </button>
       </div>
 
-      {/* Direction */}
+      
       <Seg
         options={[
           { id: 'horizontal', label: 'Horizontal', node: <MoveHorizontal className="w-3.5 h-3.5" /> },
@@ -51,7 +51,7 @@ export function AutoLayoutPanel({ groupId, activeLayer }: { groupId: string; act
         onChange={(v) => set({ direction: v as AutoLayoutConfig['direction'] })}
       />
 
-      {/* Gap + padding */}
+      
       <div className="grid grid-cols-3 gap-2">
         <NumField label="Gap" value={config.gap} onChange={(v) => set({ gap: v })} />
         <NumField
@@ -66,7 +66,7 @@ export function AutoLayoutPanel({ groupId, activeLayer }: { groupId: string; act
         />
       </div>
 
-      {/* Primary axis distribution */}
+      
       <div className="space-y-1.5">
         <Label>{horiz ? 'Horizontal' : 'Vertical'} align</Label>
         <Seg
@@ -81,7 +81,7 @@ export function AutoLayoutPanel({ groupId, activeLayer }: { groupId: string; act
         />
       </div>
 
-      {/* Counter axis alignment */}
+      
       <div className="space-y-1.5">
         <Label>{horiz ? 'Vertical' : 'Horizontal'} align</Label>
         <Seg
@@ -96,7 +96,7 @@ export function AutoLayoutPanel({ groupId, activeLayer }: { groupId: string; act
         />
       </div>
 
-      {/* Container sizing */}
+      
       <div className="grid grid-cols-2 gap-2">
         <div className="space-y-1.5">
           <Label>Width</Label>
@@ -116,7 +116,7 @@ export function AutoLayoutPanel({ groupId, activeLayer }: { groupId: string; act
         </div>
       </div>
 
-      {/* Per-child fill (active member) */}
+      
       {activeLayer.type !== 'background' && (
         <div className="space-y-1.5">
           <Label>Selected child</Label>
@@ -132,13 +132,13 @@ export function AutoLayoutPanel({ groupId, activeLayer }: { groupId: string; act
       )}
     </div>
   )
-}
+};
 
-function Label({ children }: { children: React.ReactNode }) {
+const Label = ({ children }: { children: React.ReactNode }) => {
   return <label className="text-[13px] text-muted-foreground font-normal">{children}</label>
-}
+};
 
-function Seg({
+const Seg = ({
   options,
   value,
   onChange,
@@ -146,7 +146,7 @@ function Seg({
   options: { id: string; node: React.ReactNode; label?: string }[]
   value: string
   onChange: (id: string) => void
-}) {
+}) => {
   return (
     <div className="flex gap-1">
       {options.map((o) => (
@@ -166,9 +166,9 @@ function Seg({
       ))}
     </div>
   )
-}
+};
 
-function NumField({
+const NumField = ({
   label,
   value,
   onChange,
@@ -176,7 +176,7 @@ function NumField({
   label: string
   value: number
   onChange: (v: number) => void
-}) {
+}) => {
   return (
     <label className="flex flex-col gap-1">
       <span className="text-[11px] text-muted-foreground/60">{label}</span>
@@ -189,4 +189,4 @@ function NumField({
       />
     </label>
   )
-}
+};

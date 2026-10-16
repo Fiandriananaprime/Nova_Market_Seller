@@ -1,39 +1,39 @@
 import { createRoot, type Root } from 'react-dom/client'
-// From shaders-react (the declared dependency) rather than the core
-// `@paper-design/shaders` package, which is only a transitive dep and isn't
-// resolvable under pnpm's strict node_modules during the production build.
+                                                                    
+                                                                            
+                                                                           
 import { isPaperShaderElement } from '@paper-design/shaders-react'
 import type { ShaderFill } from '@/features/product-studio/canvas/types/design'
-import { renderShaderElement } from '@/features/product-studio/canvas/components/canvas/ShaderBackground'
+import { renderShaderElement } from '@/features/product-studio/canvas/engine/renderShaderElement'
 
-/**
- * Renders a shader background to a static bitmap for the Canvas-2D export pipeline.
- *
- * Paper Shaders are WebGL React components, so we mount one into a detached,
- * off-screen host at the requested resolution, freeze it (`speed: 0`) at the
- * fill's deterministic `frame`, force a synchronous render via `setFrame`, then
- * copy the WebGL canvas into a plain 2D canvas the compositor can `drawImage`.
- *
- * Results are memoised by fill signature + size so repeated exports / re-renders
- * of the same design don't re-mount WebGL every time.
- */
+   
+                                                                                    
+  
+                                                                             
+                                                                             
+                                                                                
+                                                                               
+  
+                                                                                 
+                                                      
+   
 
 const cache = new Map<string, HTMLCanvasElement>()
 
-function signature(fill: ShaderFill, w: number, h: number): string {
+const signature = (fill: ShaderFill, w: number, h: number):string => {
   return JSON.stringify([fill.kind, fill.colors, fill.frame, fill.intensity, fill.scale, fill.rotation, fill.grain, w, h])
-}
+};
 
 const nextFrame = () => new Promise<void>((r) => requestAnimationFrame(() => r()))
 
-function findShaderMount(host: HTMLElement) {
+const findShaderMount = (host: HTMLElement) => {
   for (const node of [host, ...host.querySelectorAll<HTMLElement>('*')]) {
     if (isPaperShaderElement(node)) return node.paperShaderMount
   }
   return undefined
-}
+};
 
-function solidFallback(fill: ShaderFill, w: number, h: number): HTMLCanvasElement {
+const solidFallback = (fill: ShaderFill, w: number, h: number):HTMLCanvasElement => {
   const c = document.createElement('canvas')
   c.width = Math.round(w)
   c.height = Math.round(h)
@@ -41,13 +41,12 @@ function solidFallback(fill: ShaderFill, w: number, h: number): HTMLCanvasElemen
   ctx.fillStyle = fill.colors[0] ?? '#2563eb'
   ctx.fillRect(0, 0, c.width, c.height)
   return c
-}
+};
 
-export async function captureShaderFrame(
+export const captureShaderFrame = async (
   fill: ShaderFill,
   width: number,
-  height: number,
-): Promise<HTMLCanvasElement> {
+  height: number,):Promise<HTMLCanvasElement> => {
   const key = signature(fill, width, height)
   const hit = cache.get(key)
   if (hit) return hit
@@ -98,14 +97,13 @@ export async function captureShaderFrame(
       host.remove()
     }, 0)
   }
-}
+};
 
 /** Collect shader-background captures for a document, keyed by layer id. */
-export async function captureDesignShaders(
+export const captureDesignShaders = async (
   layers: { id: string; type: string; fill?: unknown }[],
   width: number,
-  height: number,
-): Promise<Map<string, HTMLCanvasElement>> {
+  height: number,):Promise<Map<string, HTMLCanvasElement>> => {
   const map = new Map<string, HTMLCanvasElement>()
   for (const layer of layers) {
     if (layer.type !== 'background') continue
@@ -114,4 +112,4 @@ export async function captureDesignShaders(
     map.set(layer.id, await captureShaderFrame(fill, width, height))
   }
   return map
-}
+};

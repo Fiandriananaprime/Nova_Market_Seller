@@ -1,14 +1,14 @@
-// Auto Layout engine — pure geometry. Given a container config and its children
-// (in visual order), compute each child's absolute rect and the container's
-// resolved size. No store, no DOM: same inputs → same outputs, so it's trivially
-// testable and drives both the live editor and any future export.
-//
-// Mental model = CSS flexbox on one axis:
-//   - primary axis  = the layout direction (row → x, column → y)
-//   - counter axis  = perpendicular
-// Fixed dimensions use the container's stored size; Hug dimensions are derived
-// from the children. `layoutGrow` children share leftover primary space (only
-// meaningful when the primary dimension is Fixed — Hug has no leftover).
+                                                                                
+                                                                            
+                                                                                 
+                                                                  
+  
+                                          
+                                                                 
+                                    
+                                                                               
+                                                                              
+                                                                         
 
 import type { AutoLayoutConfig, AutoLayoutDirection } from '@/features/product-studio/canvas/types/design'
 
@@ -29,16 +29,16 @@ export interface LayoutRect {
 
 export interface AutoLayoutResult {
   rects: LayoutRect[]
-  // The container's resolved size (== config w/h for Fixed dims, derived for Hug).
+                                                                                   
   width: number
   height: number
 }
 
-export function computeAutoLayout(config: AutoLayoutConfig, children: LayoutChild[]): AutoLayoutResult {
+export const computeAutoLayout = (config: AutoLayoutConfig, children: LayoutChild[]):AutoLayoutResult => {
   const horiz = config.direction === 'horizontal'
   const { padding: pad, gap } = config
 
-  // Axis-agnostic padding: "start/end" are along each axis.
+                                                            
   const primPadStart = horiz ? pad.left : pad.top
   const primPadEnd = horiz ? pad.right : pad.bottom
   const counterPadStart = horiz ? pad.top : pad.left
@@ -53,21 +53,21 @@ export function computeAutoLayout(config: AutoLayoutConfig, children: LayoutChil
   const n = children.length
   const totalGap = n > 1 ? gap * (n - 1) : 0
 
-  // --- Counter axis: container size + per-child stretch --------------------
+                                                                              
   const maxCounter = children.reduce((m, c) => Math.max(m, counterOf(c)), 0)
   const counterContainer = counterHug
     ? maxCounter + counterPadStart + counterPadEnd
     : horiz ? config.height : config.width
   const counterInner = counterContainer - counterPadStart - counterPadEnd
 
-  // --- Primary axis: fill children + container size ------------------------
+                                                                              
   const growers = children.filter((c) => c.layoutGrow)
   const fixedPrimarySum = children
     .filter((c) => !c.layoutGrow)
     .reduce((s, c) => s + primaryOf(c), 0)
 
-  // Grow only resolves against real leftover space, which only exists when the
-  // primary dimension is Fixed. In Hug, growers keep their intrinsic size.
+                                                                               
+                                                                           
   const primaryContainer = primaryHug
     ? childrenPrimaryExtent(children, primaryOf) + totalGap + primPadStart + primPadEnd
     : horiz ? config.width : config.height
@@ -81,7 +81,7 @@ export function computeAutoLayout(config: AutoLayoutConfig, children: LayoutChil
   const resolvedPrimary = (c: LayoutChild) =>
     c.layoutGrow && !primaryHug ? growSize : primaryOf(c)
 
-  // --- Primary distribution (start/center/end/space-between) ---------------
+                                                                              
   const usedPrimary = children.reduce((s, c) => s + resolvedPrimary(c), 0) + totalGap
   const freePrimary = primaryHug ? 0 : Math.max(0, primaryInner - usedPrimary)
 
@@ -91,18 +91,18 @@ export function computeAutoLayout(config: AutoLayoutConfig, children: LayoutChil
     if (config.primaryAlign === 'center') cursor += freePrimary / 2
     else if (config.primaryAlign === 'end') cursor += freePrimary
     else if (config.primaryAlign === 'space-between' && n > 1) {
-      // Distribute all free space between items; edges hug the padding.
+                                                                        
       betweenGap = gap + freePrimary / (n - 1)
     }
   }
 
-  // --- Emit rects ----------------------------------------------------------
+                                                                              
   const rects: LayoutRect[] = children.map((c) => {
     const primSize = resolvedPrimary(c)
     const primPos = cursor
     cursor += primSize + betweenGap
 
-    // Counter position + optional stretch.
+                                           
     const stretched = config.counterAlign === 'stretch'
     const counterSize = stretched ? counterInner : counterOf(c)
     let counterPos = counterPadStart
@@ -112,7 +112,7 @@ export function computeAutoLayout(config: AutoLayoutConfig, children: LayoutChil
       else if (config.counterAlign === 'end') counterPos += slack
     }
 
-    // Map primary/counter back to x/y and absolute position via the container origin.
+                                                                                      
     const x = config.x + (horiz ? primPos : counterPos)
     const y = config.y + (horiz ? counterPos : primPos)
     const width = horiz ? primSize : counterSize
@@ -125,15 +125,15 @@ export function computeAutoLayout(config: AutoLayoutConfig, children: LayoutChil
     width: round(horiz ? primaryContainer : counterContainer),
     height: round(horiz ? counterContainer : primaryContainer),
   }
-}
+};
 
-function childrenPrimaryExtent(children: LayoutChild[], primaryOf: (c: LayoutChild) => number): number {
+const childrenPrimaryExtent = (children: LayoutChild[], primaryOf: (c: LayoutChild) => number):number => {
   return children.reduce((s, c) => s + primaryOf(c), 0)
-}
+};
 
 const round = (n: number): number => Math.round(n * 100) / 100
 
-// --- Inference (used when converting a raw selection into Auto Layout) --------
+                                                                                 
 
 export interface InferInput {
   x: number
@@ -142,13 +142,13 @@ export interface InferInput {
   height: number
 }
 
-/**
- * Guess the most likely direction + gap from how the selected layers are laid
- * out: if their horizontal spread dominates the vertical, it's a row; else a
- * column. Gap = median of the visible edge-to-edge gaps between neighbours,
- * clamped to a sane range.
- */
-export function inferAutoLayout(items: InferInput[]): { direction: AutoLayoutDirection; gap: number } {
+   
+                                                                              
+                                                                             
+                                                                            
+                           
+   
+export const inferAutoLayout = (items: InferInput[]):{ direction: AutoLayoutDirection; gap: number } => {
   if (items.length < 2) return { direction: 'horizontal', gap: 0 }
 
   const xs = items.map((i) => i.x)
@@ -173,4 +173,4 @@ export function inferAutoLayout(items: InferInput[]): { direction: AutoLayoutDir
   const median = gaps[Math.floor(gaps.length / 2)] ?? 0
   const gap = Math.max(0, Math.min(200, Math.round(median)))
   return { direction, gap }
-}
+};

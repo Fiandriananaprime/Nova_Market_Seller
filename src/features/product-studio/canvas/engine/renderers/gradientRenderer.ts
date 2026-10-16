@@ -1,17 +1,16 @@
-import type { GradientLayer, GradientColorStop } from '@/features/product-studio/canvas/types/design'
+import type { GradientLayer } from '@/features/product-studio/canvas/types/design'
 
-export function oklchToRgba(l: number, c: number, h: number, a: number): string {
-  // Simple OKLCH to sRGB approximation for canvas rendering
-  // Uses CSS oklch() which modern browsers support
+export const oklchToRgba = (l: number, c: number, h: number, a: number):string => {
+                                                            
+                                                   
   return `oklch(${l} ${c} ${h} / ${a})`
-}
+};
 
-function renderGrain(
+const renderGrain = (
   ctx: CanvasRenderingContext2D,
   w: number,
   h: number,
-  grain: number,
-) {
+  grain: number,) => {
   const grainCanvas = document.createElement('canvas')
   grainCanvas.width = Math.round(w)
   grainCanvas.height = Math.round(h)
@@ -33,13 +32,12 @@ function renderGrain(
   ctx.drawImage(grainCanvas, 0, 0)
   ctx.globalAlpha = 1
   ctx.globalCompositeOperation = 'source-over'
-}
+};
 
-export function renderGradientLayer(
+export const renderGradientLayer = (
   ctx: CanvasRenderingContext2D,
   layer: GradientLayer,
-  scale: number,
-) {
+  scale: number,) => {
   const w = layer.width * scale
   const h = layer.height * scale
 
@@ -132,4 +130,4 @@ export function renderGradientLayer(
   }
 
   ctx.restore()
-}
+};

@@ -1,11 +1,11 @@
 let ctx: AudioContext | null = null
 
-/**
- * A soft, short two-note "ship" chime for successful export — generated with
- * WebAudio so it needs no asset. Low gain, sine tones; silently no-ops if audio
- * isn't available.
- */
-export function playChime(): void {
+   
+                                                                             
+                                                                                
+                   
+   
+export const playChime = (): void => {
   try {
     const AC = window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext
     ctx = ctx ?? new AC()
@@ -23,7 +23,7 @@ export function playChime(): void {
       osc.start(t)
       osc.stop(t + 0.24)
     }
-  } catch {
-    // Audio unavailable (autoplay policy, no device) — stay silent.
+  } catch (error) {
+    console.error('Unable to play the notification chime:', error)
   }
-}
+};

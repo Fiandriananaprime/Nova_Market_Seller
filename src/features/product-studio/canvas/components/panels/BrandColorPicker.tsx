@@ -5,14 +5,14 @@ import { Tooltip, TooltipTrigger, TooltipContent, TooltipProvider } from '@/feat
 import { ChevronDown, ChevronRight, Pipette } from 'lucide-react'
 import { useIsProMode } from '@/features/product-studio/canvas/hooks/useIsProMode'
 
-// EyeDropper API — supported in Chromium; feature-detected below.
+                                                                  
 interface EyeDropperResult { sRGBHex: string }
 interface EyeDropperCtor { new (): { open: () => Promise<EyeDropperResult> } }
 declare global {
   interface Window { EyeDropper?: EyeDropperCtor }
 }
 
-// Core groups shown in simplified mode
+                                       
 const CORE_GROUPS = new Set(['neutrals', 'brand', 'accent', 'traffic'])
 
 interface Props {
@@ -21,10 +21,10 @@ interface Props {
   label?: string
 }
 
-export function BrandColorPicker({ value, onChange, label }: Props) {
+export const BrandColorPicker = ({ value, onChange, label }: Props) => {
   const isPro = useIsProMode()
-  // Basic locks colour to the curated brand tokens — no full palette, no custom
-  // eyedropper — so you can't pick a clashing colour.
+                                                                                
+                                                      
   const [simplified, setSimplified] = useState(true)
   const [collapsed, setCollapsed] = useState<Set<string>>(new Set())
 
@@ -34,8 +34,10 @@ export function BrandColorPicker({ value, onChange, label }: Props) {
     try {
       const { sRGBHex } = await new window.EyeDropper().open()
       onChange({ token: 'custom', hex: sRGBHex })
-    } catch {
-      /* user pressed Escape — ignore */
+    } catch (error) {
+      if (!(error instanceof DOMException && error.name === 'AbortError')) {
+        console.error('Unable to sample a color from the screen:', error)
+      }
     }
   }
 
@@ -48,7 +50,7 @@ export function BrandColorPicker({ value, onChange, label }: Props) {
     })
   }
 
-  // In Basic, always the core groups (the toggle is hidden).
+                                                             
   const visibleGroups = (simplified || !isPro)
     ? BRAND_GROUPS.filter((g) => CORE_GROUPS.has(g.id))
     : BRAND_GROUPS
@@ -59,7 +61,7 @@ export function BrandColorPicker({ value, onChange, label }: Props) {
         <div className="text-[13px] text-muted-foreground font-normal">{label}</div>
       )}
 
-      {/* Current color preview + mode toggle */}
+      
       <div className="flex items-center gap-2 mb-2">
         <div
           className="w-7 h-7 rounded-[5px] border border-border shrink-0"
@@ -88,7 +90,7 @@ export function BrandColorPicker({ value, onChange, label }: Props) {
         )}
       </div>
 
-      {/* Palette groups */}
+      
       <TooltipProvider>
         <div className="space-y-1">
           {visibleGroups.map((group) => {
@@ -112,9 +114,7 @@ export function BrandColorPicker({ value, onChange, label }: Props) {
                   <div className="flex flex-wrap gap-1 pb-1">
                     {tokens.map((t) => (
                       <Tooltip key={t.token}>
-                        {/* `render` composes the trigger onto the swatch itself
-                            so we don't nest a <button> inside the trigger's
-                            <button> (which throws a hydration error). */}
+                        
                         <TooltipTrigger
                           render={
                             <button
@@ -142,4 +142,4 @@ export function BrandColorPicker({ value, onChange, label }: Props) {
       </TooltipProvider>
     </div>
   )
-}
+};

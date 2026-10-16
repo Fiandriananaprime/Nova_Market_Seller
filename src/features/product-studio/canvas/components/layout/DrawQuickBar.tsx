@@ -5,17 +5,17 @@ import { useUIStore } from '@/features/product-studio/canvas/store/useUIStore'
 import { getBrandColor } from '@/features/product-studio/canvas/brand/palette'
 import { haptic } from '@/features/product-studio/canvas/lib/haptics'
 
-// A curated quick palette — the full picker still lives in the sidebar panel.
+                                                                              
 const SWATCHES = ['charcoal', 'brand-primary', 'red', 'green', 'orange', 'gold-300']
 const PEN_SIZES = [3, 6, 12, 24]
 const MARKER_SIZES = [12, 22, 40, 64]
 
-/**
- * A contextual quick bar that springs in above the main FloatingToolbar while
- * the pen or eraser is active (tldraw-style). Fast access to mode, a handful of
- * colours, and sizes without opening the sidebar. Desktop and mobile.
- */
-export function DrawQuickBar() {
+   
+                                                                              
+                                                                                
+                                                                      
+   
+export const DrawQuickBar = () => {
   const tool = useDesignStore((s) => s.tool)
   const setTool = useDesignStore((s) => s.setTool)
   const drawMode = useUIStore((s) => s.drawMode)
@@ -114,4 +114,4 @@ export function DrawQuickBar() {
       )}
     </AnimatePresence>
   )
-}
+};

@@ -21,8 +21,8 @@ const TEXT_TRANSFORMS = [
   { label: 'aa', value: 'lowercase' as const },
 ]
 
-// A harmonious type scale. In Basic, font sizes snap to these so text sizes
-// relate to each other instead of landing on arbitrary values.
+                                                                            
+                                                               
 const TYPE_SCALE = [12, 14, 16, 18, 20, 24, 28, 32, 40, 48, 56, 64, 72, 96, 120]
 const snapToTypeScale = (v: number) =>
   TYPE_SCALE.reduce((best, s) => (Math.abs(s - v) < Math.abs(best - v) ? s : best), TYPE_SCALE[0])
@@ -31,12 +31,12 @@ interface Props {
   layer: TextLayer
 }
 
-export function TextPropertiesPanel({ layer }: Props) {
+export const TextPropertiesPanel = ({ layer }: Props) => {
   const updateLayer = useDesignStore((s) => s.updateLayer)
   const pushSnapshot = useDesignStore((s) => s.pushSnapshot)
   const isPro = useIsProMode()
 
-  // Legibility nudge: compare the text colour against a solid frame background.
+                                                                                
   const bgHex = useDesignStore((s) => {
     const bg = s.document.layers.find((l) => l.type === 'background')
     return bg && bg.type === 'background' && bg.fill.type === 'solid'
@@ -51,7 +51,7 @@ export function TextPropertiesPanel({ layer }: Props) {
         Text
       </div>
 
-      {/* Content */}
+      
       <div className="space-y-1.5">
         <label className="text-[13px] text-muted-foreground font-normal">Content</label>
         <textarea
@@ -62,7 +62,7 @@ export function TextPropertiesPanel({ layer }: Props) {
         />
       </div>
 
-      {/* Text Role */}
+      
       <div className="space-y-1.5">
         <label className="text-[13px] text-muted-foreground font-normal">Role</label>
         <select
@@ -84,7 +84,7 @@ export function TextPropertiesPanel({ layer }: Props) {
         </select>
       </div>
 
-      {/* Font size */}
+      
       <SliderField
         label="Size"
         value={layer.fontSize}
@@ -96,7 +96,7 @@ export function TextPropertiesPanel({ layer }: Props) {
         onChange={(fontSize) => updateLayer<TextLayer>(layer.id, { fontSize: isPro ? fontSize : snapToTypeScale(fontSize) })}
       />
 
-      {/* Font weight */}
+      
       <div className="space-y-1.5">
         <label className="text-[13px] text-muted-foreground font-normal">Weight</label>
         <div className="flex gap-1">
@@ -121,7 +121,7 @@ export function TextPropertiesPanel({ layer }: Props) {
         </div>
       </div>
 
-      {/* Alignment */}
+      
       <div className="space-y-1.5">
         <label className="text-[13px] text-muted-foreground font-normal">Alignment</label>
         <div className="flex gap-1">
@@ -150,7 +150,7 @@ export function TextPropertiesPanel({ layer }: Props) {
         </div>
       </div>
 
-      {/* Text transform */}
+      
       <div className="space-y-1.5">
         <label className="text-[13px] text-muted-foreground font-normal">Transform</label>
         <div className="flex gap-1">
@@ -174,7 +174,7 @@ export function TextPropertiesPanel({ layer }: Props) {
         </div>
       </div>
 
-      {/* Color */}
+      
       <BrandColorPicker
         label="Color"
         value={layer.color}
@@ -184,7 +184,7 @@ export function TextPropertiesPanel({ layer }: Props) {
         }}
       />
 
-      {/* Legibility nudge — inline, not a toast. */}
+      
       {contrast != null && contrast < 4.5 && (
         <div className="flex items-center gap-1.5 text-[11px] text-amber-600">
           <span className="inline-block h-1.5 w-1.5 rounded-full bg-amber-500" />
@@ -192,7 +192,7 @@ export function TextPropertiesPanel({ layer }: Props) {
         </div>
       )}
 
-      {/* Letter spacing */}
+      
       <SliderField
         label="Letter Spacing"
         value={layer.letterSpacing}
@@ -203,7 +203,7 @@ export function TextPropertiesPanel({ layer }: Props) {
         onChange={(letterSpacing) => updateLayer<TextLayer>(layer.id, { letterSpacing })}
       />
 
-      {/* Line height */}
+      
       <SliderField
         label="Line Height"
         value={layer.lineHeight}
@@ -214,8 +214,7 @@ export function TextPropertiesPanel({ layer }: Props) {
         onChange={(lineHeight) => updateLayer<TextLayer>(layer.id, { lineHeight })}
       />
 
-      {/* Vertical trim — hug cap→baseline vs keep the font's leading. Toggling
-          re-hugs the box height so the change is visible immediately. */}
+      
       <div className="space-y-1.5">
         <label className="text-[13px] text-muted-foreground font-normal">Vertical trim</label>
         <div className="flex gap-1">
@@ -245,7 +244,7 @@ export function TextPropertiesPanel({ layer }: Props) {
         </div>
       </div>
 
-      {/* Text Decoration */}
+      
       <div className="space-y-1.5">
         <label className="text-[13px] text-muted-foreground font-normal">Decoration</label>
         <div className="flex gap-1">
@@ -282,7 +281,7 @@ export function TextPropertiesPanel({ layer }: Props) {
         </div>
       </div>
 
-      {/* Vertical Alignment — Pro only */}
+      
       {isPro && (
       <div className="space-y-1.5">
         <label className="text-[13px] text-muted-foreground font-normal">Vertical Align</label>
@@ -312,7 +311,7 @@ export function TextPropertiesPanel({ layer }: Props) {
       </div>
       )}
 
-      {/* Text Wrap — Pro only */}
+      
       {isPro && (
       <div className="space-y-1.5">
         <label className="text-[13px] text-muted-foreground font-normal">Text Wrap</label>
@@ -342,9 +341,7 @@ export function TextPropertiesPanel({ layer }: Props) {
       </div>
       )}
 
-      {/* Resizing — Figma-style segmented control (Pro only). Icons + tooltips;
-          Auto width hugs the text on one line (de-wraps), Auto height keeps the
-          width and fits the box to the wrapped text. */}
+      
       {isPro && (
       <div className="space-y-1.5">
         <label className="text-[13px] text-muted-foreground font-normal">Resizing</label>
@@ -386,7 +383,7 @@ export function TextPropertiesPanel({ layer }: Props) {
       </div>
       )}
 
-      {/* Position, Size, Opacity, Rotation are in PositionSizePanel */}
+      
     </div>
   )
-}
+};

@@ -5,11 +5,9 @@ import {
   TrendingUp,
   ShieldCheck,
   Zap,
-  ShoppingBag,
   ArrowRight,
   Eye,
   EyeOff,
-  Sparkles,
   Lock,
   Mail,
 } from "lucide-react"
@@ -17,7 +15,7 @@ import { requestLogin } from "@/service/auth"
 import { Button } from "@/components/ui"
 import { tutorialService } from "@/features/tutorials/services/tutorialService"
 
-export default function Login() {
+const Login = () => {
   const navigate = useNavigate()
   const location = useLocation()
   const { t } = useTranslation()
@@ -26,8 +24,8 @@ export default function Login() {
   const [error, setError] = useState("")
   const [rememberMe, setRememberMe] = useState(false)
   const [showPassword, setShowPassword] = useState(false)
-  const [email, setEmail] = useState("hei.fiandrianana@gmail.com")
-  const [password, setPassword] = useState("Fiandrianana1357")
+  const [identifier, setIdentifier] = useState("")
+  const [password, setPassword] = useState("")
 
   const from =
     (location.state as { from?: { pathname?: string } } | null)?.from
@@ -40,12 +38,9 @@ export default function Login() {
       setLoading(true)
       setError("")
 
-      const response = await requestLogin(email, password, rememberMe)
+      await requestLogin(identifier, password, rememberMe)
 
       tutorialService.startNewLoginSession()
-
-      localStorage.setItem("accessToken", response.tokens.accessToken)
-      localStorage.setItem("currentStore", response.currentStore)
 
       navigate(from, { replace: true })
     } catch (err) {
@@ -56,17 +51,12 @@ export default function Login() {
     }
   }
 
-  const fillDemoCredentials = () => {
-    setEmail("hei.fiandrianana@gmail.com")
-    setPassword("Fiandrianana1357")
-  }
-
   return (
     <main className="min-h-full bg-background flex items-center justify-center p-4 sm:p-6 lg:p-8">
       <div className="w-full max-w-4xl grid lg:grid-cols-2 rounded-3xl border border-border/80 bg-card shadow-2xl overflow-hidden">
-        {/* Left: Brand Value Pillar */}
+        
         <div className="hidden lg:flex flex-col justify-between p-10 bg-gradient-to-br from-primary via-blue-600 to-indigo-900 text-white relative overflow-hidden">
-          {/* Subtle background circles */}
+          
           <div className="absolute -top-24 -left-24 w-72 h-72 rounded-full bg-white/10 blur-2xl" />
           <div className="absolute -bottom-24 -right-24 w-72 h-72 rounded-full bg-white/10 blur-2xl" />
 
@@ -95,7 +85,7 @@ export default function Login() {
             </div>
           </div>
 
-          {/* Feature Badges */}
+          
           <div className="relative z-10 space-y-3 pt-8 border-t border-white/15">
             <div className="flex items-center gap-3 text-xs text-white/90">
               <div className="w-6 h-6 rounded-lg bg-white/10 flex items-center justify-center shrink-0">
@@ -113,7 +103,7 @@ export default function Login() {
           </div>
         </div>
 
-        {/* Right: Modern Sign In Form */}
+        
         <div className="p-8 sm:p-10 flex flex-col justify-center">
           <div className="mb-8">
             <div className="flex items-center gap-2 lg:hidden mb-4">
@@ -133,36 +123,21 @@ export default function Login() {
             </p>
           </div>
 
-          {/* Quick Demo Helper Pill */}
-          <div className="mb-6 p-3 rounded-xl bg-primary/10 border border-primary/20 flex items-center justify-between gap-3 text-xs">
-            <div className="flex items-center gap-2 text-primary font-medium">
-              <Sparkles size={14} />
-              <span>Compte test préconfiguré disponible</span>
-            </div>
-            <button
-              type="button"
-              onClick={fillDemoCredentials}
-              className="text-primary font-bold hover:underline shrink-0 cursor-pointer"
-            >
-              Remplir
-            </button>
-          </div>
-
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
-              <label className="block text-xs font-semibold text-foreground mb-1.5" htmlFor="email">
-                {t("email")}
+              <label className="block text-xs font-semibold text-foreground mb-1.5" htmlFor="identifier">
+                {t("emailOrPhone")}
               </label>
               <div className="relative flex items-center">
                 <Mail size={15} className="absolute left-3 text-muted-foreground pointer-events-none" />
                 <input
-                  id="email"
-                  name="email"
-                  type="email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  autoComplete="email"
-                  placeholder={t("emailPlaceholder")}
+                  id="identifier"
+                  name="identifier"
+                  type="text"
+                  value={identifier}
+                  onChange={(e) => setIdentifier(e.target.value)}
+                  autoComplete="username"
+                  placeholder={t("emailOrPhonePlaceholder")}
                   className="w-full pl-9.5 pr-3.5 py-2.5 text-sm rounded-xl border border-border bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-colors"
                   required
                 />
@@ -236,4 +211,5 @@ export default function Login() {
       </div>
     </main>
   )
-}
+};
+export default Login;

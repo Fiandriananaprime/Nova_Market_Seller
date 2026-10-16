@@ -1,11 +1,11 @@
-/**
- * File system hierarchy for the Ads Creator:
- *
- * Homepage → Files & Folders
- * File → Pages (named, collapsible)
- * Page → Frames (individual ads on a canvas)
- * Frame → Layers
- */
+   
+                                             
+  
+                             
+                                    
+                                             
+                 
+   
 
 import type { Layer, AdFormat, BackgroundFill, AutoLayoutConfig } from '@/features/product-studio/canvas/types/design'
 
@@ -31,7 +31,7 @@ export interface DesignPage {
 export interface DesignFile {
   id: string
   name: string
-  folderId: string | null // null = root level
+  folderId: string | null                     
   pages: DesignPage[]
   thumbnailUrl?: string
   isScratchpad?: boolean
@@ -42,6 +42,6 @@ export interface DesignFile {
 export interface Folder {
   id: string
   name: string
-  parentId: string | null // null = root level
+  parentId: string | null                     
   createdAt: string
 }

@@ -2,13 +2,13 @@ import { useDesignStore } from '@/features/product-studio/canvas/store/useDesign
 import { getBrandColor } from '@/features/product-studio/canvas/brand/palette'
 import type { Layer, TextLayer, ShapeLayer, BackgroundLayer } from '@/features/product-studio/canvas/types/design'
 
-/**
- * Apply an LLM-produced design (a JSON array of text/shape layers) to the
- * active frame, replacing its content layers. Shared by the AI ad builder and
- * the AI re-layout path so there's one parser/applier, not two that drift.
- * Returns false if the text can't be parsed into a layer array.
- */
-export function applyDesignJson(jsonText: string): boolean {
+   
+                                                                          
+                                                                              
+                                                                           
+                                                                
+   
+export const applyDesignJson = (jsonText: string):boolean => {
   try {
     const jsonMatch = jsonText.match(/```json?\s*\n?([\s\S]*?)```/)
     const raw = jsonMatch ? jsonMatch[1].trim() : jsonText.trim()
@@ -21,7 +21,7 @@ export function applyDesignJson(jsonText: string): boolean {
     const format = store.document.format
     store.pushSnapshot()
 
-    // Clear existing content layers (keep the background).
+                                                           
     const existing = store.document.layers.filter((l) => l.type !== 'background')
     for (const l of existing) store.removeLayer(l.id)
 
@@ -47,7 +47,7 @@ export function applyDesignJson(jsonText: string): boolean {
           verticalAlign: 'top',
         } as Omit<TextLayer, 'id' | 'zIndex'>)
       } else if (layer.type === 'shape') {
-        // A full-canvas rect is treated as the background fill, not a layer.
+                                                                             
         if (layer.x === 0 && layer.y === 0 && layer.width >= format.width && layer.height >= format.height) {
           const bgLayer = store.document.layers.find((l) => l.type === 'background')
           if (bgLayer) {
@@ -73,14 +73,14 @@ export function applyDesignJson(jsonText: string): boolean {
   } catch {
     return false
   }
-}
+};
 
-/**
- * Serialise the current content layers into the compact shape the LLM speaks
- * (the same schema applyDesignJson reads back), so a re-layout preserves the
- * existing content and intent rather than inventing new copy.
- */
-export function serializeLayersForAI(layers: Layer[]) {
+   
+                                                                             
+                                                                             
+                                                              
+   
+export const serializeLayersForAI = (layers: Layer[]) => {
   return layers
     .filter((l) => l.type === 'text' || l.type === 'shape')
     .map((l) => {
@@ -103,4 +103,4 @@ export function serializeLayersForAI(layers: Layer[]) {
         borderRadius: s.borderRadius,
       }
     })
-}
+};

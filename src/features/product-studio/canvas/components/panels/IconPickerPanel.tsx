@@ -7,7 +7,7 @@ import { SliderField } from '@/features/product-studio/canvas/components/control
 import { icons } from 'lucide-react'
 import type { BrandColor, SvgLayer } from '@/features/product-studio/canvas/types/design'
 
-// Popular icons for ad creation
+                                
 const POPULAR_ICONS = [
   'ArrowRight', 'ArrowUpRight', 'Check', 'CheckCircle', 'Star', 'Heart',
   'Briefcase', 'Building2', 'MapPin', 'Clock', 'Calendar', 'Mail',
@@ -17,7 +17,7 @@ const POPULAR_ICONS = [
   'ChevronRight', 'Play', 'Send', 'Bookmark', 'Shield',
 ]
 
-export function IconPickerPanel() {
+export const IconPickerPanel = () => {
   const addLayer = useDesignStore((s) => s.addLayer)
   const [search, setSearch] = useState('')
   const [size, setSize] = useState(48)
@@ -42,8 +42,8 @@ export function IconPickerPanel() {
     const IconComponent = icons[iconName as keyof typeof icons]
     if (!IconComponent) return
 
-    // Use renderToStaticMarkup to synchronously get the full SVG string
-    // This produces a complete <svg> with all paths/circles/lines from Lucide
+                                                                        
+                                                                              
     const svgContent = renderToStaticMarkup(
       createElement(IconComponent, {
         size,
@@ -75,7 +75,7 @@ export function IconPickerPanel() {
         Icons
       </div>
 
-      {/* Search */}
+      
       <input
         className="w-full px-3 py-2 text-[13px] bg-white border border-border rounded-[5px] outline-none focus:ring-1 focus:ring-ring"
         placeholder="Search icons..."
@@ -83,14 +83,14 @@ export function IconPickerPanel() {
         onChange={(e) => setSearch(e.target.value)}
       />
 
-      {/* Settings */}
+      
       <div className="space-y-2">
         <SliderField label="Size" value={size} min={16} max={120} step={4} format={(v) => `${v}px`} onChange={setSize} />
         <SliderField label="Stroke" value={strokeWidth} min={0.5} max={4} step={0.5} format={(v) => `${v}px`} onChange={setStrokeWidth} />
         <BrandColorPicker label="Color" value={color} onChange={setColor} />
       </div>
 
-      {/* Toggle */}
+      
       <div className="flex justify-between items-center">
         <span className="text-[12px] text-muted-foreground tabular-nums">{filtered.length} icons</span>
         <button
@@ -101,7 +101,7 @@ export function IconPickerPanel() {
         </button>
       </div>
 
-      {/* Icon grid */}
+      
       <div className="grid grid-cols-5 gap-1 max-h-[300px] overflow-y-auto">
         {filtered.slice(0, showAll ? 500 : 100).map((name) => {
           const IconComp = icons[name as keyof typeof icons]
@@ -124,4 +124,4 @@ export function IconPickerPanel() {
       </div>
     </div>
   )
-}
+};

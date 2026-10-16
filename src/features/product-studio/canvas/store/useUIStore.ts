@@ -4,16 +4,16 @@ import type { BrandColor, DrawMode } from '@/features/product-studio/canvas/type
 
 export interface GridConfig {
   columns: number
-  // `'auto'` derives the row count from the frame's aspect ratio so modules stay
-  // roughly square (the grid reflects whatever frame it's drawn on).
+                                                                                 
+                                                                     
   rows: number | 'auto'
-  // Outer margin + gutter expressed as a fraction of the frame's *shorter* side,
-  // so spacing scales consistently across frames of any size.
+                                                                                 
+                                                              
   marginRatio: number
   gutterRatio: number
 }
 
-// Concrete, pixel-space grid resolved against a specific frame format.
+                                                                       
 export interface ResolvedGrid {
   columns: number
   rows: number
@@ -23,13 +23,12 @@ export interface ResolvedGrid {
   cellH: number
 }
 
-// Resolve a (possibly adaptive) grid config into concrete pixel values for a
-// given frame size. `rows: 'auto'` picks a row count that keeps cells ~square,
-// so the same preset fills a square, portrait, or landscape frame correctly.
-export function resolveGrid(
+                                                                             
+                                                                               
+                                                                             
+export const resolveGrid = (
   config: GridConfig,
-  format: { width: number; height: number },
-): ResolvedGrid {
+  format: { width: number; height: number },):ResolvedGrid => {
   const minDim = Math.min(format.width, format.height)
   const padding = Math.max(0, Math.round(config.marginRatio * minDim))
   const gutter = Math.max(0, Math.round(config.gutterRatio * minDim))
@@ -43,7 +42,7 @@ export function resolveGrid(
       : Math.max(1, Math.round(config.rows))
   const cellH = (innerH - gutter * (rows - 1)) / rows
   return { columns, rows, padding, gutter, cellW, cellH }
-}
+};
 
 const GRID_PRESETS: Record<string, GridConfig> = {
   thirds: { columns: 3, rows: 3, marginRatio: 0.04, gutterRatio: 0.02 },
@@ -57,7 +56,7 @@ const GRID_PRESETS: Record<string, GridConfig> = {
 export type AppMode = 'basic' | 'pro'
 
 interface UIStore {
-  // Mode
+         
   appMode: AppMode
   settingsOpen: boolean
 
@@ -75,27 +74,27 @@ interface UIStore {
   gridConfig: GridConfig
   gridPreset: string
 
-  // Pen tool settings (shown in the right sidebar when the draw tool is active).
+                                                                                 
   drawMode: DrawMode
-  // Pen and highlighter keep independent colours so toggling doesn't clobber
-  // your marker colour with your ink colour and vice-versa.
+                                                                             
+                                                            
   drawColor: BrandColor
   highlighterColor: BrandColor
   drawWidth: number
   highlighterWidth: number
-  // Pen shape controls (highlighter is a constant-width round marker, so these
-  // only apply to the pen): pressure→width variation, end taper, and smoothing.
+                                                                               
+                                                                                
   drawThinning: number
   drawTaper: number
   drawSmoothing: number
   drawOpacity: number
 
-  // Arrow-key nudge distances in design px. Plain arrow uses `nudgeSmall`;
-  // Shift+arrow uses `nudgeLarge`.
+                                                                           
+                                   
   nudgeSmall: number
   nudgeLarge: number
 
-  // Actions
+            
   setAppMode: (mode: AppMode) => void
   setSettingsOpen: (open: boolean) => void
   setRightPanel: (panel: UIStore['rightPanel']) => void
@@ -144,9 +143,9 @@ export const useUIStore = create<UIStore>((set) => ({
   drawWidth: 6,
   highlighterWidth: 22,
   drawThinning: 0.55,
-  // Round caps by default (taper 0) — soft ends, not a point. Any taper > 0
-  // narrows the stroke to an actual point at the tip; the pen still looks lively
-  // from pressure/thinning. Crank Taper toward "Pointed" for calligraphic ends.
+                                                                            
+                                                                                 
+                                                                                
   drawTaper: 0,
   drawSmoothing: 0.5,
   drawOpacity: 1,

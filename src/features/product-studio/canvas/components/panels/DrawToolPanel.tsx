@@ -6,21 +6,21 @@ import { SliderField } from '@/features/product-studio/canvas/components/control
 import { getDrawPath, HIGHLIGHTER_OPACITY } from '@/features/product-studio/canvas/engine/freehand'
 import type { BrandColor, DrawMode } from '@/features/product-studio/canvas/types/design'
 
-// Quick-pick sizes (S/M/L/XL), tldraw-style — faster than dragging the slider.
+                                                                               
 const PEN_SIZES = [3, 6, 12, 24]
 const MARKER_SIZES = [12, 22, 40, 64]
 const SIZE_LABELS = ['S', 'M', 'L', 'XL']
 
-// A sample squiggle (in a 600×120 space) drawn with the current settings, so you
-// see the actual pen before committing. Varying segment lengths let the
-// velocity-simulated pressure show, the way a real stroke would.
+                                                                                 
+                                                                        
+                                                                 
 const PREVIEW_PTS: [number, number][] = [
   [40, 88], [130, 34], [220, 86], [310, 36], [400, 84], [500, 46], [568, 72],
 ]
 
-function PenPreview({ mode, width, color, thinning, taper, smoothing }: {
+const PenPreview = ({ mode, width, color, thinning, taper, smoothing }: {
   mode: DrawMode; width: number; color: BrandColor; thinning: number; taper: number; smoothing: number
-}) {
+}) => {
   const isHighlighter = mode === 'highlighter'
   const d = getDrawPath({
     points: PREVIEW_PTS,
@@ -41,23 +41,23 @@ function PenPreview({ mode, width, color, thinning, taper, smoothing }: {
       />
     </svg>
   )
-}
+};
 
-// A dot of proportional size for the S/M/L/XL buttons.
-function SizeDot({ px }: { px: number }) {
+                                                       
+const SizeDot = ({ px }: { px: number }) => {
   const d = Math.max(4, Math.min(18, 4 + px * 0.5))
   return <span className="rounded-full bg-current" style={{ width: d, height: d }} />
-}
+};
 
-/**
- * Draw tool settings — shown in the right sidebar while the draw tool is active
- * (tool-aware inspector). Toggles between a pressure-variable **pen** (tapered,
- * velocity-driven width) and a translucent **highlighter** (constant width,
- * multiply blend). Pen and highlighter keep independent colour + width so
- * switching modes never clobbers the other's settings. The live preview and the
- * committed DrawLayer both read these from the UI store.
- */
-export function DrawToolPanel() {
+   
+                                                                                
+                                                                                
+                                                                            
+                                                                          
+                                                                                
+                                                         
+   
+export const DrawToolPanel = () => {
   const tool = useDesignStore((s) => s.tool)
   const setTool = useDesignStore((s) => s.setTool)
   const mode = useUIStore((s) => s.drawMode)
@@ -74,7 +74,7 @@ export function DrawToolPanel() {
   const setDrawWidth = useUIStore((s) => s.setDrawWidth)
   const setHighlighterWidth = useUIStore((s) => s.setHighlighterWidth)
 
-  // Pen shape controls (the highlighter is a constant-width round marker).
+                                                                           
   const thinning = useUIStore((s) => s.drawThinning)
   const taper = useUIStore((s) => s.drawTaper)
   const smoothing = useUIStore((s) => s.drawSmoothing)
@@ -89,7 +89,7 @@ export function DrawToolPanel() {
   const width = isHighlighter ? highlighterWidth : drawWidth
   const setWidth = isHighlighter ? setHighlighterWidth : setDrawWidth
 
-  // Pen / Marker set the draw tool + mode; Eraser is its own tool.
+                                                                   
   const modes = [
     { id: 'pen', label: 'Pen', Icon: Pen, active: tool === 'draw' && !isHighlighter, onClick: () => { setTool('draw'); setMode('pen') } },
     { id: 'marker', label: 'Marker', Icon: Highlighter, active: tool === 'draw' && isHighlighter, onClick: () => { setTool('draw'); setMode('highlighter') } },
@@ -102,7 +102,7 @@ export function DrawToolPanel() {
         {isEraser ? 'Eraser' : 'Draw'}
       </div>
 
-      {/* Pen / Marker / Eraser segmented toggle. */}
+      
       <div className="flex gap-1">
         {modes.map(({ id, label, Icon, active, onClick }) => (
           <button
@@ -128,12 +128,12 @@ export function DrawToolPanel() {
         </p>
       ) : (
         <>
-      {/* What the current pen will actually look like. */}
+      
       <PenPreview mode={mode} width={width} color={color} thinning={thinning} taper={taper} smoothing={smoothing} />
 
       <BrandColorPicker label="Color" value={color} onChange={setColor} />
 
-      {/* Quick sizes + a slider for fine control. */}
+      
       <div className="space-y-1.5">
         <label className="text-[13px] text-muted-foreground font-normal">{isHighlighter ? 'Marker width' : 'Stroke width'}</label>
         <div className="flex gap-1">
@@ -165,8 +165,7 @@ export function DrawToolPanel() {
         />
       </div>
 
-      {/* Pen-only shape controls. The highlighter is a constant-width round
-          marker, so taper / pressure / smoothing don't apply to it. */}
+      
       {!isHighlighter && (
         <>
           <SliderField
@@ -217,4 +216,4 @@ export function DrawToolPanel() {
       )}
     </div>
   )
-}
+};

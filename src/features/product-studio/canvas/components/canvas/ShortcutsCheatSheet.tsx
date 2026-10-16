@@ -2,8 +2,8 @@ import { useState, useEffect } from 'react'
 import { createPortal } from 'react-dom'
 import { X } from 'lucide-react'
 
-// The keyboard map, grouped. Keys render as little <kbd> chips; multiple keys in
-// one string (space-separated) render as separate chips.
+                                                                                 
+                                                         
 const GROUPS: { title: string; items: [string, string][] }[] = [
   {
     title: 'Tools',
@@ -69,7 +69,7 @@ const GROUPS: { title: string; items: [string, string][] }[] = [
   },
 ]
 
-function Keys({ combo }: { combo: string }) {
+const Keys = ({ combo }: { combo: string }) => {
   return (
     <span className="flex shrink-0 items-center gap-1">
       {combo.split(' ').map((k, i) => (
@@ -82,13 +82,13 @@ function Keys({ combo }: { combo: string }) {
       ))}
     </span>
   )
-}
+};
 
-/**
- * A keyboard-shortcut cheat sheet. Opens on "?" (Shift+/) or the `tela:shortcuts`
- * event (fired by the command palette). Self-contained, like the command palette.
- */
-export function ShortcutsCheatSheet() {
+   
+                                                                                  
+                                                                                  
+   
+export const ShortcutsCheatSheet = () => {
   const [open, setOpen] = useState(false)
 
   useEffect(() => {
@@ -150,4 +150,4 @@ export function ShortcutsCheatSheet() {
     </div>,
     document.body,
   )
-}
+};

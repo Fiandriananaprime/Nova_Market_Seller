@@ -13,11 +13,11 @@ interface Props {
   onClose?: () => void
 }
 
-export function FormatSelector({ onClose }: Props) {
+export const FormatSelector = ({ onClose }: Props) => {
   const currentFormat = useDesignStore((s) => s.document.format)
   const setFormat = useDesignStore((s) => s.setFormat)
 
-  // Group by platform
+                      
   const grouped = AD_FORMATS.reduce((acc, format) => {
     const key = format.platform
     if (!acc[key]) acc[key] = []
@@ -52,7 +52,7 @@ export function FormatSelector({ onClose }: Props) {
                   onClose?.()
                 }}
               >
-                {/* Aspect ratio preview */}
+                
                 <div
                   className="border border-muted-foreground/40 rounded-[2px] bg-muted-foreground/25 shrink-0"
                   style={{ width: previewW, height: previewH }}
@@ -75,4 +75,4 @@ export function FormatSelector({ onClose }: Props) {
       ))}
     </div>
   )
-}
+};

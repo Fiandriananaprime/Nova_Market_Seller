@@ -2,7 +2,13 @@ import { nanoid } from 'nanoid'
 import { BRAND } from '@/features/product-studio/canvas/brand/brand.config'
 import { DEFAULT_FORMAT, AD_FORMATS } from '@/features/product-studio/canvas/brand/formats'
 import { getBrandColor } from '@/features/product-studio/canvas/brand/palette'
-import type { DesignDocument } from '@/features/product-studio/canvas/types/design'
+import type { DesignDocument, Layer } from '@/features/product-studio/canvas/types/design'
+
+type LayerInput = Layer extends infer T
+  ? T extends Layer
+    ? Omit<T, 'id' | 'zIndex'>
+    : never
+  : never
 
 export interface DesignTemplate {
   id: string
@@ -13,22 +19,21 @@ export interface DesignTemplate {
   create: () => DesignDocument
 }
 
-function makeDoc(
+const makeDoc = (
   name: string,
   formatId: string,
-  layers: Array<Record<string, any>>,
-): DesignDocument {
+  layers: LayerInput[],):DesignDocument => {
   const format = AD_FORMATS.find((f) => f.id === formatId) ?? DEFAULT_FORMAT
   const now = new Date().toISOString()
   return {
     id: nanoid(),
     name,
     format,
-    layers: layers.map((l, i) => ({ ...l, id: nanoid(), zIndex: i }) as any),
+    layers: layers.map<Layer>((layer, i) => ({ ...layer, id: nanoid(), zIndex: i })),
     createdAt: now,
     updatedAt: now,
   }
-}
+};
 
 export const DESIGN_TEMPLATES: DesignTemplate[] = [
   {

@@ -10,11 +10,11 @@ interface SliderFieldProps {
   step: number
   onChange: (value: number) => void
   format?: (v: number) => string
-  /** Values to snap to when within threshold (default threshold: 3% of range) */
+                                                                                 
   snapTo?: number[]
 }
 
-export function SliderField({ label, value, min, max, step, onChange, format, snapTo }: SliderFieldProps) {
+export const SliderField = ({ label, value, min, max, step, onChange, format, snapTo }: SliderFieldProps) => {
   const handleChange = useCallback(
     (val: number | readonly number[]) => {
       let v = Array.isArray(val) ? val[0] : (typeof val === 'number' ? val : val[0])
@@ -55,4 +55,4 @@ export function SliderField({ label, value, min, max, step, onChange, format, sn
       />
     </div>
   )
-}
+};

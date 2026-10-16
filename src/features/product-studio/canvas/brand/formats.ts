@@ -12,6 +12,6 @@ export const AD_FORMATS: AdFormat[] = [
 
 export const DEFAULT_FORMAT = AD_FORMATS.find(f => f.id === 'linkedin-feed')!
 
-export function getFormatsByPlatform(platform: string) {
+export const getFormatsByPlatform = (platform: string) => {
   return AD_FORMATS.filter(f => f.platform === platform)
-}
+};

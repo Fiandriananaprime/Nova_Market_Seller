@@ -6,7 +6,7 @@ interface Props {
   layer: Layer
 }
 
-export function EffectsPanel({ layer }: Props) {
+export const EffectsPanel = ({ layer }: Props) => {
   const updateLayer = useDesignStore((s) => s.updateLayer)
   const pushSnapshot = useDesignStore((s) => s.pushSnapshot)
 
@@ -39,7 +39,7 @@ export function EffectsPanel({ layer }: Props) {
         </span>
       </div>
 
-      {/* Drop Shadow toggle */}
+      
       <div className="flex items-center justify-between">
         <span className="text-[13px] text-muted-foreground">Drop Shadow</span>
         <button
@@ -114,7 +114,7 @@ export function EffectsPanel({ layer }: Props) {
         </div>
       )}
 
-      {/* Blur */}
+      
       <SliderField
         label="Layer Blur"
         value={layer.blur ?? 0}
@@ -128,4 +128,4 @@ export function EffectsPanel({ layer }: Props) {
       />
     </div>
   )
-}
+};

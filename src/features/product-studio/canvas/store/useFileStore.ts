@@ -6,9 +6,9 @@ import { getBrandColor } from '@/features/product-studio/canvas/brand/palette'
 import type { DesignFile, DesignPage, DesignFrame, Folder } from '@/features/product-studio/canvas/types/fileSystem'
 import type { BackgroundLayer } from '@/features/product-studio/canvas/types/design'
 
-// --- Factories ---
+                    
 
-function createDefaultFrame(name?: string): DesignFrame {
+const createDefaultFrame = (name?: string):DesignFrame => {
   return {
     id: nanoid(),
     name: name ?? DEFAULT_FORMAT.label,
@@ -33,17 +33,17 @@ function createDefaultFrame(name?: string): DesignFrame {
       fill: { type: 'solid', color: getBrandColor('cloud') },
     } as BackgroundLayer],
   }
-}
+};
 
-function createDefaultPage(name: string = 'Page 1', frameName?: string): DesignPage {
+const createDefaultPage = (name: string = 'Page 1', frameName?: string):DesignPage => {
   return {
     id: nanoid(),
     name,
     frames: [createDefaultFrame(frameName)],
   }
-}
+};
 
-function createScratchpadFile(): DesignFile {
+const createScratchpadFile = (): DesignFile => {
   const now = new Date().toISOString()
   return {
     id: 'scratchpad',
@@ -54,35 +54,35 @@ function createScratchpadFile(): DesignFile {
     createdAt: now,
     updatedAt: now,
   }
-}
+};
 
-// --- Store ---
+                
 
 interface FileStore {
   files: DesignFile[]
   folders: Folder[]
 
-  // File CRUD
+              
   createFile: (name: string, folderId?: string | null) => string
   deleteFile: (id: string) => void
   renameFile: (id: string, name: string) => void
   moveFileToFolder: (fileId: string, folderId: string | null) => void
   duplicateFile: (id: string) => string
 
-  // Folder CRUD
+                
   createFolder: (name: string, parentId?: string | null) => string
   deleteFolder: (id: string) => void
   renameFolder: (id: string, name: string) => void
 
-  // Page management within a file
+                                  
   addPage: (fileId: string, name?: string) => string
   removePage: (fileId: string, pageId: string) => void
   renamePage: (fileId: string, pageId: string, name: string) => void
 
-  // Sync workspace pages back into file
-  updateFilePages: (fileId: string, pages: Array<{ id: string; name: string; frames: Array<Record<string, any>> }>) => void
+                                        
+  updateFilePages: (fileId: string, pages: DesignPage[]) => void
 
-  // Helpers
+            
   getFile: (id: string) => DesignFile | undefined
   getFilesInFolder: (folderId: string | null) => DesignFile[]
   getSubFolders: (parentId: string | null) => Folder[]
@@ -102,7 +102,7 @@ export const useFileStore = create<FileStore>()(
           id,
           name,
           folderId,
-          // Name the default frame after the file so the editor title matches.
+                                                                               
           pages: [createDefaultPage('Page 1', name)],
           createdAt: now,
           updatedAt: now,

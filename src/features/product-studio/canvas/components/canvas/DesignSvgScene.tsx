@@ -17,33 +17,33 @@ import type {
   DrawLayer,
 } from '@/features/product-studio/canvas/types/design'
 
-/**
- * Live SVG-DOM scene renderer — Phase 1 of replacing the Canvas-2D compositor.
- *
- * Every layer is a real, resolution-independent DOM node (SVG element or, for
- * text, HTML inside <foreignObject>) instead of pixels drawn to a bitmap. The
- * component works in *design coordinates* via the root <svg> viewBox, so the
- * whole scene scales crisply with zoom — no rasterisation, no blur.
- *
- * Rendered inside PreviewPanel's editing stack in place of <DesignCanvas/>.
- * Selection/resize/interaction overlays are unaffected: they read layer
- * geometry from the store, not from this surface. Shader backgrounds still
- * animate via <ShaderBackgroundOverlay/> behind this layer, so we skip them.
- */
-/**
- * Captured shader-background stills (layerId → PNG data URL), supplied for
- * export/thumbnail rendering where the live WebGL overlay isn't present. Empty
- * on the live editing surface (the animated <ShaderBackgroundOverlay/> paints
- * shaders there instead).
- */
+   
+                                                                               
+  
+                                                                              
+                                                                              
+                                                                             
+                                                                    
+  
+                                                                            
+                                                                        
+                                                                           
+                                                                             
+   
+   
+                                                                           
+                                                                               
+                                                                              
+                          
+   
 const ShaderStillsContext = createContext<Record<string, string>>({})
 
-/** True in the live editor (enables state-change animations like fill morph);
- *  false for export so renderToStaticMarkup stays static. */
+                                                                              
+                                                             
 const SceneLiveContext = createContext(false)
 
-/** Frame dimensions, so a text node can size its <foreignObject> to reach the
- *  frame edge and avoid the scaled-SVG overflow-clip artifact. */
+                                                                              
+                                                                  
 const SceneSizeContext = createContext<{ w: number; h: number }>({ w: 1200, h: 627 })
 const XHTML_ATTRS = { xmlns: 'http://www.w3.org/1999/xhtml' }
 
@@ -51,25 +51,17 @@ export type NaturalImageSize = { width: number; height: number }
 const naturalImageSizeCache = new Map<string, NaturalImageSize>()
 const ImageSizesContext = createContext<Record<string, NaturalImageSize>>({})
 
-function useNaturalImageSize(url: string): NaturalImageSize | null {
+const useNaturalImageSize = (url: string):NaturalImageSize | null => {
   const provided = useContext(ImageSizesContext)[url]
-  const [size, setSize] = useState<NaturalImageSize | null>(
-    () => provided ?? naturalImageSizeCache.get(url) ?? null,
-  )
+  const [loadedSize, setLoadedSize] = useState<{ url: string; size: NaturalImageSize } | null>(null)
 
   useEffect(() => {
     if (provided) {
       naturalImageSizeCache.set(url, provided)
-      setSize(provided)
       return
     }
 
-    const cached = naturalImageSizeCache.get(url)
-    if (cached) {
-      setSize(cached)
-      return
-    }
-    setSize(null)
+    if (naturalImageSizeCache.has(url)) return
 
     let cancelled = false
     const img = new Image()
@@ -79,7 +71,7 @@ function useNaturalImageSize(url: string): NaturalImageSize | null {
         height: img.naturalHeight || img.height,
       }
       naturalImageSizeCache.set(url, next)
-      if (!cancelled) setSize(next)
+      if (!cancelled) setLoadedSize({ url, size: next })
     }
     img.src = url
 
@@ -88,10 +80,10 @@ function useNaturalImageSize(url: string): NaturalImageSize | null {
     }
   }, [provided, url])
 
-  return size
-}
+  return provided ?? naturalImageSizeCache.get(url) ?? (loadedSize?.url === url ? loadedSize.size : null)
+};
 
-export function DesignSvgScene() {
+export const DesignSvgScene = () => {
   const doc = useDesignStore((s) => s.document)
   const zoom = useDesignStore((s) => s.zoom)
   const editingTextLayerId = useDesignStore((s) => s.editingTextLayerId)
@@ -104,15 +96,15 @@ export function DesignSvgScene() {
       animateEntrance
     />
   )
-}
+};
 
-/**
- * Pure, document-driven SVG scene. Rendered live by <DesignSvgScene/> and also
- * serialised for vector export (via renderToStaticMarkup), so the exported .svg
- * is identical to what's on screen — one renderer, no drift. Pass `standalone`
- * for export so the root carries the SVG namespace.
- */
-export function SvgScene({
+   
+                                                                               
+                                                                                
+                                                                               
+                                                    
+   
+export const SvgScene = ({
   doc,
   zoom = 1,
   hideLayerId,
@@ -127,20 +119,20 @@ export function SvgScene({
   hideLayerId?: string
   standalone?: boolean
   className?: string
-  /** layerId → PNG data URL for shader backgrounds (export/thumbnail only). */
+                                                                               
   shaderStills?: Record<string, string>
-  /** imageUrl → natural dimensions, used by static SVG export for cropped images. */
+                                                                                     
   imageSizes?: Record<string, NaturalImageSize>
-  /** Fade layers in on mount — live editor only; NEVER for export (a mid-
-   *  animation frame would serialise as blank). */
+                                                                          
+                                                   
   animateEntrance?: boolean
-}) {
+}) => {
   const fw = doc.format?.width ?? 1200
   const fh = doc.format?.height ?? 627
   const w = Math.max(1, fw * zoom)
   const h = Math.max(1, fh * zoom)
 
-  // Paint order: ascending zIndex, then array order as a tiebreak.
+                                                                   
   const ordered = [...doc.layers]
     .map((l, i) => ({ l, i }))
     .sort((a, b) => a.l.zIndex - b.l.zIndex || a.i - b.i)
@@ -170,12 +162,10 @@ export function SvgScene({
       </ShaderStillsContext.Provider>
     </svg>
   )
-}
+};
 
 /** Wraps a layer's content in a transform/opacity/effects group. */
-function LayerNode({ layer, animate = false }: { layer: Layer; animate?: boolean }) {
-  const cx = layer.x + layer.width / 2
-  const cy = layer.y + layer.height / 2
+const LayerNode = ({ layer, animate = false }: { layer: Layer; animate?: boolean }) => {
   const transform =
     `translate(${layer.x} ${layer.y})` +
     (layer.rotation ? ` rotate(${layer.rotation} ${layer.width / 2} ${layer.height / 2})` : '') +
@@ -221,9 +211,9 @@ function LayerNode({ layer, animate = false }: { layer: Layer; animate?: boolean
       {content}
     </g>
   )
-}
+};
 
-function LayerContent({ layer }: { layer: Layer }) {
+const LayerContent = ({ layer }: { layer: Layer }) => {
   switch (layer.type) {
     case 'background':
       return <BackgroundNode layer={layer} />
@@ -245,11 +235,11 @@ function LayerContent({ layer }: { layer: Layer }) {
     default:
       return null
   }
-}
+};
 
 // --- Background -------------------------------------------------------------
 
-function BackgroundNode({ layer }: { layer: BackgroundLayer }) {
+const BackgroundNode = ({ layer }: { layer: BackgroundLayer }) => {
   const { fill, width, height } = layer
   const shaderStills = useContext(ShaderStillsContext)
   if (fill.type === 'solid') {
@@ -300,11 +290,11 @@ function BackgroundNode({ layer }: { layer: BackgroundLayer }) {
     )
   }
   return null
-}
+};
 
 // --- Shape ------------------------------------------------------------------
 
-function ShapeNode({ layer }: { layer: ShapeLayer }) {
+const ShapeNode = ({ layer }: { layer: ShapeLayer }) => {
   const { width, height, fill, stroke, borderRadius, shape } = layer
   const live = useContext(SceneLiveContext)
   const strokeProps = stroke
@@ -378,11 +368,11 @@ function ShapeNode({ layer }: { layer: ShapeLayer }) {
     ...strokeProps,
   }
   return live ? <motion.rect {...props} {...fillMorph} /> : <rect {...props} />
-}
+};
 
 // --- Text (real HTML inside foreignObject) ----------------------------------
 
-function TextNode({ layer }: { layer: TextLayer }) {
+const TextNode = ({ layer }: { layer: TextLayer }) => {
   const scene = useContext(SceneSizeContext)
   const va = layer.verticalAlign ?? 'top'
   const justify = va === 'middle' ? 'center' : va === 'bottom' ? 'flex-end' : 'flex-start'
@@ -434,17 +424,17 @@ function TextNode({ layer }: { layer: TextLayer }) {
 
   return (
     <foreignObject x={0} y={0} width={layer.width} height={foHeight} overflow="visible" style={{ overflow: 'visible' }}>
-      {/* Real HTML text: browser handles wrapping, alignment, tracking. */}
+      
       <div {...XHTML_ATTRS} style={wrapStyle}>
         <div style={textStyle}>{layer.content}</div>
       </div>
     </foreignObject>
   )
-}
+};
 
 // --- Freehand drawing -------------------------------------------------------
 
-function DrawNode({ layer }: { layer: DrawLayer }) {
+const DrawNode = ({ layer }: { layer: DrawLayer }) => {
   // Scale the stored stroke into the current box so resizing works (matches how
   // every other layer scales content to width/height). Fallback 1:1 for layers
   // saved before natWidth/natHeight existed.
@@ -475,11 +465,11 @@ function DrawNode({ layer }: { layer: DrawLayer }) {
   )
   if (sx === 1 && sy === 1) return path
   return <g transform={`scale(${sx} ${sy})`}>{path}</g>
-}
+};
 
 // --- Image ------------------------------------------------------------------
 
-function ImageNode({ layer }: { layer: ImageLayer }) {
+const ImageNode = ({ layer }: { layer: ImageLayer }) => {
   const { width, height, imageUrl, fit, borderRadius, cropX, cropY, cropW, cropH } = layer
   const clipId = `img-clip-${layer.id}`
   const par = fit === 'contain' ? 'xMidYMid meet' : fit === 'fill' ? 'none' : 'xMidYMid slice'
@@ -519,11 +509,11 @@ function ImageNode({ layer }: { layer: ImageLayer }) {
       <g clipPath={`url(#${clipId})`}>{content}</g>
     </>
   )
-}
+};
 
 // --- SVG (true vector, recoloured, scaled) ----------------------------------
 
-function SvgNode({ layer }: { layer: SvgLayer }) {
+const SvgNode = ({ layer }: { layer: SvgLayer }) => {
   // Apply recolour to the markup, then render it as real inline vector via an
   // HTML wrapper in <foreignObject> (scales crisply, stays editable vector).
   const html = useMemo(() => {
@@ -583,7 +573,7 @@ function SvgNode({ layer }: { layer: SvgLayer }) {
       />
     </foreignObject>
   )
-}
+};
 
 // --- Gradient layer ---------------------------------------------------------
 
@@ -596,7 +586,7 @@ const MESH_POSITIONS = [
 const oklch = (s: { oklchL: number; oklchC: number; oklchH: number; alpha: number }, alphaMul = 1) =>
   `oklch(${s.oklchL} ${s.oklchC} ${s.oklchH} / ${s.alpha * alphaMul})`
 
-function GradientNode({ layer }: { layer: GradientLayer }) {
+const GradientNode = ({ layer }: { layer: GradientLayer }) => {
   const id = `grad-${layer.id}`
   const clipId = `grad-clip-${layer.id}`
   const { width: w, height: h, borderRadius, grain, gradientType, angle } = layer
@@ -682,11 +672,11 @@ function GradientNode({ layer }: { layer: GradientLayer }) {
       )}
     </>
   )
-}
+};
 
 // --- Shared: angled linear gradient -----------------------------------------
 
-function LinearGrad({
+const LinearGrad = ({
   id,
   angle,
   stops,
@@ -694,7 +684,7 @@ function LinearGrad({
   id: string
   angle: number
   stops: { offset: number; color: string }[]
-}) {
+}) => {
   // Convert a CSS-style angle (0 = up, clockwise) to gradient vector endpoints.
   const rad = ((angle - 90) * Math.PI) / 180
   const x = Math.cos(rad)
@@ -710,4 +700,4 @@ function LinearGrad({
       ))}
     </linearGradient>
   )
-}
+};

@@ -1,4 +1,4 @@
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import {
   Bell,
   Mail,
@@ -16,13 +16,14 @@ import {
   ShieldAlert,
 } from "lucide-react"
 import { Card, CardHeader, CardTitle, CardBody, Button, Badge } from "@/components/ui"
+import { getNotificationPreferences, updateNotificationPreferences } from "@/service/seller"
 
 interface NotificationsTabProps {
   showToast?: (msg: string) => void
   onShowToast?: (msg: string) => void
 }
 
-export function NotificationsTab({ showToast, onShowToast }: NotificationsTabProps) {
+export const NotificationsTab = ({ showToast, onShowToast }: NotificationsTabProps) => {
   const triggerToast = showToast || onShowToast || (() => {})
   const [channels, setChannels] = useState({
     email: true,
@@ -50,20 +51,63 @@ export function NotificationsTab({ showToast, onShowToast }: NotificationsTabPro
   const [dndEnabled, setDndEnabled] = useState(false)
   const [dndStart, setDndStart] = useState("22:00")
   const [dndEnd, setDndEnd] = useState("07:00")
+  const [loading, setLoading] = useState(true)
+  const [saving, setSaving] = useState(false)
+  const [error, setError] = useState<string | null>(null)
 
-  const handleSave = () => {
-    triggerToast("Préférences de notifications et alertes enregistrées")
+  useEffect(() => {
+    getNotificationPreferences()
+      .then((preferences) => {
+        setChannels((current) => ({
+          ...current,
+          email: preferences.email ?? current.email,
+          sms: preferences.sms ?? current.sms,
+          webPush: preferences.push ?? current.webPush,
+        }))
+        setEvents((current) => ({
+          ...current,
+          newOrders: preferences.newOrder ?? current.newOrders,
+          orderCancellations: preferences.orderCancelled ?? current.orderCancellations,
+          stockLow: preferences.lowStock ?? current.stockLow,
+          newReviews: preferences.newReview ?? current.newReviews,
+          payouts: preferences.payout ?? current.payouts,
+        }))
+      })
+      .catch(() => setError("Impossible de charger les préférences de notifications."))
+      .finally(() => setLoading(false))
+  }, [])
+
+  const handleSave = async () => {
+    setSaving(true)
+    setError(null)
+    try {
+      await updateNotificationPreferences({
+        email: channels.email,
+        sms: channels.sms,
+        push: channels.webPush,
+        newOrder: events.newOrders,
+        orderCancelled: events.orderCancellations,
+        lowStock: events.stockLow,
+        newReview: events.newReviews,
+        payout: events.payouts,
+      })
+      triggerToast("Préférences prises en charge enregistrées.")
+    } catch {
+      setError("Impossible d'enregistrer les préférences de notifications.")
+    } finally {
+      setSaving(false)
+    }
   }
 
   const playTestSound = () => {
-    // Play a gentle notification beep
+                                      
     try {
       const audioCtx = new (window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext)()
       const osc = audioCtx.createOscillator()
       const gain = audioCtx.createGain()
       osc.type = "sine"
-      osc.frequency.setValueAtTime(587.33, audioCtx.currentTime) // D5
-      osc.frequency.setValueAtTime(880, audioCtx.currentTime + 0.12) // A5
+      osc.frequency.setValueAtTime(587.33, audioCtx.currentTime)      
+      osc.frequency.setValueAtTime(880, audioCtx.currentTime + 0.12)      
       gain.gain.setValueAtTime(0.2, audioCtx.currentTime)
       gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.35)
       osc.connect(gain)
@@ -78,7 +122,9 @@ export function NotificationsTab({ showToast, onShowToast }: NotificationsTabPro
 
   return (
     <div className="space-y-6">
-      {/* 17. Canaux de diffusion */}
+      {loading && <p role="status" className="text-xs text-muted-foreground">Chargement des préférences…</p>}
+      {error && <p role="alert" className="rounded-xl border border-destructive/30 bg-destructive/5 p-3 text-xs text-destructive">{error}</p>}
+      
       <Card>
         <CardHeader>
           <div className="flex items-center gap-2">
@@ -96,7 +142,7 @@ export function NotificationsTab({ showToast, onShowToast }: NotificationsTabPro
           </p>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5">
-            {/* Email */}
+            
             <div className="p-3.5 rounded-xl border border-border bg-card flex items-center justify-between">
               <div className="flex items-center gap-3">
                 <div className="w-9 h-9 rounded-lg bg-blue-500/10 text-blue-600 dark:text-blue-400 flex items-center justify-center">
@@ -115,7 +161,7 @@ export function NotificationsTab({ showToast, onShowToast }: NotificationsTabPro
               />
             </div>
 
-            {/* WhatsApp Direct */}
+            
             <div className="p-3.5 rounded-xl border border-emerald-500/20 bg-emerald-500/5 flex items-center justify-between">
               <div className="flex items-center gap-3">
                 <div className="w-9 h-9 rounded-lg bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 flex items-center justify-center">
@@ -137,7 +183,7 @@ export function NotificationsTab({ showToast, onShowToast }: NotificationsTabPro
               />
             </div>
 
-            {/* SMS Mobile */}
+            
             <div className="p-3.5 rounded-xl border border-border bg-card flex items-center justify-between">
               <div className="flex items-center gap-3">
                 <div className="w-9 h-9 rounded-lg bg-amber-500/10 text-amber-600 dark:text-amber-400 flex items-center justify-center">
@@ -156,7 +202,7 @@ export function NotificationsTab({ showToast, onShowToast }: NotificationsTabPro
               />
             </div>
 
-            {/* Web Push */}
+            
             <div className="p-3.5 rounded-xl border border-border bg-card flex items-center justify-between">
               <div className="flex items-center gap-3">
                 <div className="w-9 h-9 rounded-lg bg-purple-500/10 text-purple-600 dark:text-purple-400 flex items-center justify-center">
@@ -187,23 +233,24 @@ export function NotificationsTab({ showToast, onShowToast }: NotificationsTabPro
               className="w-full max-w-sm px-3.5 py-2 text-sm rounded-xl border border-border bg-card text-foreground focus:outline-none"
             />
           </div>
+          <p className="text-[11px] text-muted-foreground">WhatsApp, numéro de destination, sonnerie, horaires silencieux et préférences d'événements supplémentaires restent locaux. Le contrat actuel ne permet de sauvegarder que les canaux Email/SMS/Push et commandes, annulations, stock faible, avis et versements.</p>
         </CardBody>
       </Card>
 
-      {/* Déclencheurs d'évènements */}
+      
       <Card>
         <CardHeader>
           <div className="flex items-center gap-2">
             <Bell size={18} className="text-primary" />
             <CardTitle>Évènements & Alertes Spécifiques</CardTitle>
           </div>
-          <Button variant="primary" size="sm" onClick={handleSave}>
+          <Button variant="primary" size="sm" onClick={() => void handleSave()} loading={saving} disabled={loading}>
             <Save size={14} className="mr-1" />
             Enregistrer les alertes
           </Button>
         </CardHeader>
         <CardBody className="divide-y divide-border/60">
-          {/* Section Commandes */}
+          
           <div className="py-3 first:pt-0 space-y-3">
             <div className="flex items-center gap-2">
               <ShoppingBag size={14} className="text-primary" />
@@ -260,7 +307,7 @@ export function NotificationsTab({ showToast, onShowToast }: NotificationsTabPro
             </div>
           </div>
 
-          {/* Section Stocks */}
+          
           <div className="py-3 space-y-3">
             <div className="flex items-center gap-2">
               <AlertTriangle size={14} className="text-amber-500" />
@@ -302,7 +349,7 @@ export function NotificationsTab({ showToast, onShowToast }: NotificationsTabPro
             </div>
           </div>
 
-          {/* Section Finances */}
+          
           <div className="py-3 space-y-3">
             <div className="flex items-center gap-2">
               <DollarSign size={14} className="text-emerald-500" />
@@ -344,7 +391,7 @@ export function NotificationsTab({ showToast, onShowToast }: NotificationsTabPro
             </div>
           </div>
 
-          {/* Section Clientèle & Avis */}
+          
           <div className="py-3 space-y-3">
             <div className="flex items-center gap-2">
               <Star size={14} className="text-amber-400" />
@@ -386,7 +433,7 @@ export function NotificationsTab({ showToast, onShowToast }: NotificationsTabPro
             </div>
           </div>
 
-          {/* Section Sécurité */}
+          
           <div className="py-3 last:pb-0 space-y-3">
             <div className="flex items-center gap-2">
               <ShieldAlert size={14} className="text-rose-500" />
@@ -413,7 +460,7 @@ export function NotificationsTab({ showToast, onShowToast }: NotificationsTabPro
         </CardBody>
       </Card>
 
-      {/* Fréquence & Plage de Silence (Mode Ne pas déranger) */}
+      
       <Card>
         <CardHeader>
           <div className="flex items-center gap-2">
@@ -477,7 +524,7 @@ export function NotificationsTab({ showToast, onShowToast }: NotificationsTabPro
           </div>
 
           <div className="pt-2 flex justify-end">
-            <Button variant="primary" size="sm" onClick={handleSave}>
+            <Button variant="primary" size="sm" onClick={() => void handleSave()} loading={saving} disabled={loading}>
               <CheckCircle2 size={14} className="mr-1" />
               Appliquer les réglages d'horaires
             </Button>
@@ -486,4 +533,4 @@ export function NotificationsTab({ showToast, onShowToast }: NotificationsTabPro
       </Card>
     </div>
   )
-}
+};

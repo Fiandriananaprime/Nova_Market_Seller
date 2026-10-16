@@ -2,23 +2,23 @@ import { getBrandColor } from '@/features/product-studio/canvas/brand/palette'
 import type { BrandColor, ImageLayer, Layer, ShapeLayer, TextLayer } from '@/features/product-studio/canvas/types/design'
 import { SAMPLE_AVATAR_URL } from '@/features/product-studio/canvas/brand/avatars'
 
-/**
- * Design-system component library for the canvas.
- *
- * Each entry composites a real design-system component (Button,
- * Input, Card, Badge, Avatar, Banner …) out of primitive canvas layers —
- * rounded-rect shapes + centred text. Because the canvas renders through the
- * Canvas-2D compositor (`engine/layerRenderer.ts`), these are inherently
- * NON-INTERACTIVE: they're composited pixels the user arranges to mock up a
- * design, never live controls.
- *
- * Values follow a small design-system convention:
- *   radius small                    → 5px
- *   button primary                  → charcoal #100f0f / white text
- *   button secondary                → charcoal @5% (≈ stone) / charcoal text
- *   font size small/body/big        → 13 / 15 / 17 px
- *   button heights sm/md/lg         → 32 / 40 / 48 px
- */
+   
+                                                  
+  
+                                                                
+                                                                         
+                                                                             
+                                                                         
+                                                                            
+                               
+  
+                                                  
+                                          
+                                                                    
+                                                                             
+                                                      
+                                                      
+   
 
 type LayerSpec = Omit<Layer, 'id' | 'zIndex'>
 
@@ -34,41 +34,41 @@ export interface DSComponentDef {
   id: string
   name: string
   category: DSComponentCategory
-  /** Intrinsic component bounds, used both for preview scaling and insertion. */
+                                                                                 
   width: number
   height: number
-  /** Build the primitive layers, offset to (ox, oy). Call build(0, 0) for previews. */
+                                                                                       
   build: (ox: number, oy: number) => LayerSpec[]
-  /**
-   * Randomizable photo avatar. Its built image carries a sample URL for the
-   * thumbnail; on insert the panel swaps in a random avatar as an inlined data
-   * URL (build() is synchronous and can't fetch).
-   */
+     
+                                                                            
+                                                                               
+                                                  
+     
   kind?: 'photo-avatar'
-  /** Multi-layer components that should move/select as one unit — the panel
-   *  assigns a fresh groupId to every built layer on insert. */
+                                                                            
+                                                                
   group?: boolean
 }
 
-// --- Token-faithful colours -------------------------------------------------
+                                                                               
 
 const RADIUS_SMALL = 5
 const RADIUS_CARD = 12
 
-// Brand-palette tokens (rendered via getBrandColor → exact DS hex).
+                                                                    
 const charcoal = () => getBrandColor('charcoal')
 const charcoal60 = () => getBrandColor('charcoal-60')
 const white = () => getBrandColor('white')
 const stone = () => getBrandColor('stone')
 const cloud = () => getBrandColor('cloud')
 
-// Custom hexes for tokens with no direct palette entry. The renderer only reads
-// `.hex`, so a descriptive token label is all that's needed alongside it.
+                                                                                
+                                                                          
 const c = (token: string, hex: string): BrandColor => ({ token, hex })
 
-const BORDER_SUBTLE = c('border-subtle', '#100f0f1a') // charcoal @10%
+const BORDER_SUBTLE = c('border-subtle', '#100f0f1a')                 
 
-// Sentiment pairs (DS light theme, oklch→hex approximations).
+                                                              
 const SENTIMENT = {
   positive: { bg: c('positive-bg', '#e8f6ea'), fg: c('positive-fg', '#1a8a37') },
   warning: { bg: c('warning-bg', '#faf0e2'), fg: c('warning-fg', '#9c6b16') },
@@ -76,7 +76,7 @@ const SENTIMENT = {
   info: { bg: c('info-bg', '#e8effb'), fg: c('info-fg', '#2d5ed1') },
 } as const
 
-// --- Primitive builders -----------------------------------------------------
+                                                                               
 
 interface RectOpts {
   name: string
@@ -89,7 +89,7 @@ interface RectOpts {
   stroke?: { color: BrandColor; width: number }
 }
 
-function rect(o: RectOpts): ShapeLayer {
+const rect = (o: RectOpts):ShapeLayer => {
   return {
     type: 'shape',
     name: o.name,
@@ -106,9 +106,9 @@ function rect(o: RectOpts): ShapeLayer {
     borderRadius: o.radius ?? 0,
     ...(o.stroke ? { stroke: o.stroke } : {}),
   } as ShapeLayer
-}
+};
 
-function ellipse(o: Omit<RectOpts, 'radius'>): ShapeLayer {
+const ellipse = (o: Omit<RectOpts, 'radius'>):ShapeLayer => {
   return {
     type: 'shape',
     name: o.name,
@@ -125,7 +125,7 @@ function ellipse(o: Omit<RectOpts, 'radius'>): ShapeLayer {
     borderRadius: 0,
     ...(o.stroke ? { stroke: o.stroke } : {}),
   } as ShapeLayer
-}
+};
 
 interface ImageOpts {
   name: string
@@ -138,7 +138,7 @@ interface ImageOpts {
   avatarSet?: boolean
 }
 
-function imageLayer(o: ImageOpts): Omit<ImageLayer, 'id' | 'zIndex'> {
+const imageLayer = (o: ImageOpts):Omit<ImageLayer, 'id' | 'zIndex'> => {
   return {
     type: 'image',
     name: o.name,
@@ -160,7 +160,7 @@ function imageLayer(o: ImageOpts): Omit<ImageLayer, 'id' | 'zIndex'> {
     aspectRatioLocked: true,
     ...(o.avatarSet ? { avatarSet: true } : {}),
   }
-}
+};
 
 interface TextOpts {
   name: string
@@ -178,7 +178,7 @@ interface TextOpts {
   lineHeight?: number
 }
 
-function text(o: TextOpts): Omit<TextLayer, 'id' | 'zIndex'> {
+const text = (o: TextOpts):Omit<TextLayer, 'id' | 'zIndex'> => {
   return {
     type: 'text',
     name: o.name,
@@ -205,14 +205,14 @@ function text(o: TextOpts): Omit<TextLayer, 'id' | 'zIndex'> {
     underline: false,
     strikethrough: false,
   }
-}
+};
 
-/** Rough label width so auto-sized buttons/badges hug their text. */
-function estTextWidth(content: string, fontSize: number): number {
+                                                                     
+const estTextWidth = (content: string, fontSize: number):number => {
   return Math.ceil(content.length * fontSize * 0.56)
-}
+};
 
-// --- Button ----------------------------------------------------------------
+                                                                              
 
 type ButtonSize = 'sm' | 'md' | 'lg'
 const BUTTON_SIZE = {
@@ -227,13 +227,12 @@ interface ButtonStyle {
   stroke?: { color: BrandColor; width: number }
 }
 
-function buttonDef(
+const buttonDef = (
   id: string,
   name: string,
   label: string,
   size: ButtonSize,
-  style: ButtonStyle,
-): DSComponentDef {
+  style: ButtonStyle,):DSComponentDef => {
   const s = BUTTON_SIZE[size]
   const width = s.padX * 2 + estTextWidth(label, s.font)
   const height = s.h
@@ -269,16 +268,15 @@ function buttonDef(
       }),
     ],
   }
-}
+};
 
 // --- Input ------------------------------------------------------------------
 
-function inputDef(
+const inputDef = (
   id: string,
   name: string,
   placeholder: string,
-  opts: { width?: number; height?: number; label?: string; multiline?: boolean } = {},
-): DSComponentDef {
+  opts: { width?: number; height?: number; label?: string; multiline?: boolean } = {},):DSComponentDef => {
   const fieldW = opts.width ?? 280
   const fieldH = opts.height ?? 40
   const labelH = opts.label ? 22 : 0
@@ -338,16 +336,15 @@ function inputDef(
       return layers
     },
   }
-}
+};
 
 // --- Badge / status pill ----------------------------------------------------
 
-function badgeDef(
+const badgeDef = (
   id: string,
   name: string,
   label: string,
-  sentiment: keyof typeof SENTIMENT,
-): DSComponentDef {
+  sentiment: keyof typeof SENTIMENT,):DSComponentDef => {
   const font = 12
   const padX = 10
   const height = 24
@@ -379,11 +376,11 @@ function badgeDef(
       }),
     ],
   }
-}
+};
 
 // --- Avatar -----------------------------------------------------------------
 
-function avatarDef(id: string, name: string, size: number, initials: string): DSComponentDef {
+const avatarDef = (id: string, name: string, size: number, initials: string):DSComponentDef => {
   return {
     id,
     name,
@@ -421,7 +418,7 @@ function avatarDef(id: string, name: string, size: number, initials: string): DS
       }),
     ],
   }
-}
+};
 
 /**
  * Photo avatar — a circular image sourced from the bundled 100-face set. The
@@ -429,7 +426,7 @@ function avatarDef(id: string, name: string, size: number, initials: string): DS
  * panel swaps in a random face (as an inlined data URL) and the inspector
  * exposes a Shuffle action to cycle through the set.
  */
-function avatarPhotoDef(id: string, name: string, size: number): DSComponentDef {
+const avatarPhotoDef = (id: string, name: string, size: number):DSComponentDef => {
   return {
     id,
     name,
@@ -450,11 +447,11 @@ function avatarPhotoDef(id: string, name: string, size: number): DSComponentDef 
       }),
     ],
   }
-}
+};
 
 // --- Card -------------------------------------------------------------------
 
-function cardBase(name: string, ox: number, oy: number, width: number, height: number): ShapeLayer {
+const cardBase = (name: string, ox: number, oy: number, width: number, height: number):ShapeLayer => {
   return rect({
     name: `${name} surface`,
     x: ox,
@@ -465,17 +462,16 @@ function cardBase(name: string, ox: number, oy: number, width: number, height: n
     radius: RADIUS_CARD,
     stroke: { color: BORDER_SUBTLE, width: 1 },
   })
-}
+};
 
 // --- Banner -----------------------------------------------------------------
 
-function bannerDef(
+const bannerDef = (
   id: string,
   name: string,
   title: string,
   body: string,
-  sentiment: keyof typeof SENTIMENT,
-): DSComponentDef {
+  sentiment: keyof typeof SENTIMENT,):DSComponentDef => {
   const width = 420
   const height = 76
   const { bg, fg } = SENTIMENT[sentiment]
@@ -525,7 +521,7 @@ function bannerDef(
       }),
     ],
   }
-}
+};
 
 // --- Catalog ----------------------------------------------------------------
 

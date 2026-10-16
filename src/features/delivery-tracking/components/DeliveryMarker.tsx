@@ -112,7 +112,7 @@ export const DeliveryMarker: React.FC<DeliveryMarkerProps> = ({
     >
       <Popup className="delivery-custom-popup" minWidth={260} maxWidth={320}>
         <div className="p-4 space-y-3 font-sans">
-          {/* Header */}
+          
           <div className="flex items-center justify-between gap-2 border-b border-border/60 pb-2.5">
             <span className="font-display font-bold text-sm text-foreground">
               {record.orderReference}
@@ -124,7 +124,7 @@ export const DeliveryMarker: React.FC<DeliveryMarkerProps> = ({
             </span>
           </div>
 
-          {/* Details body */}
+          
           <div className="space-y-1.5 text-xs">
             <div className="flex items-start gap-1.5">
               <span className="text-muted-foreground font-medium shrink-0">Client :</span>
@@ -168,7 +168,7 @@ export const DeliveryMarker: React.FC<DeliveryMarkerProps> = ({
             )}
           </div>
 
-          {/* Action button */}
+          
           <button
             type="button"
             onClick={(e) => {

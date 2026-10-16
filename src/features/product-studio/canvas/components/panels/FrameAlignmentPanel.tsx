@@ -11,17 +11,17 @@ type Align = 'left' | 'center-h' | 'right' | 'top' | 'center-v' | 'bottom'
 
 const TIDY_GAP = 80
 
-/**
- * Align / distribute the currently selected frames on the canvas. Frames are
- * top-level objects, so alignment is always relative to the selection's bounds
- * (there's no parent canvas to align against). Operates directly on the
- * workspace store via `updateFrame`, which the PreviewPanel positions from.
- */
-export function FrameAlignmentPanel() {
+   
+                                                                             
+                                                                               
+                                                                        
+                                                                            
+   
+export const FrameAlignmentPanel = () => {
   const updateFrame = useWorkspaceStore((s) => s.updateFrame)
-  // Select STABLE references (the frames array + the selection set), then derive
-  // the filtered list with useMemo — returning a fresh array straight from the
-  // selector would fail zustand's Object.is check and loop forever.
+                                                                                 
+                                                                               
+                                                                    
   const selectedFrameIds = useWorkspaceStore((s) => s.selectedFrameIds)
   const frames = useWorkspaceStore((s) =>
     s.workspace.pages.find((p) => p.id === s.workspace.activePageId)?.frames,
@@ -70,7 +70,7 @@ export function FrameAlignmentPanel() {
     }
   }
 
-  // Equalise the spacing between frame centers (endpoints stay put).
+                                                                     
   const distributeCenters = (axis: 'h' | 'v') => {
     if (selected.length < 3) return
     const centerOf = (f: (typeof selected)[number]) =>
@@ -86,7 +86,7 @@ export function FrameAlignmentPanel() {
     }
   }
 
-  // Pack selected frames into a single top-aligned row with an even gap.
+                                                                         
   const tidyRow = () => {
     const sorted = [...selected].sort((a, b) => a.x - b.x)
     let cur = sorted[0].x
@@ -179,4 +179,4 @@ export function FrameAlignmentPanel() {
       </p>
     </div>
   )
-}
+};

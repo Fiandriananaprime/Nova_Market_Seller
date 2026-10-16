@@ -1,15 +1,15 @@
 import type { Frame } from '@/features/product-studio/canvas/types/workspace'
 
-/** Padding around the bounding box of all frames */
+                                                    
 export const FRAME_CANVAS_PADDING = 120
 
-/** Height reserved for the label above each frame */
+                                                     
 export const LABEL_HEIGHT = 28
 
-/**
- * Compute a bounding box that contains every frame, plus padding.
- */
-export function computeCanvasBounds(frames: Frame[]) {
+   
+                                                                  
+   
+export const computeCanvasBounds = (frames: Frame[]) => {
   if (frames.length === 0) return { originX: 0, originY: 0, totalW: 0, totalH: 0 }
 
   let minX = Infinity
@@ -30,4 +30,4 @@ export function computeCanvasBounds(frames: Frame[]) {
     totalW: maxX - minX + FRAME_CANVAS_PADDING * 2,
     totalH: maxY - minY + FRAME_CANVAS_PADDING * 2 + LABEL_HEIGHT,
   }
-}
+};

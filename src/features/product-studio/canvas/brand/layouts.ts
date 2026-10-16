@@ -1,35 +1,34 @@
 import { getBrandColor } from '@/features/product-studio/canvas/brand/palette'
-import type { Layer, TextLayer, ShapeLayer, FontWeight } from '@/features/product-studio/canvas/types/design'
+import type { LayerInput, TextLayer, ShapeLayer, FontWeight } from '@/features/product-studio/canvas/types/design'
 
-// A layout drops a set of well-placed *placeholder* layers — a composition you
-// fill in — rather than a finished design. Every layout is a function of the
-// frame's width/height, so it adapts to any aspect ratio (landscape banner,
-// square post, portrait story). This is the macro-level guardrail: pick a good
-// structure and you can't end up with a lopsided, unaligned mess.
+                                                                               
+                                                                             
+                                                                            
+                                                                               
+                                                                  
 
-export type LayoutLayer = Omit<Layer, 'id' | 'zIndex'>
+export type LayoutLayer = LayerInput
 export type LayoutFit = 'any' | 'landscape' | 'portrait' | 'square'
 
 export interface DesignLayout {
   id: string
   name: string
   description: string
-  /** Which aspect ratios this composition is designed for (used to sort/hint). */
+                                                                                  
   fits: LayoutFit
   build: (w: number, h: number) => LayoutLayer[]
 }
 
-// --- placeholder builders ---------------------------------------------------
+                                                                               
 
 const base = { visible: true, locked: false, opacity: 1, rotation: 0 } as const
 
-function t(
+const t = (
   name: string,
   content: string,
   x: number, y: number, w: number,
   fontSize: number,
-  opts: { weight?: FontWeight; align?: 'left' | 'center' | 'right'; color?: string; lines?: number; upper?: boolean } = {},
-): Omit<TextLayer, 'id' | 'zIndex'> {
+  opts: { weight?: FontWeight; align?: 'left' | 'center' | 'right'; color?: string; lines?: number; upper?: boolean } = {},):Omit<TextLayer, 'id' | 'zIndex'> => {
   const lineHeight = 1.2
   return {
     ...base,
@@ -46,28 +45,28 @@ function t(
     lineHeight,
     textTransform: opts.upper ? 'uppercase' : 'none',
   }
-}
+};
 
-/** A soft placeholder box — stands in for an image or a media area. */
-function media(name: string, x: number, y: number, w: number, h: number, radius = 12): Omit<ShapeLayer, 'id' | 'zIndex'> {
+                                                                       
+const media = (name: string, x: number, y: number, w: number, h: number, radius = 12):Omit<ShapeLayer, 'id' | 'zIndex'> => {
   return {
     ...base, type: 'shape', name,
     x: Math.round(x), y: Math.round(y), width: Math.round(w), height: Math.round(h),
     shape: 'rectangle', fill: getBrandColor('stone'), borderRadius: radius,
   }
-}
+};
 
-/** A CTA button (pill) + its label, returned as two layers. */
-function cta(x: number, y: number, w: number, h: number, label = 'Get started'): LayoutLayer[] {
+                                                               
+const cta = (x: number, y: number, w: number, h: number, label = 'Get started'):LayoutLayer[] => {
   const pill: Omit<ShapeLayer, 'id' | 'zIndex'> = {
     ...base, type: 'shape', name: 'Button',
     x: Math.round(x), y: Math.round(y), width: Math.round(w), height: Math.round(h),
     shape: 'pill', fill: getBrandColor('ember-500'), borderRadius: 9999,
   }
   return [pill, t('Button label', label, x, y + h * 0.28, w, h * 0.42, { weight: 600, align: 'center', color: 'white' })]
-}
+};
 
-// --- the layouts ------------------------------------------------------------
+                                                                               
 
 export const DESIGN_LAYOUTS: DesignLayout[] = [
   {
@@ -104,7 +103,7 @@ export const DESIGN_LAYOUTS: DesignLayout[] = [
           ...cta(tx, h * 0.72, 22 * u, 6.5 * u),
         ]
       }
-      // portrait / square → media on top, text below
+                                                     
       const mh = h * 0.5
       return [
         media('Image', w * 0.06, h * 0.06, w * 0.88, mh),

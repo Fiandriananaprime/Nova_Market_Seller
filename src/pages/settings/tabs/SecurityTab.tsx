@@ -1,14 +1,10 @@
 import { useState } from "react"
 import {
-  Shield,
   Lock,
   Smartphone,
   Laptop,
-  CheckCircle2,
   Download,
-  KeyRound,
   FileText,
-  AlertCircle,
 } from "lucide-react"
 import {
   Card,
@@ -19,11 +15,11 @@ import {
   Badge,
 } from "@/components/ui"
 
-export function SecurityTab({
+export const SecurityTab = ({
   showToast,
 }: {
   showToast: (msg: string) => void
-}) {
+}) => {
   const [twoFactorEnabled, setTwoFactorEnabled] = useState(true)
   const [analyticsConsent, setAnalyticsConsent] = useState(true)
 
@@ -63,13 +59,13 @@ export function SecurityTab({
     a.href = url
     a.download = `nova-seller-data-export-${new Date().toISOString().slice(0, 10)}.json`
     a.click()
-    URL.revokeObjectURL(a)
+    URL.revokeObjectURL(url)
     showToast("Archive de vos données téléchargée avec succès")
   }
 
   return (
     <div className="space-y-6">
-      {/* 2. Sécurité et Connexion */}
+      
       <Card>
         <CardHeader>
           <div className="flex items-center gap-2">
@@ -141,7 +137,7 @@ export function SecurityTab({
             </div>
           </form>
 
-          {/* 2FA Double Facteur */}
+          
           <div className="pt-4 border-t border-border/60">
             <div className="flex items-center justify-between gap-4 p-4 rounded-xl border border-border bg-card">
               <div className="flex items-center gap-3">
@@ -182,7 +178,7 @@ export function SecurityTab({
             </div>
           </div>
 
-          {/* Sessions Actives */}
+          
           <div className="pt-2 space-y-3">
             <h4 className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
               Sessions et appareils connectés
@@ -231,7 +227,7 @@ export function SecurityTab({
         </CardBody>
       </Card>
 
-      {/* 3. Confidentialité et Données Personnelles */}
+      
       <Card>
         <CardHeader>
           <div className="flex items-center gap-2">

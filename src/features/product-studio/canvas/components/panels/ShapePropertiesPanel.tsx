@@ -24,7 +24,7 @@ interface Props {
   layer: ShapeLayer
 }
 
-export function ShapePropertiesPanel({ layer }: Props) {
+export const ShapePropertiesPanel = ({ layer }: Props) => {
   const updateLayer = useDesignStore((s) => s.updateLayer)
   const pushSnapshot = useDesignStore((s) => s.pushSnapshot)
 
@@ -34,7 +34,7 @@ export function ShapePropertiesPanel({ layer }: Props) {
         Shape
       </div>
 
-      {/* Shape type */}
+      
       <div className="flex gap-1 flex-wrap">
         {SHAPES.map((s) => (
           <button
@@ -55,7 +55,7 @@ export function ShapePropertiesPanel({ layer }: Props) {
         ))}
       </div>
 
-      {/* Fill */}
+      
       <BrandColorPicker
         label="Fill"
         value={layer.fill}
@@ -65,7 +65,7 @@ export function ShapePropertiesPanel({ layer }: Props) {
         }}
       />
 
-      {/* Line-specific controls */}
+      
       {layer.shape === 'line' && (
         <div className="space-y-3">
           <SliderField
@@ -150,7 +150,7 @@ export function ShapePropertiesPanel({ layer }: Props) {
         </div>
       )}
 
-      {/* Border radius (rectangle only) — brand-constrained presets */}
+      
       {layer.shape === 'rectangle' && (
         <div className="space-y-1.5">
           <label className="text-[13px] text-muted-foreground font-normal">Corner Radius</label>
@@ -176,7 +176,7 @@ export function ShapePropertiesPanel({ layer }: Props) {
         </div>
       )}
 
-      {/* Position, Size, Opacity, Rotation are in PositionSizePanel */}
+      
     </div>
   )
-}
+};

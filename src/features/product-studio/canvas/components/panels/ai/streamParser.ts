@@ -1,21 +1,22 @@
-// --- Streaming SSE parser for the Canvas AI endpoint ---
-//
-// Calls the configured AI endpoint (see lib/aiApi.ts), which forwards to your
-// LLM provider. The stream is a minimal, provider-agnostic SSE format:
-// one `data: {"text": "<delta>"}` line per chunk, a terminal `data: [DONE]`,
-// and `data: {"error": "..."}` if generation fails. No provider credential is
-// used here.
+                                                          
+  
+                                                                              
+                                                                       
+                                                                             
+                                                                              
+             
 
 import { postCanvasAI } from '@/features/product-studio/canvas/lib/aiApi'
+import type { CanvasAIChatMessage } from '@/features/product-studio/canvas/lib/aiApi'
 
-export async function streamAIResponse(options: {
+export const streamAIResponse = async (options: {
   model: string
   system: string
-  messages: { role: 'user' | 'assistant'; content: string }[]
+  messages: CanvasAIChatMessage[]
   maxTokens: number
   onDelta: (text: string) => void
   signal?: AbortSignal
-}): Promise<string> {
+}):Promise<string> => {
   const response = await postCanvasAI({
     model: options.model,
     system: options.system,
@@ -36,9 +37,9 @@ export async function streamAIResponse(options: {
 
     buffer += decoder.decode(value, { stream: true })
 
-    // Parse SSE events from buffer
+                                   
     const lines = buffer.split('\n')
-    // Keep the last potentially incomplete line
+                                                
     buffer = lines.pop() ?? ''
 
     for (const line of lines) {
@@ -53,8 +54,8 @@ export async function streamAIResponse(options: {
           options.onDelta(data.text)
         }
       } catch (err) {
-        // A thrown provider error must surface; a JSON parse failure on a
-        // partial chunk must not.
+                                                                          
+                                  
         if (err instanceof Error && err.message && !(err instanceof SyntaxError)) {
           throw err
         }
@@ -63,4 +64,4 @@ export async function streamAIResponse(options: {
   }
 
   return fullText
-}
+};

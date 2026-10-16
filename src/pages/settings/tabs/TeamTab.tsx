@@ -1,11 +1,8 @@
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import {
   Users,
   UserPlus,
-  Shield,
   Trash2,
-  Mail,
-  CheckCircle2,
 } from "lucide-react"
 import {
   Card,
@@ -15,6 +12,7 @@ import {
   Button,
   Badge,
 } from "@/components/ui"
+import { deleteTeamMember, getTeamMembers, inviteTeamMember } from "@/service/seller"
 
 interface Member {
   id: string
@@ -31,59 +29,65 @@ const ROLE_LABELS: Record<string, { label: string; badge: "primary" | "purple" |
   accountant: { label: "Comptable", badge: "success" },
 }
 
-export function TeamTab({
+export const TeamTab = ({
   showToast,
 }: {
   showToast: (msg: string) => void
-}) {
-  const [members, setMembers] = useState<Member[]>([
-    {
-      id: "mem-1",
-      name: "Rakoto Andry",
-      email: "hei.fiandrianana@gmail.com",
-      role: "owner",
-      status: "active",
-    },
-    {
-      id: "mem-2",
-      name: "Hery Rajaonah",
-      email: "hery.logistique@gmail.com",
-      role: "manager",
-      status: "active",
-    },
-    {
-      id: "mem-3",
-      name: "Mialy Rasoa",
-      email: "mialy.compta@gmail.com",
-      role: "accountant",
-      status: "invited",
-    },
-  ])
+}) => {
+  const [members, setMembers] = useState<Member[]>([])
 
   const [showInviteModal, setShowInviteModal] = useState(false)
   const [inviteEmail, setInviteEmail] = useState("")
   const [inviteRole, setInviteRole] = useState<Member["role"]>("manager")
+  const [loading, setLoading] = useState(true)
+  const [saving, setSaving] = useState(false)
+  const [error, setError] = useState<string | null>(null)
 
-  function handleInvite(e: React.FormEvent) {
+  useEffect(() => {
+    getTeamMembers()
+      .then((list) => setMembers(list.map((member) => ({
+        id: member.id,
+        name: member.name ?? member.email.split("@")[0],
+        email: member.email,
+        role: member.role as Member["role"],
+        status: member.status === "invited" ? "invited" : "active",
+      }))))
+      .catch(() => setError("Impossible de charger l'équipe."))
+      .finally(() => setLoading(false))
+  }, [])
+
+  async function handleInvite(e: React.FormEvent) {
     e.preventDefault()
-    if (!inviteEmail) return
-
-    const newMem: Member = {
-      id: `mem-${Date.now()}`,
-      name: inviteEmail.split("@")[0],
-      email: inviteEmail,
-      role: inviteRole,
-      status: "invited",
+    if (!inviteEmail || saving) return
+    setSaving(true)
+    setError(null)
+    try {
+      const member = await inviteTeamMember({ email: inviteEmail, role: inviteRole })
+      setMembers((current) => [...current, {
+        id: member.id,
+        name: member.name ?? member.email.split("@")[0],
+        email: member.email,
+        role: member.role as Member["role"],
+        status: member.status === "invited" ? "invited" : "active",
+      }])
+      setShowInviteModal(false)
+      setInviteEmail("")
+      showToast(`Invitation envoyée à ${member.email}`)
+    } catch {
+      setError("Impossible d'envoyer cette invitation.")
+    } finally {
+      setSaving(false)
     }
-    setMembers([...members, newMem])
-    setShowInviteModal(false)
-    setInviteEmail("")
-    showToast(`Invitation envoyée à ${inviteEmail}`)
   }
 
-  function handleRemove(id: string) {
-    setMembers((prev) => prev.filter((m) => m.id !== id))
-    showToast("Membre retiré de l'équipe")
+  async function handleRemove(id: string) {
+    try {
+      await deleteTeamMember(id)
+      setMembers((prev) => prev.filter((member) => member.id !== id))
+      showToast("Membre retiré de l'équipe.")
+    } catch {
+      setError("Impossible de retirer ce membre.")
+    }
   }
 
   return (
@@ -93,7 +97,7 @@ export function TeamTab({
           <div className="flex items-center gap-2">
             <Users size={18} className="text-primary" />
             <div>
-              <CardTitle>18 · Équipe, Collaborateurs & Permissions</CardTitle>
+              <CardTitle>{members.length} · Équipe, Collaborateurs & Permissions</CardTitle>
               <p className="text-xs text-muted-foreground mt-0.5">
                 Déléguez la gestion de vos stocks, commandes et factures en toute sécurité
               </p>
@@ -109,6 +113,8 @@ export function TeamTab({
           </Button>
         </CardHeader>
         <CardBody className="space-y-4">
+          {loading && <p role="status" className="text-xs text-muted-foreground">Chargement de l'équipe…</p>}
+          {error && <p role="alert" className="rounded-lg border border-destructive/30 bg-destructive/5 p-3 text-xs text-destructive">{error}</p>}
           {showInviteModal && (
             <form
               onSubmit={handleInvite}
@@ -159,15 +165,16 @@ export function TeamTab({
                 >
                   Annuler
                 </Button>
-                <Button variant="primary" size="sm" type="submit">
+                <Button variant="primary" size="sm" type="submit" loading={saving} disabled={saving}>
                   Envoyer l'invitation
                 </Button>
               </div>
             </form>
           )}
 
-          {/* Members list */}
+          
           <div className="divide-y divide-border/60 rounded-xl border border-border bg-card overflow-hidden">
+            {!loading && members.length === 0 && <p className="p-4 text-center text-xs text-muted-foreground">Aucun membre d'équipe.</p>}
             {members.map((member) => (
               <div
                 key={member.id}
@@ -203,7 +210,7 @@ export function TeamTab({
                 {member.role !== "owner" && (
                   <button
                     type="button"
-                    onClick={() => handleRemove(member.id)}
+                    onClick={() => void handleRemove(member.id)}
                     className="p-1.5 rounded-lg text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/40 transition-colors cursor-pointer self-end sm:self-center"
                     title="Retirer les accès"
                   >

@@ -5,7 +5,7 @@ import { getBrandColor } from '@/features/product-studio/canvas/brand/palette'
 import { Sparkles, Loader2, X, Wand2 } from 'lucide-react'
 import type { TextLayer, ShapeLayer, BackgroundLayer } from '@/features/product-studio/canvas/types/design'
 
-export function InlineAIPrompt() {
+export const InlineAIPrompt = () => {
   const [open, setOpen] = useState(false)
   const [prompt, setPrompt] = useState('')
   const [loading, setLoading] = useState(false)
@@ -16,13 +16,13 @@ export function InlineAIPrompt() {
   const activeLayerId = useDesignStore((s) => s.activeLayerId)
   const format = useDesignStore((s) => s.document.format)
 
-  // Cmd+I to open
+                  
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
       if ((e.metaKey || e.ctrlKey) && e.key === 'i') {
         e.preventDefault()
 
-        // If a text layer is selected, default to edit mode
+                                                            
         const state = useDesignStore.getState()
         const activeLayer = state.activeLayerId ? state.getLayer(state.activeLayerId) : null
         if (activeLayer?.type === 'text') {
@@ -61,7 +61,7 @@ export function InlineAIPrompt() {
 
     try {
       if (mode === 'edit' && activeLayerId) {
-        // Edit selected layer
+                              
         const layer = store.getLayer(activeLayerId)
         if (layer?.type === 'text') {
           setStatus('Writing copy...')
@@ -75,7 +75,7 @@ export function InlineAIPrompt() {
           setStatus('Done')
         }
       } else {
-        // Generate full design
+                               
         setStatus('Designing ad...')
         const jsonStr = await generateAdDesign({
           model: aiStore.model,
@@ -92,13 +92,13 @@ export function InlineAIPrompt() {
         store.pushSnapshot()
         setStatus('Adding layers...')
 
-        // Remove existing non-background layers
+                                                
         const existing = store.document.layers.filter((l) => l.type !== 'background')
         for (const l of existing) {
           store.removeLayer(l.id)
         }
 
-        // Add layers one by one with slight delay for visual effect
+                                                                    
         for (let i = 0; i < layers.length; i++) {
           const layer = layers[i]
           setStatus(`Adding layer ${i + 1}/${layers.length}...`)
@@ -151,8 +151,9 @@ export function InlineAIPrompt() {
 
         setStatus(`Done — ${layers.length} layers created`)
       }
-    } catch (err: any) {
-      setStatus(`Error: ${err.message}`)
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : String(error)
+      setStatus(`Error: ${message}`)
     } finally {
       setLoading(false)
       setTimeout(() => setOpen(false), 1500)
@@ -167,7 +168,7 @@ export function InlineAIPrompt() {
   return (
     <div className="absolute top-3 left-1/2 -translate-x-1/2 z-40 w-[min(560px,calc(100vw-1.5rem))]">
       <div className="bg-white border border-border rounded-[12px] shadow-[0_8px_30px_-4px_rgba(17,17,17,0.15)] overflow-hidden">
-        {/* Mode indicator */}
+        
         <div className="flex items-center gap-2 px-4 pt-3 pb-1">
           <Sparkles className="w-4 h-4 text-primary" />
           <span className="text-[12px] font-medium text-foreground">
@@ -178,7 +179,7 @@ export function InlineAIPrompt() {
           </button>
         </div>
 
-        {/* Prompt input */}
+        
         <div className="flex items-center gap-2 px-4 pb-3">
           <input
             ref={inputRef}
@@ -210,14 +211,14 @@ export function InlineAIPrompt() {
           </button>
         </div>
 
-        {/* Status */}
+        
         {status && (
           <div className="px-4 pb-3 text-[12px] text-muted-foreground">
             {status}
           </div>
         )}
 
-        {/* Quick suggestions */}
+        
         {!loading && !status && !isEditMode && (
           <div className="px-4 pb-3 flex flex-wrap gap-1.5">
             {[
@@ -239,4 +240,4 @@ export function InlineAIPrompt() {
       </div>
     </div>
   )
-}
+};

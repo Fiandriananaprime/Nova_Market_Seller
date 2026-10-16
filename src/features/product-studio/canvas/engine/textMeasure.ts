@@ -1,29 +1,27 @@
 import type { TextLayer } from '@/features/product-studio/canvas/types/design'
 
-// Single source of truth for the text font — shared by wrap measurement, the
-// Canvas-2D export renderer, the SVG scene, and the edit overlay so all four
-// agree exactly (no wrap/overflow drift, editor text matches what renders).
+                                                                             
+                                                                             
+                                                                            
 export const FONT_FAMILY = "'Inter Variable', system-ui, sans-serif"
 
-export function getFontString(fontSize: number, fontWeight: number): string {
+export const getFontString = (fontSize: number, fontWeight: number):string => {
   return `${fontWeight} ${fontSize}px ${FONT_FAMILY}`
-}
+};
 
 /**
  * Properly configure a canvas context for text measurement.
  * Must be called before any measurement to ensure accurate results.
  */
-export function setupTextContext(
+export const setupTextContext = (
   ctx: CanvasRenderingContext2D,
   fontSize: number,
-  fontWeight: number,
-  letterSpacing: number = 0,
-): void {
+  fontWeight: number,):void => {
   ctx.font = getFontString(fontSize, fontWeight)
   ctx.textBaseline = 'top'
   // Letter spacing workaround: we apply it manually during rendering
   // but need to account for it during measurement
-}
+};
 
 export interface MeasuredLine {
   text: string
@@ -34,15 +32,14 @@ export interface MeasuredLine {
  * Wrap text into lines that fit within maxWidth.
  * Accounts for letter spacing in width calculations.
  */
-export function wrapText(
+export const wrapText = (
   ctx: CanvasRenderingContext2D,
   text: string,
   maxWidth: number,
   fontSize: number,
   fontWeight: number,
-  letterSpacing: number = 0,
-): MeasuredLine[] {
-  setupTextContext(ctx, fontSize, fontWeight, letterSpacing)
+  letterSpacing: number = 0,):MeasuredLine[] => {
+  setupTextContext(ctx, fontSize, fontWeight)
 
   const paragraphs = text.split('\n')
   const lines: MeasuredLine[] = []
@@ -83,21 +80,20 @@ export function wrapText(
   }
 
   return lines
-}
+};
 
 /**
  * Get the bounding box of a text layer.
  * Creates and properly configures a canvas context for accurate measurement.
  */
-export function getTextBounds(
+export const getTextBounds = (
   ctx: CanvasRenderingContext2D,
   layer: TextLayer,
-  scale: number = 1,
-): { width: number; height: number } {
+  scale: number = 1,):{ width: number; height: number } => {
   const fontSize = layer.fontSize * scale
 
   // MUST set font before measuring
-  setupTextContext(ctx, fontSize, layer.fontWeight, layer.letterSpacing)
+  setupTextContext(ctx, fontSize, layer.fontWeight)
 
   const lines = wrapText(
     ctx,
@@ -140,14 +136,14 @@ export function getTextBounds(
   }
 
   return { width: maxWidth / scale, height: height / scale }
-}
+};
 
 /**
  * Create a properly configured offscreen canvas for text measurement.
  */
-export function createMeasureContext(): CanvasRenderingContext2D {
+export const createMeasureContext = (): CanvasRenderingContext2D => {
   const canvas = document.createElement('canvas')
   canvas.width = 1
   canvas.height = 1
   return canvas.getContext('2d')!
-}
+};

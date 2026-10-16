@@ -1,4 +1,4 @@
-import { PaginationMeta } from "@/service/order";
+import type { PaginationMeta } from "@/type/order"
 
 export interface ProductSpecs {
   [key: string]: string;
@@ -15,9 +15,28 @@ export type RatingCount = {
 export type productStatus = 'active' | 'inactive';
 export type productStatusDto = 'draft' | 'pending' | 'approved' | 'rejected';
 export type productModerationStatus = productStatusDto;
+export type ProductListStatus = productStatus | productModerationStatus;
 export interface ProductImage {
   url: string;
   isDefault: boolean;
+}
+export interface CategoryAttribute {
+  key: string
+  label: string
+  required: boolean
+}
+export interface Category {
+  id: string
+  name: string
+  count?: number
+  parentId?: string | null
+  children?: Category[]
+}
+export interface CategoryDetails extends Category {
+  attributes: CategoryAttribute[]
+}
+export interface ProductImageUploadResponse {
+  url: string
 }
 export interface ProductVariant {
   name?: string;
@@ -67,11 +86,22 @@ export interface GetProductsResponse {
   meta: PaginationMeta;
 }
 
+export type ProductInput = Pick<Product, "name" | "categoryId" | "price" | "stock"> &
+  Partial<Pick<Product, "sku" | "description" | "status" | "images" | "brand" | "tags" | "specs" | "variants" | "weightGrams" | "dimensions" | "lowStockThreshold">>;
+
+export interface GetSellerProductsResponse {
+  data: Product[]
+  meta: PaginationMeta
+  lowStock: Product[]
+  outOfStock: Product[]
+}
+
 export interface GetProductsQueryParams {
   search?: string;
   page?: number;
   limit?: number;
-  category?: string;
+  categoryId?: string;
+  status?: ProductListStatus;
   sellerId?: string;
   minPrice?: number;
   maxPrice?: number;
