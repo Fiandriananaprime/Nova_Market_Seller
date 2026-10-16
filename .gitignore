@@ -11,6 +11,9 @@ logs/
 *.log
 .env
 .tmp-*
+.vscode/*
+!.vscode/
+!.vscode/mcp.json
 
 
 

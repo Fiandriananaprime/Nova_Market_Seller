@@ -1,283 +1,443 @@
-import { useState } from "react";
-import { Store as StoreIcon, Globe, Phone, Mail, MapPin, Clock, CheckCircle2, Edit2, Camera, Link } from "lucide-react";
-import { storeInfo } from "../data/mock";
-import { PageHeader, Button, Badge, Toast, Card, CardHeader, CardTitle, CardBody } from "../components/ui";
+import { useEffect, useState } from "react"
+import { useTranslation } from "react-i18next"
+import {
+  CheckCircle2,
+  Camera,
+  Save,
+} from "lucide-react"
+import {
+  getSellerBusiness,
+  getStorePolicies,
+  updateSellerBusiness,
+  updateStorePolicies,
+} from "@/service/seller"
+import type { SellerBusiness, StorePolicies } from "@/type/seller"
+import {
+  PageHeader,
+  Button,
+  Badge,
+  Toast,
+  Card,
+  CardHeader,
+  CardTitle,
+  CardBody,
+} from "@/components/ui"
 
-const DAYS = ["Lundi", "Mardi", "Mercredi", "Jeudi", "Vendredi", "Samedi", "Dimanche"];
+const DAYS = [
+  "Lundi",
+  "Mardi",
+  "Mercredi",
+  "Jeudi",
+  "Vendredi",
+  "Samedi",
+  "Dimanche",
+]
 
-const defaultHours = {
-  Lundi:    { open: "08:00", close: "18:00", closed: false },
-  Mardi:    { open: "08:00", close: "18:00", closed: false },
+const defaultHours: Record<string, { open: string; close: string; closed: boolean }> = {
+  Lundi: { open: "08:00", close: "18:00", closed: false },
+  Mardi: { open: "08:00", close: "18:00", closed: false },
   Mercredi: { open: "08:00", close: "18:00", closed: false },
-  Jeudi:    { open: "08:00", close: "18:00", closed: false },
+  Jeudi: { open: "08:00", close: "18:00", closed: false },
   Vendredi: { open: "08:00", close: "18:00", closed: false },
-  Samedi:   { open: "09:00", close: "16:00", closed: false },
+  Samedi: { open: "09:00", close: "16:00", closed: false },
   Dimanche: { open: "", close: "", closed: true },
-};
+}
 
-export default function Store() {
-  const [tab, setTab] = useState<"profile" | "hours" | "policies">("profile");
-  const [vacationMode, setVacationMode] = useState(storeInfo.vacationMode);
-  const [hours, setHours] = useState(defaultHours);
-  const [toast, setToast] = useState<string | null>(null);
-  const [form, setForm] = useState({
-    name: storeInfo.name,
-    description: storeInfo.description,
-    location: storeInfo.location,
-    phone: storeInfo.phone,
-    email: storeInfo.email,
-    facebook: storeInfo.socialLinks.facebook,
-    instagram: storeInfo.socialLinks.instagram,
-    website: storeInfo.socialLinks.website,
-  });
+const Store = () => {
+  const { t } = useTranslation()
+  const [tab, setTab] = useState<"profile" | "hours" | "policies">("profile")
+  const [store, setStore] = useState<SellerBusiness>({})
+  const [vacationMode, setVacationMode] = useState(false)
+  const [hours, setHours] = useState(defaultHours)
+  const [policies, setPolicies] = useState<StorePolicies>({})
+  const [toast, setToast] = useState<string | null>(null)
+  const [form, setForm] = useState({ name: "", description: "", location: "", phone: "", email: "", facebook: "", instagram: "", website: "" })
+  const [loading, setLoading] = useState(true)
+  const [saving, setSaving] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+
+  useEffect(() => {
+    Promise.all([getSellerBusiness(), getStorePolicies()])
+      .then(([business, storePolicies]) => {
+        setStore(business)
+        setPolicies(storePolicies)
+        setForm({
+          name: business.name ?? "",
+          description: business.description ?? "",
+          location: business.location ?? "",
+          phone: business.contact?.phone ?? "",
+          email: business.contact?.email ?? "",
+          facebook: "",
+          instagram: "",
+          website: business.contact?.website ?? "",
+        })
+      })
+      .catch(() => setError("Impossible de charger les informations de la boutique."))
+      .finally(() => setLoading(false))
+  }, [])
 
   function showToast(msg: string) {
-    setToast(msg);
-    setTimeout(() => setToast(null), 3000);
+    setToast(msg)
+    setTimeout(() => setToast(null), 3000)
+  }
+
+  async function saveChanges() {
+    setSaving(true)
+    setError(null)
+    try {
+      if (tab === "profile") {
+        const updated = await updateSellerBusiness({
+          name: form.name,
+          description: form.description,
+          location: form.location,
+          contact: { phone: form.phone, email: form.email, website: form.website },
+        })
+        setStore(updated)
+        showToast("Profil de la boutique enregistré.")
+      } else if (tab === "policies") {
+        const updated = await updateStorePolicies(policies)
+        setPolicies(updated)
+        showToast("Politique de retour enregistrée.")
+      } else {
+        showToast("Les horaires et le mode vacances restent locaux : aucun endpoint de sauvegarde n'est disponible.")
+      }
+    } catch {
+      setError("L'enregistrement a échoué. Vérifiez votre connexion et réessayez.")
+    } finally {
+      setSaving(false)
+    }
   }
 
   return (
-    <div className="p-6 space-y-5 animate-fade-in">
+    <div className="p-6 md:p-8 space-y-6 animate-fade-in max-w-7xl mx-auto">
+      
       <PageHeader
-        title="Ma boutique"
-        subtitle={storeInfo.name}
+        title={t("store.title")}
+        subtitle={store.name ?? ""}
         actions={
-          <Button variant="primary" onClick={() => showToast("Modifications enregistrées")}>
-            Enregistrer les modifications
+          <Button
+            variant="primary"
+            size="md"
+            onClick={saveChanges}
+            loading={saving}
+          >
+            <Save size={14} />
+            {t("store.saveChanges")}
           </Button>
         }
       />
 
-      {/* Cover + Logo */}
-      <Card className="overflow-hidden">
-        <div className="relative h-40 bg-secondary">
-          <img src={storeInfo.coverUrl} alt="Couverture" className="w-full h-full object-cover" />
-          <button className="absolute bottom-3 right-3 flex items-center gap-1.5 px-3 py-1.5 rounded-md bg-foreground/60 text-white text-xs hover:bg-foreground/80 transition-colors cursor-pointer">
-            <Camera size={12} />
+      {loading && <p role="status" className="text-sm text-muted-foreground">Chargement des informations de la boutique…</p>}
+      {error && <p role="alert" className="rounded-xl border border-destructive/30 bg-destructive/5 p-3 text-sm text-destructive">{error}</p>}
+
+      
+      <Card data-tour="store-hero" className="overflow-hidden">
+        <div className="relative h-48 bg-gradient-to-r from-primary/30 to-blue-600/30">
+          {store.coverUrl && (
+            <img
+              src={store.coverUrl}
+              alt="Couverture"
+              className="w-full h-full object-cover"
+            />
+          )}
+          <button className="absolute bottom-4 right-4 flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-card/90 backdrop-blur-xs text-foreground text-xs font-semibold hover:bg-card transition-colors cursor-pointer shadow-sm">
+            <Camera size={13} />
             Modifier la couverture
           </button>
         </div>
-        <div className="px-5 pb-5 flex items-end justify-between" style={{ marginTop: "-2.5rem" }}>
+
+        <div className="px-6 pb-6 pt-0 relative flex flex-col md:flex-row md:items-end justify-between gap-4 -mt-10">
           <div className="flex items-end gap-4">
             <div className="relative">
-              <img src={storeInfo.logoUrl} alt="Logo" className="w-20 h-20 rounded-xl border-4 border-card object-cover bg-muted" />
-              <button className="absolute -bottom-1 -right-1 w-6 h-6 rounded-full bg-primary text-white flex items-center justify-center hover:bg-primary/90 transition-colors cursor-pointer">
-                <Camera size={11} />
+              {store.logoUrl ? (
+                <img
+                  src={store.logoUrl}
+                  alt="Logo"
+                  className="w-20 h-20 rounded-2xl border-4 border-card object-cover bg-card shadow-md"
+                />
+              ) : (
+                <div className="w-20 h-20 rounded-2xl border-4 border-card bg-primary text-white flex items-center justify-center font-bold text-xl shadow-md">
+                  NM
+                </div>
+              )}
+              <button className="absolute -bottom-1 -right-1 w-7 h-7 rounded-full bg-primary text-white flex items-center justify-center hover:bg-primary/90 transition-colors cursor-pointer shadow-xs">
+                <Camera size={12} />
               </button>
             </div>
+
             <div className="mb-1">
               <div className="flex items-center gap-2">
-                <h2 className="font-display font-700 text-lg text-foreground">{storeInfo.name}</h2>
-                {storeInfo.verified && (
-                  <CheckCircle2 size={16} className="text-primary" />
+                <h2 className="font-display font-extrabold text-xl text-foreground">
+                  {store.name}
+                </h2>
+                {store.verified && (
+                  <CheckCircle2 size={18} className="text-primary fill-primary/10" />
                 )}
               </div>
-              <div className="flex items-center gap-3 text-xs text-muted-foreground">
-                <span>{storeInfo.productsCount} produits</span>
+
+              <div className="flex items-center gap-3 text-xs text-muted-foreground mt-0.5">
+                <span>{store.productsCount ?? 0} produits</span>
                 <span>·</span>
-                <span>{storeInfo.followersCount.toLocaleString()} abonnés</span>
+                <span>{(store.followersCount ?? 0).toLocaleString()} abonnés</span>
                 <span>·</span>
-                <span className="flex items-center gap-1">★ {storeInfo.rating} ({storeInfo.reviewsCount} avis)</span>
+                <span className="text-amber-500 font-semibold">
+                  ★ {store.rating ?? 0} ({store.reviewsCount ?? 0} avis)
+                </span>
               </div>
             </div>
           </div>
 
-          {/* Vacation mode toggle */}
-          <div className="flex items-center gap-3 mb-1">
+          
+          <div data-tour="store-vacation" className="flex items-center gap-3 p-2.5 rounded-xl bg-muted/60 border border-border/60">
             <div className="flex items-center gap-2">
-              <span className="text-xs text-muted-foreground">Mode vacances</span>
+              <span className="text-xs font-semibold text-foreground">
+                {t("store.vacationMode")}
+              </span>
               <button
-                onClick={() => { setVacationMode(!vacationMode); showToast(vacationMode ? "Mode vacances désactivé" : "Mode vacances activé"); }}
-                className={`relative w-10 h-5 rounded-full transition-colors cursor-pointer ${vacationMode ? "bg-[var(--warning)]" : "bg-muted"}`}
+                type="button"
+                onClick={() => {
+                  setVacationMode(!vacationMode)
+                }}
+                className={`relative w-10 h-5 rounded-full transition-colors cursor-pointer ${
+                  vacationMode ? "bg-amber-500" : "bg-muted-foreground/30"
+                }`}
               >
-                <span className={`absolute top-0.5 w-4 h-4 rounded-full bg-white shadow transition-transform ${vacationMode ? "translate-x-5" : "translate-x-0.5"}`} />
+                <span
+                  className={`absolute top-0.5 w-4 h-4 rounded-full bg-white shadow transition-transform ${
+                    vacationMode ? "translate-x-5" : "translate-x-0.5"
+                  }`}
+                />
               </button>
             </div>
-            <Badge variant={storeInfo.isOpen && !vacationMode ? "success" : "warning"}>
-              {vacationMode ? "Mode vacances" : storeInfo.isOpen ? "Ouverte" : "Fermée"}
+
+            <Badge variant={store.isOpen && !vacationMode ? "success" : "warning"}>
+              {vacationMode ? "En pause (local)" : store.isOpen ? "Ouverte" : "Fermée"}
             </Badge>
           </div>
         </div>
       </Card>
+      <p className="text-xs text-muted-foreground">Le mode vacances, les horaires, les réseaux sociaux et les images n'ont pas d'endpoint de sauvegarde disponible.</p>
 
-      {/* Tabs */}
-      <div className="flex gap-1 border-b border-border">
-        {[
-          { id: "profile" as const, label: "Profil de la boutique" },
-          { id: "hours" as const, label: "Horaires" },
-          { id: "policies" as const, label: "Politiques" },
-        ].map((t) => (
+      
+      <div data-tour="store-tabs" className="flex items-center gap-2 border-b border-border/80 pb-2">
+        {(
+          [
+            { id: "profile", label: "Informations Générales" },
+            { id: "hours", label: "Horaires d'Ouverture" },
+            { id: "policies", label: "Politiques & Livraison" },
+          ] as const
+        ).map((t) => (
           <button
             key={t.id}
             onClick={() => setTab(t.id)}
-            className={`px-4 py-2.5 text-sm font-medium border-b-2 -mb-px transition-colors cursor-pointer ${tab === t.id ? "border-primary text-primary" : "border-transparent text-muted-foreground hover:text-foreground"}`}
+            className={`px-4 py-2 rounded-xl text-xs font-semibold transition-all cursor-pointer ${
+              tab === t.id
+                ? "bg-primary text-white shadow-xs"
+                : "text-muted-foreground hover:bg-muted hover:text-foreground"
+            }`}
           >
             {t.label}
           </button>
         ))}
       </div>
 
-      {/* Profile tab */}
+      
       {tab === "profile" && (
-        <div className="grid lg:grid-cols-2 gap-5">
-          {/* Basic info */}
+        <div data-tour="store-profile-form" className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <Card>
-            <CardHeader><CardTitle>Informations générales</CardTitle></CardHeader>
+            <CardHeader>
+              <CardTitle>Identité & Description</CardTitle>
+            </CardHeader>
             <CardBody className="space-y-4">
               <div>
-                <label className="text-xs font-medium text-foreground mb-1.5 block">Nom de la boutique</label>
+                <label className="text-xs font-semibold text-foreground mb-1 block">
+                  Nom de l'enseigne
+                </label>
                 <input
                   value={form.name}
                   onChange={(e) => setForm({ ...form, name: e.target.value })}
-                  className="w-full px-3 py-2 text-sm rounded-md border border-border bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-ring/30"
+                  className="w-full px-3.5 py-2 text-sm rounded-xl border border-border bg-card text-foreground focus:outline-none focus:ring-2 focus:ring-primary/20"
                 />
               </div>
+
               <div>
-                <label className="text-xs font-medium text-foreground mb-1.5 block">Description</label>
+                <label className="text-xs font-semibold text-foreground mb-1 block">
+                  Présentation de la boutique
+                </label>
                 <textarea
+                  rows={4}
                   value={form.description}
                   onChange={(e) => setForm({ ...form, description: e.target.value })}
-                  rows={4}
-                  className="w-full px-3 py-2 text-sm rounded-md border border-border bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-ring/30 resize-none"
+                  className="w-full px-3.5 py-2 text-sm rounded-xl border border-border bg-card text-foreground focus:outline-none focus:ring-2 focus:ring-primary/20 resize-none"
                 />
               </div>
+
               <div>
-                <label className="text-xs font-medium text-foreground mb-1.5 flex items-center gap-1.5"><MapPin size={12} />Localisation</label>
+                <label className="text-xs font-semibold text-foreground mb-1 block">
+                  Localisation physique
+                </label>
                 <input
                   value={form.location}
                   onChange={(e) => setForm({ ...form, location: e.target.value })}
-                  className="w-full px-3 py-2 text-sm rounded-md border border-border bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-ring/30"
+                  placeholder="Antananarivo, Madagascar"
+                  className="w-full px-3.5 py-2 text-sm rounded-xl border border-border bg-card text-foreground focus:outline-none focus:ring-2 focus:ring-primary/20"
                 />
               </div>
             </CardBody>
           </Card>
 
-          {/* Contact + social */}
-          <div className="space-y-5">
-            <Card>
-              <CardHeader><CardTitle>Contact</CardTitle></CardHeader>
-              <CardBody className="space-y-4">
-                <div>
-                  <label className="text-xs font-medium text-foreground mb-1.5 flex items-center gap-1.5"><Phone size={12} />Téléphone</label>
-                  <input
-                    value={form.phone}
-                    onChange={(e) => setForm({ ...form, phone: e.target.value })}
-                    className="w-full px-3 py-2 text-sm rounded-md border border-border bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-ring/30"
-                  />
-                </div>
-                <div>
-                  <label className="text-xs font-medium text-foreground mb-1.5 flex items-center gap-1.5"><Mail size={12} />Email</label>
-                  <input
-                    type="email"
-                    value={form.email}
-                    onChange={(e) => setForm({ ...form, email: e.target.value })}
-                    className="w-full px-3 py-2 text-sm rounded-md border border-border bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-ring/30"
-                  />
-                </div>
-              </CardBody>
-            </Card>
+          <Card>
+            <CardHeader>
+              <CardTitle>Canaux de Contact & Réseaux</CardTitle>
+            </CardHeader>
+            <CardBody className="space-y-4">
+              <div>
+                <label className="text-xs font-semibold text-foreground mb-1 block">
+                  Téléphone professionnel
+                </label>
+                <input
+                  value={form.phone}
+                  onChange={(e) => setForm({ ...form, phone: e.target.value })}
+                  placeholder="+261 34 00 000 00"
+                  className="w-full px-3.5 py-2 text-sm rounded-xl border border-border bg-card text-foreground focus:outline-none focus:ring-2 focus:ring-primary/20"
+                />
+              </div>
 
-            <Card>
-              <CardHeader><CardTitle>Réseaux sociaux</CardTitle></CardHeader>
-              <CardBody className="space-y-4">
-                <div>
-                  <label className="text-xs font-medium text-foreground mb-1.5 flex items-center gap-1.5"><Link size={12} />Facebook</label>
-                  <input
-                    value={form.facebook}
-                    onChange={(e) => setForm({ ...form, facebook: e.target.value })}
-                    className="w-full px-3 py-2 text-sm rounded-md border border-border bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-ring/30"
-                  />
-                </div>
-                <div>
-                  <label className="text-xs font-medium text-foreground mb-1.5 flex items-center gap-1.5"><Link size={12} />Instagram</label>
-                  <input
-                    value={form.instagram}
-                    onChange={(e) => setForm({ ...form, instagram: e.target.value })}
-                    className="w-full px-3 py-2 text-sm rounded-md border border-border bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-ring/30"
-                  />
-                </div>
-                <div>
-                  <label className="text-xs font-medium text-foreground mb-1.5 flex items-center gap-1.5"><Globe size={12} />Site web</label>
-                  <input
-                    value={form.website}
-                    onChange={(e) => setForm({ ...form, website: e.target.value })}
-                    className="w-full px-3 py-2 text-sm rounded-md border border-border bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-ring/30"
-                  />
-                </div>
-              </CardBody>
-            </Card>
-          </div>
+              <div>
+                <label className="text-xs font-semibold text-foreground mb-1 block">
+                  Email de contact clients
+                </label>
+                <input
+                  value={form.email}
+                  onChange={(e) => setForm({ ...form, email: e.target.value })}
+                  placeholder="contact@boutique.mg"
+                  className="w-full px-3.5 py-2 text-sm rounded-xl border border-border bg-card text-foreground focus:outline-none focus:ring-2 focus:ring-primary/20"
+                />
+              </div>
+
+              <div>
+                <label className="text-xs font-semibold text-foreground mb-1 block">
+                  Lien Facebook / Page
+                </label>
+                <input
+                  value={form.facebook}
+                  onChange={(e) => setForm({ ...form, facebook: e.target.value })}
+                  placeholder="https://facebook.com/maboutique"
+                  className="w-full px-3.5 py-2 text-sm rounded-xl border border-border bg-card text-foreground focus:outline-none focus:ring-2 focus:ring-primary/20"
+                />
+              </div>
+            </CardBody>
+          </Card>
         </div>
       )}
 
-      {/* Hours tab */}
+      
       {tab === "hours" && (
         <Card>
           <CardHeader>
-            <CardTitle>Horaires d'ouverture</CardTitle>
+            <CardTitle>Plages Horaires d'Ouverture</CardTitle>
           </CardHeader>
-          <CardBody className="space-y-3">
+          <CardBody className="divide-y divide-border/60 p-0">
             {DAYS.map((day) => {
-              const h = hours[day as keyof typeof hours];
+              const h = hours[day] || { open: "08:00", close: "18:00", closed: false }
               return (
-                <div key={day} className="flex items-center gap-4">
-                  <span className="text-sm font-medium text-foreground w-24">{day}</span>
-                  <button
-                    onClick={() => setHours((prev) => ({ ...prev, [day]: { ...prev[day as keyof typeof prev], closed: !h.closed } }))}
-                    className={`relative w-9 h-5 rounded-full transition-colors cursor-pointer flex-shrink-0 ${!h.closed ? "bg-primary" : "bg-muted"}`}
-                  >
-                    <span className={`absolute top-0.5 w-4 h-4 rounded-full bg-white shadow transition-transform ${!h.closed ? "translate-x-4" : "translate-x-0.5"}`} />
-                  </button>
-                  {!h.closed ? (
-                    <div className="flex items-center gap-2 flex-1">
-                      <input
-                        type="time"
-                        value={h.open}
-                        onChange={(e) => setHours((prev) => ({ ...prev, [day]: { ...prev[day as keyof typeof prev], open: e.target.value } }))}
-                        className="px-2 py-1.5 text-xs rounded-md border border-border bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-ring/30"
-                      />
-                      <span className="text-muted-foreground text-xs">–</span>
-                      <input
-                        type="time"
-                        value={h.close}
-                        onChange={(e) => setHours((prev) => ({ ...prev, [day]: { ...prev[day as keyof typeof prev], close: e.target.value } }))}
-                        className="px-2 py-1.5 text-xs rounded-md border border-border bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-ring/30"
-                      />
-                    </div>
-                  ) : (
-                    <span className="text-xs text-muted-foreground">Fermé</span>
-                  )}
+                <div
+                  key={day}
+                  className="p-4 sm:px-6 flex items-center justify-between gap-4 text-xs"
+                >
+                  <span className="font-bold text-foreground w-28">{day}</span>
+
+                  <div className="flex items-center gap-3">
+                    {h.closed ? (
+                      <span className="text-muted-foreground italic">Fermé</span>
+                    ) : (
+                      <div className="flex items-center gap-2">
+                        <input
+                          type="time"
+                          value={h.open}
+                          onChange={(e) =>
+                            setHours({
+                              ...hours,
+                              [day]: { ...h, open: e.target.value },
+                            })
+                          }
+                          className="px-2.5 py-1 rounded-lg border border-border bg-card text-foreground"
+                        />
+                        <span className="text-muted-foreground">à</span>
+                        <input
+                          type="time"
+                          value={h.close}
+                          onChange={(e) =>
+                            setHours({
+                              ...hours,
+                              [day]: { ...h, close: e.target.value },
+                            })
+                          }
+                          className="px-2.5 py-1 rounded-lg border border-border bg-card text-foreground"
+                        />
+                      </div>
+                    )}
+
+                    <button
+                      type="button"
+                      onClick={() =>
+                        setHours({
+                          ...hours,
+                          [day]: { ...h, closed: !h.closed },
+                        })
+                      }
+                      className={`px-3 py-1 rounded-lg text-xs font-semibold cursor-pointer transition-colors ${
+                        h.closed
+                          ? "bg-primary text-white"
+                          : "border border-border text-muted-foreground hover:bg-muted"
+                      }`}
+                    >
+                      {h.closed ? "Ouvrir" : "Fermer"}
+                    </button>
+                  </div>
                 </div>
-              );
+              )
             })}
           </CardBody>
         </Card>
       )}
 
-      {/* Policies tab */}
+      
       {tab === "policies" && (
-        <div className="space-y-4">
-          {[
-            { label: "Politique de retour", key: "return", placeholder: "Décrivez votre politique de retour..." },
-            { label: "Politique de remboursement", key: "refund", placeholder: "Décrivez votre politique de remboursement..." },
-            { label: "Politique d'annulation", key: "cancel", placeholder: "Décrivez votre politique d'annulation..." },
-            { label: "Politique de livraison", key: "shipping", placeholder: "Décrivez votre politique de livraison..." },
-          ].map((p) => (
-            <Card key={p.key}>
-              <CardHeader><CardTitle>{p.label}</CardTitle></CardHeader>
-              <CardBody>
-                <textarea
-                  rows={4}
-                  placeholder={p.placeholder}
-                  className="w-full px-3 py-2 text-sm rounded-md border border-border bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring/30 resize-none"
-                />
-              </CardBody>
-            </Card>
-          ))}
-        </div>
+        <Card>
+          <CardHeader>
+            <CardTitle>Conditions de Livraison et Retours</CardTitle>
+          </CardHeader>
+          <CardBody className="space-y-4">
+            <div>
+              <label className="text-xs font-semibold text-foreground mb-1 block">
+                Délai moyen d'expédition
+              </label>
+              <select className="w-full px-3.5 py-2 text-sm rounded-xl border border-border bg-card text-foreground focus:outline-none">
+                <option>Expédition sous 24 heures ouvrées</option>
+                <option>Expédition sous 48 heures ouvrées</option>
+                <option>Expédition sous 3 à 5 jours ouvrés</option>
+              </select>
+            </div>
+
+            <div>
+              <label className="text-xs font-semibold text-foreground mb-1 block">
+                Politique de retour et réclamations
+              </label>
+              <textarea
+                rows={3}
+                value={policies.returnPolicy ?? ""}
+                onChange={(event) => setPolicies({ ...policies, returnPolicy: event.target.value })}
+                className="w-full px-3.5 py-2 text-sm rounded-xl border border-border bg-card text-foreground focus:outline-none resize-none"
+              />
+            </div>
+          </CardBody>
+        </Card>
       )}
 
-      {toast && <Toast message={toast} type="success" onDismiss={() => setToast(null)} />}
+      
+      {toast && <Toast message={toast} onDismiss={() => setToast(null)} />}
     </div>
-  );
-}
+  )
+};
+export default Store

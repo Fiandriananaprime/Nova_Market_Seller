@@ -1,0 +1,179 @@
+@import "leaflet/dist/leaflet.css";
+
+                                                                              
+                                           
+                 
+                            
+                            
+                            
+                            
+                            
+                                                                                 
+
+                       
+.delivery-map-container {
+  width: 100%;
+  height: 100%;
+  min-height: 480px;
+  background-color: #f1f5f9;
+  border-radius: 1.25rem;
+  overflow: hidden;
+  position: relative;
+  z-index: 10;
+}
+
+                                                                                            
+.dark .delivery-map-container {
+  background-color: #0f172a;
+}
+
+.dark .leaflet-tile-pane {
+  filter: brightness(0.7) invert(1) contrast(1.15) hue-rotate(190deg) saturate(0.5);
+}
+
+                           
+.delivery-marker-icon-wrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  cursor: pointer;
+  transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.delivery-marker-icon-wrapper:hover {
+  transform: scale(1.15);
+}
+
+.delivery-marker-icon-wrapper.selected {
+  transform: scale(1.22);
+  z-index: 9999 !important;
+}
+
+                                                   
+.delivery-radar-pulse {
+  position: absolute;
+  inset: -6px;
+  border-radius: 9999px;
+  background-color: rgba(90, 188, 185, 0.35);
+  animation: deliveryPulse 2s cubic-bezier(0, 0, 0.2, 1) infinite;
+  pointer-events: none;
+}
+
+.delivery-radar-pulse.delayed {
+  background-color: rgba(239, 68, 68, 0.35);
+}
+
+@keyframes deliveryPulse {
+  0% {
+    transform: scale(0.85);
+    opacity: 0.9;
+  }
+  70% {
+    transform: scale(1.6);
+    opacity: 0;
+  }
+  100% {
+    transform: scale(1.8);
+    opacity: 0;
+  }
+}
+
+                              
+.leaflet-popup-content-wrapper {
+  background: var(--card, #ffffff) !important;
+  color: var(--foreground, #0f172a) !important;
+  border-radius: 1rem !important;
+  border: 1px solid rgba(208, 204, 208, 0.8) !important;
+  box-shadow: 0 16px 36px -8px rgba(22, 38, 46, 0.22), 0 4px 12px -2px rgba(0, 0, 0, 0.08) !important;
+  padding: 0 !important;
+  overflow: hidden !important;
+}
+
+.dark .leaflet-popup-content-wrapper {
+  background: #16262e !important;
+  color: #f8fafc !important;
+  border: 1px solid rgba(42, 69, 85, 0.85) !important;
+  box-shadow: 0 20px 40px -10px rgba(0, 0, 0, 0.6) !important;
+}
+
+.leaflet-popup-content {
+  margin: 0 !important;
+  line-height: 1.4 !important;
+}
+
+.leaflet-popup-tip {
+  background: var(--card, #ffffff) !important;
+}
+
+.dark .leaflet-popup-tip {
+  background: #16262e !important;
+}
+
+.leaflet-popup-close-button {
+  top: 8px !important;
+  right: 8px !important;
+  color: #64748b !important;
+  padding: 4px !important;
+  font-size: 16px !important;
+}
+
+.leaflet-popup-close-button:hover {
+  color: #0f172a !important;
+}
+
+.dark .leaflet-popup-close-button:hover {
+  color: #f8fafc !important;
+}
+
+                                        
+.leaflet-control-attribution {
+  font-size: 10px !important;
+  background: rgba(255, 255, 255, 0.8) !important;
+  backdrop-filter: blur(4px) !important;
+  padding: 2px 8px !important;
+  border-top-left-radius: 8px !important;
+}
+
+.dark .leaflet-control-attribution {
+  background: rgba(22, 38, 46, 0.85) !important;
+  color: #94a3b8 !important;
+}
+
+.dark .leaflet-control-attribution a {
+  color: #5abcb9 !important;
+}
+
+                                                                              
+                                    
+                                                                                 
+
+                                                          
+.delivery-route-remaining {
+  stroke-dasharray: 8 10;
+  animation: routeDashFlow 24s linear infinite;
+}
+
+@keyframes routeDashFlow {
+  to {
+    stroke-dashoffset: -1000;
+  }
+}
+
+                                     
+.delivery-route-traveled {
+  filter: drop-shadow(0 2px 4px rgba(0, 119, 182, 0.35));
+}
+
+                                    
+.delivery-destination-pin:hover {
+  transform: scale(1.15) translateY(-2px);
+}
+
+.delivery-destination-pin.selected {
+  transform: scale(1.25) translateY(-3px);
+  z-index: 9999 !important;
+}
+

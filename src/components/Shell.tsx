@@ -1,203 +1,593 @@
-import { useState } from "react";
+import { useEffect, useState } from "react"
+import { Outlet, useLocation, useNavigate } from "react-router"
 import {
-  LayoutDashboard, ShoppingBag, Package, Warehouse, Users, Star,
-  Store, BarChart3, Settings, Bell, Search, Menu, X, LogOut,
-  ChevronDown, TrendingUp, AlertTriangle, CheckCircle2
-} from "lucide-react";
-import { storeInfo, metrics } from "../data/mock";
+  LayoutDashboard,
+  ShoppingBag,
+  Truck,
+  Package,
+  Warehouse,
+  Users,
+  Star,
+  Store as StoreIcon,
+  BarChart3,
+  Settings,
+  Bell,
+  Search,
+  Menu,
+  X,
+  LogOut,
+  ChevronDown,
+  TrendingUp,
+  AlertTriangle,
+  Check,
+  Globe,
+  Bot
+} from "lucide-react"
+import { useTranslation } from "react-i18next"
+import { useStore } from "@/context/useStore"
+import { TutorialProvider } from "@/features/tutorials/context/TutorialContext"
+import { tutorialService } from "@/features/tutorials/services/tutorialService"
+import {
+  getSellerNotifications,
+  getSellerProfile,
+  markAllSellerNotificationsRead,
+  markSellerNotificationRead,
+} from "@/service/account"
+import type { User } from "@/type/auth"
+import type { SellerNotification } from "@/type/notification"
+import { requestLogout } from "@/service/auth"
+import { subscribeToSellerNotifications } from "@/service/realtime"
 
-export type Page =
-  | "dashboard" | "orders" | "products" | "inventory"
-  | "customers" | "reviews" | "store" | "analytics" | "settings";
+const navItems = [
+  { path: "/dashboard", labelKey: "nav.dashboard", icon: LayoutDashboard },
+  { path: "/orders", labelKey: "nav.orders", icon: ShoppingBag },
+  { path: "/deliveries", labelKey: "nav.deliveries", icon: Truck },
+  { path: "/products", labelKey: "nav.products", icon: Package },
+  { path: "/inventory", labelKey: "nav.inventory", icon: Warehouse },
+  { path: "/customers", labelKey: "nav.customers", icon: Users },
+  { path: "/reviews", labelKey: "nav.reviews", icon: Star },
+  { path: "/store", labelKey: "nav.store", icon: StoreIcon },
+  { path: "/analytics", labelKey: "nav.analytics", icon: BarChart3 },
+  { path: "/ai-automation", labelKey: "nav.aiAutomation", icon: Bot },
+  { path: "/settings", labelKey: "nav.settings", icon: Settings }
+]
 
-const navItems: { id: Page; label: string; icon: typeof LayoutDashboard; badge?: number }[] = [
-  { id: "dashboard", label: "Tableau de bord", icon: LayoutDashboard },
-  { id: "orders", label: "Commandes", icon: ShoppingBag, badge: 14 },
-  { id: "products", label: "Produits", icon: Package },
-  { id: "inventory", label: "Inventaire", icon: Warehouse, badge: 7 },
-  { id: "customers", label: "Clients", icon: Users },
-  { id: "reviews", label: "Avis", icon: Star },
-  { id: "store", label: "Ma boutique", icon: Store },
-  { id: "analytics", label: "Analytiques", icon: BarChart3 },
-  { id: "settings", label: "Paramètres", icon: Settings },
-];
-
-interface ShellProps {
-  page: Page;
-  onNavigate: (p: Page) => void;
-  children: React.ReactNode;
+const notificationIcon = (type: SellerNotification["type"]) => {
+  if (type === "order") return ShoppingBag
+  if (type === "review") return Star
+  if (type === "security") return AlertTriangle
+  return Bell
 }
 
-export default function Shell({ page, onNavigate, children }: ShellProps) {
-  const [sidebarOpen, setSidebarOpen] = useState(false);
-  const [notifOpen, setNotifOpen] = useState(false);
+const formatNotificationTime = (date: string) =>
+  new Intl.DateTimeFormat(undefined, {
+    dateStyle: "short",
+    timeStyle: "short",
+  }).format(new Date(date))
+
+const Shell = () => {
+  const navigate = useNavigate()
+  const { pathname } = useLocation()
+  const { t, i18n } = useTranslation()
+
+  const [sidebarOpen, setSidebarOpen] = useState(false)
+  const [notifOpen, setNotifOpen] = useState(false)
+  const [storeOpen, setStoreOpen] = useState(false)
+  const [userMenuOpen, setUserMenuOpen] = useState(false)
+  const [notifications, setNotifications] = useState<SellerNotification[]>([])
+  const [notificationsLoading, setNotificationsLoading] = useState(true)
+  const [notificationsMoreLoading, setNotificationsMoreLoading] = useState(false)
+  const [notificationsMoreError, setNotificationsMoreError] = useState<string | null>(null)
+  const [notificationPage, setNotificationPage] = useState(1)
+  const [notificationTotalPages, setNotificationTotalPages] = useState(1)
+  const [notificationsError, setNotificationsError] = useState<string | null>(null)
+  const [notificationsRealtimeConnected, setNotificationsRealtimeConnected] = useState(false)
+  const [profile, setProfile] = useState<User | null>(null)
+  const [logoutError, setLogoutError] = useState<string | null>(null)
+
+  const {
+    stores,
+    selectedStore,
+    loading: storesLoading,
+    selectStore,
+  } = useStore()
+
+  useEffect(() => {
+    let active = true
+
+    Promise.allSettled([getSellerProfile(), getSellerNotifications()]).then(([profileResult, notificationResult]) => {
+      if (!active) return
+
+      if (profileResult.status === "fulfilled") {
+        setProfile(profileResult.value)
+      } else {
+        console.error("Failed to load seller profile:", profileResult.reason)
+      }
+
+      if (notificationResult.status === "fulfilled") {
+        setNotificationPage(notificationResult.value.meta.page)
+        setNotificationTotalPages(notificationResult.value.meta.totalPages)
+        setNotifications((current) => {
+          const realtimeIds = new Set(current.map((notification) => notification.id))
+          return [
+            ...current,
+            ...notificationResult.value.data.filter((notification) => !realtimeIds.has(notification.id)),
+          ].sort((left, right) => right.createdAt.localeCompare(left.createdAt))
+        })
+      } else {
+        console.error("Failed to load seller notifications:", notificationResult.reason)
+        setNotificationsError("Impossible de charger les notifications.")
+      }
+      setNotificationsLoading(false)
+    })
+
+    return () => {
+      active = false
+    }
+  }, [])
+
+  useEffect(() => {
+    return subscribeToSellerNotifications((notification) => {
+      setNotifications((current) => [
+        notification,
+        ...current.filter((item) => item.id !== notification.id),
+      ].slice(0, 50))
+    }, (state) => setNotificationsRealtimeConnected(state === "connected"))
+  }, [])
+
+  const markAllNotificationsRead = async () => {
+    try {
+      await markAllSellerNotificationsRead()
+      setNotifications((current) => current.map((notification) => ({ ...notification, read: true })))
+    } catch (error) {
+      console.error("Failed to mark notifications as read:", error)
+      setNotificationsError("Impossible de mettre à jour les notifications.")
+    }
+  }
+
+  const markNotificationRead = async (notification: SellerNotification) => {
+    if (notification.read) return
+    try {
+      await markSellerNotificationRead(notification.id)
+      setNotifications((current) =>
+        current.map((item) => item.id === notification.id ? { ...item, read: true } : item),
+      )
+    } catch (error) {
+      console.error("Failed to mark notification as read:", error)
+      setNotificationsError("Impossible de mettre à jour cette notification.")
+    }
+  }
+
+  const loadMoreNotifications = async () => {
+    if (notificationsMoreLoading || notificationPage >= notificationTotalPages) return
+    setNotificationsMoreLoading(true)
+    setNotificationsMoreError(null)
+    try {
+      const response = await getSellerNotifications(notificationPage + 1, 10)
+      setNotifications((current) => {
+        const currentIds = new Set(current.map((notification) => notification.id))
+        return [
+          ...current,
+          ...response.data.filter((notification) => !currentIds.has(notification.id)),
+        ].sort((left, right) => right.createdAt.localeCompare(left.createdAt))
+      })
+      setNotificationPage(response.meta.page)
+      setNotificationTotalPages(response.meta.totalPages)
+    } catch (error: unknown) {
+      console.error("Failed to load older seller notifications:", error)
+      setNotificationsMoreError("Impossible de charger les anciennes notifications.")
+    } finally {
+      setNotificationsMoreLoading(false)
+    }
+  }
+
+  const sellerName = profile?.name ?? [profile?.firstName, profile?.lastName].filter(Boolean).join(" ")
+  const unreadNotifications = notifications.filter((notification) => !notification.read).length
+
+  const go = (path: string) => {
+    navigate(path)
+    setSidebarOpen(false)
+  }
+
+  const logout = async () => {
+    setLogoutError(null)
+    try {
+      await requestLogout()
+      tutorialService.resetSessionOnLogout()
+      localStorage.removeItem("currentStore")
+      navigate("/login")
+    } catch (error) {
+      console.error("Failed to log out seller:", error)
+      setLogoutError("Impossible de vous déconnecter. Réessayez.")
+    }
+  }
+
+  const handleStoreChange = (storeId: string) => {
+    selectStore(storeId)
+    setStoreOpen(false)
+  }
+
+  const toggleLanguage = () => {
+    const nextLang = i18n.language === "fr" ? "en" : "fr"
+    i18n.changeLanguage(nextLang)
+  }
 
   return (
-    <div className="flex h-full bg-background">
-      {/* Mobile overlay */}
+    <TutorialProvider>
+      <div className="flex h-full bg-background overflow-hidden text-foreground">
+      
       {sidebarOpen && (
         <div
-          className="fixed inset-0 z-40 bg-foreground/30 lg:hidden"
+          className="fixed inset-0 z-40 bg-foreground/30 backdrop-blur-xs lg:hidden transition-opacity"
           onClick={() => setSidebarOpen(false)}
         />
       )}
 
-      {/* Sidebar */}
+      
       <aside
-        className={`fixed inset-y-0 left-0 z-50 w-64 bg-card border-r border-border flex flex-col transition-transform duration-200 lg:static lg:translate-x-0 ${
-          sidebarOpen ? "translate-x-0" : "-translate-x-full"
+        className={`fixed inset-y-0 left-0 z-50 w-72 bg-card border-r border-border/80 flex flex-col transition-transform duration-200 lg:static lg:translate-x-0 ${
+          sidebarOpen ? "translate-x-0 shadow-2xl" : "-translate-x-full"
         }`}
       >
-        {/* Logo */}
-        <div className="flex items-center gap-3 px-5 py-5 border-b border-border">
-          <div className="w-8 h-8 rounded-lg bg-primary flex items-center justify-center flex-shrink-0">
-            <TrendingUp size={16} className="text-white" />
+        
+        <div className="flex items-center gap-3 px-5 py-4 border-b border-border/60">
+          <div className="w-9 h-9 rounded-xl bg-gradient-to-tr from-primary to-blue-600 flex items-center justify-center shadow-sm shadow-primary/25">
+            <TrendingUp size={18} className="text-white" />
           </div>
-          <div className="min-w-0">
-            <p className="font-display font-700 text-sm text-foreground leading-tight truncate">Nova Market</p>
-            <p className="text-xs text-muted-foreground">Portail vendeur</p>
+
+          <div className="min-w-0 flex-1">
+            <div className="flex items-center gap-1.5">
+              <span className="font-display font-bold text-base tracking-tight text-foreground">
+                Nova Market
+              </span>
+              {selectedStore?.verified && (
+                <span className="px-1.5 py-0.2 bg-primary/10 text-primary text-[10px] font-semibold rounded-md">
+                  Vérifiée
+                </span>
+              )}
+            </div>
+            <p className="text-xs text-muted-foreground font-medium">
+              Espace Marchand
+            </p>
           </div>
+
           <button
-            className="ml-auto lg:hidden p-1 rounded-md hover:bg-muted text-muted-foreground"
+            className="p-1.5 rounded-lg text-muted-foreground hover:bg-muted lg:hidden"
             onClick={() => setSidebarOpen(false)}
           >
-            <X size={16} />
+            <X size={18} />
           </button>
         </div>
 
-        {/* Store info */}
-        <div className="px-4 py-3 mx-3 mt-3 rounded-lg bg-muted">
-          <div className="flex items-center gap-2.5">
-            <img
-              src={storeInfo.logoUrl}
-              alt={storeInfo.name}
-              className="w-8 h-8 rounded-md object-cover bg-secondary flex-shrink-0"
-            />
-            <div className="min-w-0">
-              <p className="font-display font-600 text-xs text-foreground truncate">{storeInfo.name}</p>
-              <div className="flex items-center gap-1 mt-0.5">
-                <span className="w-1.5 h-1.5 rounded-full bg-[var(--success)] inline-block" />
-                <span className="text-[10px] text-muted-foreground">Boutique ouverte</span>
+        
+        <div className="relative mx-3.5 mt-3.5">
+          <button
+            type="button"
+            data-tour="store-switcher"
+            disabled={storesLoading || !selectedStore}
+            onClick={() => setStoreOpen((open) => !open)}
+            className="w-full p-2.5 rounded-xl bg-muted/60 hover:bg-muted border border-border/60 flex items-center gap-3 text-left transition-all cursor-pointer disabled:opacity-60"
+          >
+            {selectedStore?.logoUrl ? (
+              <img
+                src={selectedStore.logoUrl}
+                alt={selectedStore.name}
+                className="w-9 h-9 rounded-lg object-cover border border-border shrink-0 bg-background"
+              />
+            ) : (
+              <div className="w-9 h-9 rounded-lg bg-primary/10 border border-primary/20 flex items-center justify-center shrink-0 text-primary">
+                <StoreIcon size={16} />
+              </div>
+            )}
+
+            <div className="min-w-0 flex-1">
+              <p className="font-display font-semibold text-xs text-foreground truncate">
+                {storesLoading
+                  ? t("common.loading")
+                  : selectedStore?.name ?? "—"}
+              </p>
+
+              <div className="flex items-center gap-1.5 mt-0.5">
+                <span
+                  className={`w-1.5 h-1.5 rounded-full ${
+                    selectedStore?.isOpen ? "bg-emerald-500 animate-pulse" : "bg-muted-foreground"
+                  }`}
+                />
+                <span className="text-[11px] text-muted-foreground">
+                  {selectedStore?.isOpen ? t("common.open") : t("common.closed")}
+                </span>
               </div>
             </div>
-          </div>
+
+            <ChevronDown
+              size={14}
+              className={`text-muted-foreground shrink-0 transition-transform duration-200 ${
+                storeOpen ? "rotate-180" : ""
+              }`}
+            />
+          </button>
+
+          
+          {storeOpen && stores.length > 0 && (
+            <div className="absolute left-0 right-0 top-full mt-1.5 bg-card border border-border/90 rounded-xl shadow-xl z-50 overflow-hidden animate-slide-down">
+              <div className="px-3.5 py-2 border-b border-border/60 bg-muted/40 flex items-center justify-between">
+                <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">
+                  Mes Boutiques ({stores.length})
+                </p>
+                <button
+                  onClick={() => { setStoreOpen(false); navigate("/store"); }}
+                  className="text-[11px] text-primary hover:underline font-medium"
+                >
+                  Gérer
+                </button>
+              </div>
+
+              <div className="max-h-60 overflow-y-auto p-1.5 space-y-1">
+                {stores.map((store) => {
+                  const isSelected = selectedStore?.id === store.id
+
+                  return (
+                    <button
+                      key={store.id}
+                      type="button"
+                      onClick={() => handleStoreChange(store.id)}
+                      className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-left transition-colors cursor-pointer ${
+                        isSelected
+                          ? "bg-primary/10 text-primary font-semibold"
+                          : "hover:bg-muted text-foreground"
+                      }`}
+                    >
+                      {store.logoUrl ? (
+                        <img
+                          src={store.logoUrl}
+                          alt={store.name}
+                          className="w-7 h-7 rounded-md object-cover border border-border shrink-0"
+                        />
+                      ) : (
+                        <div className="w-7 h-7 rounded-md bg-muted flex items-center justify-center shrink-0">
+                          <StoreIcon size={14} />
+                        </div>
+                      )}
+
+                      <div className="min-w-0 flex-1">
+                        <p className="text-xs truncate">{store.name}</p>
+                        <p className="text-[10px] text-muted-foreground">
+                          {store.isOpen ? "Ouverte" : "Fermée"}
+                        </p>
+                      </div>
+
+                      {isSelected && (
+                        <Check size={14} className="text-primary shrink-0" />
+                      )}
+                    </button>
+                  )
+                })}
+              </div>
+            </div>
+          )}
         </div>
 
-        {/* Nav */}
-        <nav className="flex-1 px-3 py-3 space-y-0.5 overflow-y-auto">
-          {navItems.map((item) => {
-            const active = page === item.id;
-            const Icon = item.icon;
+        
+        <nav data-tour="sidebar-navigation" className="flex-1 px-3 py-4 space-y-1 overflow-y-auto">
+          {navItems.map(({ path, labelKey, icon: Icon }) => {
+            const isActive = pathname === path
             return (
               <button
-                key={item.id}
-                onClick={() => { onNavigate(item.id); setSidebarOpen(false); }}
-                className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-md text-sm font-medium transition-colors cursor-pointer ${
-                  active
-                    ? "bg-primary text-white"
-                    : "text-muted-foreground hover:bg-muted hover:text-foreground"
+                key={path}
+                data-tour={`nav-${path.replace("/", "")}`}
+                onClick={() => go(path)}
+                className={`w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-sm font-medium transition-all duration-150 cursor-pointer ${
+                  isActive
+                    ? "bg-primary text-white shadow-xs font-semibold"
+                    : "text-muted-foreground hover:bg-muted/70 hover:text-foreground"
                 }`}
               >
-                <Icon size={16} className="flex-shrink-0" />
-                <span className="flex-1 text-left">{item.label}</span>
-                {item.badge && !active && (
-                  <span className="text-[10px] font-600 px-1.5 py-0.5 rounded-full bg-primary/10 text-primary">
-                    {item.badge}
-                  </span>
-                )}
+                <Icon
+                  size={18}
+                  className={isActive ? "text-white" : "text-muted-foreground"}
+                />
+
+                <span className="flex-1 text-left">{t(labelKey)}</span>
+
               </button>
-            );
+            )
           })}
         </nav>
 
-        {/* Footer */}
-        <div className="px-3 py-3 border-t border-border">
-          <button className="w-full flex items-center gap-3 px-3 py-2.5 rounded-md text-sm text-muted-foreground hover:bg-muted hover:text-foreground transition-colors cursor-pointer">
-            <LogOut size={16} />
-            <span>Déconnexion</span>
+        
+        <div className="p-3 border-t border-border/60 bg-muted/20">
+          <button
+            onClick={logout}
+            className="w-full flex items-center gap-2.5 px-3 py-2 text-xs font-medium text-muted-foreground hover:text-rose-600 hover:bg-rose-500/10 rounded-lg transition-colors cursor-pointer"
+          >
+            <LogOut size={15} />
+            {t("logout")}
           </button>
         </div>
       </aside>
 
-      {/* Main */}
-      <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
-        {/* Header */}
-        <header className="h-14 bg-card border-b border-border flex items-center px-4 gap-3 flex-shrink-0">
-          <button
-            className="lg:hidden p-2 rounded-md hover:bg-muted text-muted-foreground transition-colors"
-            onClick={() => setSidebarOpen(true)}
-          >
-            <Menu size={18} />
-          </button>
+      
+      <div className="flex-1 flex flex-col min-w-0 overflow-hidden bg-background">
+        
+        <header className="h-16 bg-card/80 backdrop-blur-md border-b border-border/80 flex items-center px-5 gap-3 sticky top-0 z-30 justify-between">
+          <div className="flex items-center gap-3 flex-1 min-w-0">
+            <button
+              className="lg:hidden p-2 rounded-lg text-muted-foreground hover:bg-muted cursor-pointer"
+              onClick={() => setSidebarOpen(true)}
+            >
+              <Menu size={20} />
+            </button>
 
-          {/* Search */}
-          <div className="flex-1 max-w-xs hidden sm:flex items-center gap-2 px-3 py-1.5 rounded-md bg-muted text-muted-foreground text-sm">
-            <Search size={14} />
-            <span className="text-xs">Rechercher...</span>
+            
+            <div className="relative max-w-sm w-full hidden sm:flex items-center">
+              <Search
+                size={15}
+                className="absolute left-3 text-muted-foreground pointer-events-none"
+              />
+              <input
+                type="text"
+                placeholder="Rechercher produit, commande, client... (⌘K)"
+                className="w-full pl-9 pr-4 py-2 text-xs rounded-xl bg-muted/60 border border-border/50 text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-colors"
+              />
+            </div>
           </div>
 
-          <div className="ml-auto flex items-center gap-2">
-            {/* Quick stats pill */}
-            <div className="hidden md:flex items-center gap-3 px-3 py-1.5 rounded-md bg-muted text-xs text-muted-foreground">
-              <span className="flex items-center gap-1">
-                <AlertTriangle size={11} className="text-[var(--warning)]" />
-                <span>{metrics.pendingOrders} en attente</span>
-              </span>
-              <span className="w-px h-3 bg-border" />
-              <span className="flex items-center gap-1">
-                <AlertTriangle size={11} className="text-[var(--destructive)]" />
-                <span>{metrics.lowStockCount} stocks bas</span>
-              </span>
-            </div>
+          
+          <div className="flex items-center gap-2.5">
+            
+            <button
+              onClick={toggleLanguage}
+              title="Changer de langue"
+              className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl border border-border/60 bg-muted/50 text-xs font-semibold hover:bg-muted transition-colors cursor-pointer text-muted-foreground hover:text-foreground"
+            >
+              <Globe size={14} />
+              <span>{i18n.language.toUpperCase()}</span>
+            </button>
 
-            {/* Notifications */}
+            
             <div className="relative">
               <button
-                className="relative p-2 rounded-md hover:bg-muted text-muted-foreground transition-colors"
+                className="relative p-2 rounded-xl text-muted-foreground hover:text-foreground hover:bg-muted transition-colors cursor-pointer"
                 onClick={() => setNotifOpen(!notifOpen)}
+                aria-label={`${t("common.notifications")} — ${notificationsRealtimeConnected ? t("common.realtimeConnected") : t("common.reconnecting")}`}
+                title={notificationsRealtimeConnected ? t("common.realtimeConnected") : t("common.reconnecting")}
               >
                 <Bell size={18} />
-                <span className="absolute top-1.5 right-1.5 w-1.5 h-1.5 rounded-full bg-primary" />
+                <span
+                  aria-hidden="true"
+                  className={`absolute bottom-1 right-1 h-1.5 w-1.5 rounded-full ring-2 ring-card ${notificationsRealtimeConnected ? "bg-emerald-500" : "bg-amber-500"}`}
+                />
+                {unreadNotifications > 0 && (
+                  <span className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-primary ring-2 ring-card" />
+                )}
               </button>
+
               {notifOpen && (
-                <div className="absolute right-0 top-full mt-1 w-72 bg-card border border-border rounded-lg shadow-lg z-50 animate-fade-in">
-                  <div className="px-4 py-3 border-b border-border flex items-center justify-between">
-                    <span className="font-display font-600 text-sm">Notifications</span>
-                    <button className="text-xs text-primary hover:underline" onClick={() => setNotifOpen(false)}>Tout lire</button>
+                <div className="absolute right-0 top-full mt-2 w-80 bg-card border border-border rounded-2xl shadow-2xl z-50 overflow-hidden animate-slide-down">
+                  <div className="px-4 py-3 border-b border-border/60 flex items-center justify-between">
+                    <p className="font-display font-semibold text-sm text-foreground">
+                      {t("common.notifications")}
+                    </p>
+                    <button
+                      className="text-xs text-primary hover:underline font-medium cursor-pointer"
+                      onClick={markAllNotificationsRead}
+                    >
+                      {t("common.markAllRead")}
+                    </button>
                   </div>
-                  {[
-                    { icon: ShoppingBag, text: "Nouvelle commande ORD-2026-318", time: "il y a 12 min", color: "text-primary" },
-                    { icon: AlertTriangle, text: "Stock bas: Café Arabica (8 unités)", time: "il y a 2h", color: "text-[var(--warning)]" },
-                    { icon: Star, text: "Nouvel avis 5★ sur Vanille", time: "il y a 3h", color: "text-[var(--accent)]" },
-                    { icon: CheckCircle2, text: "Paiement reçu: ORD-2026-315", time: "hier", color: "text-[var(--success)]" },
-                  ].map((n, i) => (
-                    <div key={i} className="flex items-start gap-3 px-4 py-3 hover:bg-muted transition-colors cursor-pointer border-b border-border last:border-0">
-                      <n.icon size={14} className={`mt-0.5 flex-shrink-0 ${n.color}`} />
-                      <div>
-                        <p className="text-xs text-foreground">{n.text}</p>
-                        <p className="text-[10px] text-muted-foreground mt-0.5">{n.time}</p>
-                      </div>
-                    </div>
-                  ))}
+
+                  <div className="divide-y divide-border/60 max-h-80 overflow-y-auto">
+                    {notificationsError ? (
+                      <p role="alert" className="p-4 text-xs text-rose-600">{notificationsError}</p>
+                    ) : notificationsLoading ? (
+                      <p className="p-4 text-xs text-muted-foreground">{t("common.loading")}</p>
+                    ) : notifications.length === 0 ? (
+                      <p className="p-4 text-xs text-muted-foreground">Aucune notification.</p>
+                    ) : notifications.map((notification) => {
+                      const Icon = notificationIcon(notification.type)
+                      return (
+                        <button
+                          key={notification.id}
+                          type="button"
+                          onClick={() => markNotificationRead(notification)}
+                          className={`w-full p-3.5 hover:bg-muted/50 transition-colors flex items-start gap-3 text-left ${notification.read ? "" : "bg-primary/5"}`}
+                        >
+                          <div className="w-7 h-7 rounded-lg flex items-center justify-center shrink-0 bg-primary/10 text-primary">
+                            <Icon size={14} />
+                          </div>
+                          <div className="min-w-0 flex-1">
+                            <p className="text-xs text-foreground font-medium leading-snug">{notification.title}</p>
+                            <p className="text-xs text-muted-foreground mt-0.5">{notification.message}</p>
+                            <p className="text-[10px] text-muted-foreground mt-0.5">{formatNotificationTime(notification.createdAt)}</p>
+                          </div>
+                        </button>
+                      )
+                    })}
+                    {notificationsMoreError && (
+                      <p role="alert" className="p-3 text-xs text-rose-600">{notificationsMoreError}</p>
+                    )}
+                    {!notificationsLoading && !notificationsError && notificationPage < notificationTotalPages && (
+                      <button
+                        type="button"
+                        className="w-full p-3 text-xs font-medium text-primary hover:bg-muted/50 disabled:opacity-50"
+                        disabled={notificationsMoreLoading}
+                        onClick={() => void loadMoreNotifications()}
+                      >
+                        {notificationsMoreLoading ? "Chargement…" : "Charger les anciennes notifications"}
+                      </button>
+                    )}
+                  </div>
                 </div>
               )}
             </div>
 
-            {/* Avatar */}
-            <div className="flex items-center gap-2 px-2 py-1.5 rounded-md hover:bg-muted cursor-pointer transition-colors">
-              <div className="w-7 h-7 rounded-full bg-primary flex items-center justify-center text-white text-xs font-600">
-                MN
-              </div>
-              <ChevronDown size={12} className="text-muted-foreground hidden sm:block" />
+            
+            <div className="relative">
+              <button
+                onClick={() => setUserMenuOpen(!userMenuOpen)}
+                className="flex items-center gap-2 pl-2 pr-1.5 py-1 rounded-xl border border-border/60 bg-muted/40 hover:bg-muted transition-colors cursor-pointer"
+              >
+                <div className="w-7 h-7 rounded-lg bg-gradient-to-tr from-primary to-blue-600 flex items-center justify-center text-white text-xs font-bold shadow-xs">
+                  {sellerName ? sellerName.slice(0, 2).toUpperCase() : "…"}
+                </div>
+                <div className="hidden md:block text-left text-xs">
+                  <p className="font-semibold text-foreground leading-none">
+                    {sellerName || t("common.loading")}
+                  </p>
+                </div>
+                <ChevronDown size={12} className="text-muted-foreground" />
+              </button>
+
+              {userMenuOpen && (
+                <div className="absolute right-0 top-full mt-2 w-56 bg-card border border-border rounded-xl shadow-xl z-50 p-1.5 animate-slide-down">
+                  <div className="px-3 py-2 border-b border-border/60 mb-1">
+                    <p className="text-xs font-semibold text-foreground">
+                      {selectedStore?.name ?? "—"}
+                    </p>
+                    <p className="text-[11px] text-muted-foreground truncate">
+                      {profile?.email ?? "—"}
+                    </p>
+                  </div>
+                  <button
+                    onClick={() => { setUserMenuOpen(false); navigate("/store"); }}
+                    className="w-full flex items-center gap-2 px-3 py-2 text-xs rounded-lg hover:bg-muted text-foreground transition-colors cursor-pointer text-left"
+                  >
+                    <StoreIcon size={14} />
+                    Paramètres de la boutique
+                  </button>
+                  <button
+                    onClick={() => { setUserMenuOpen(false); navigate("/settings"); }}
+                    className="w-full flex items-center gap-2 px-3 py-2 text-xs rounded-lg hover:bg-muted text-foreground transition-colors cursor-pointer text-left"
+                  >
+                    <Settings size={14} />
+                    Préférences du compte
+                  </button>
+                  <div className="border-t border-border/60 my-1" />
+                  <button
+                    onClick={logout}
+                    className="w-full flex items-center gap-2 px-3 py-2 text-xs rounded-lg hover:bg-rose-500/10 text-rose-600 transition-colors cursor-pointer text-left font-medium"
+                  >
+                    <LogOut size={14} />
+                    Déconnexion
+                  </button>
+                </div>
+              )}
             </div>
           </div>
         </header>
 
-        {/* Page content */}
+        
         <main className="flex-1 overflow-y-auto">
-          {children}
+          {logoutError && (
+            <div role="alert" className="mx-6 mt-4 rounded-xl border border-rose-500/20 bg-rose-500/10 px-4 py-3 text-sm text-rose-700 dark:text-rose-400">
+              {logoutError}
+            </div>
+          )}
+          <Outlet />
         </main>
       </div>
     </div>
-  );
-}
+  </TutorialProvider>
+)
+};
+export default Shell;

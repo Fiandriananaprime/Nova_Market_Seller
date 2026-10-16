@@ -1,204 +1,437 @@
-import { useState } from "react";
-import { Search, Users, TrendingUp, ShoppingBag } from "lucide-react";
-import { customers, formatMGA, type Customer } from "../data/mock";
-import { PageHeader, Badge, EmptyState, Pagination, Card } from "../components/ui";
+import { useEffect, useState } from "react"
+import { useTranslation } from "react-i18next"
+import {
+  Users,
+  TrendingUp,
+  Mail,
+  MapPin,
+  Sparkles,
+  Phone,
+  MessageCircle,
+} from "lucide-react"
+import { formatMGA, formatFullMGA } from "@/hook/format"
+import { getCustomerById, getCustomers } from "@/service/customer"
+import type { Customer, CustomerListResponse, CustomerSegment } from "@/type/customer"
+import {
+  PageHeader,
+  Button,
+  SearchInput,
+  Badge,
+  EmptyState,
+  Pagination,
+  Card,
+  SlideOverDrawer,
+} from "@/components/ui"
 
-function CustomerDetail({ customer, onClose }: { customer: Customer; onClose: () => void }) {
-  return (
-    <div className="fixed inset-0 z-50 flex">
-      <div className="absolute inset-0 bg-foreground/30" onClick={onClose} />
-      <div className="relative ml-auto w-full max-w-md bg-card border-l border-border flex flex-col h-full shadow-2xl animate-fade-in">
-        <div className="flex items-center justify-between px-5 py-4 border-b border-border">
-          <h2 className="font-display font-700 text-base text-foreground">Détails client</h2>
-          <button onClick={onClose} className="p-1.5 rounded-md hover:bg-muted text-muted-foreground">✕</button>
-        </div>
+const Customers = () => {
+  const { t } = useTranslation()
+  const [customers, setCustomers] = useState<Customer[]>([])
+  const [search, setSearch] = useState("")
+  const [segmentFilter, setSegmentFilter] = useState<CustomerSegment | "all">("all")
+  const [page, setPage] = useState(1)
+  const [totalResults, setTotalResults] = useState(0)
+  const [summary, setSummary] = useState<CustomerListResponse["summary"]>({
+    totalCustomers: 0,
+    activeCustomers: 0,
+    totalSpent: 0,
+    repeatBuyersPct: 0,
+    avgOrderValue: 0,
+  })
+  const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(null)
+  const [loading, setLoading] = useState(true)
+  const [detailLoading, setDetailLoading] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+  const [detailError, setDetailError] = useState<string | null>(null)
+  const PAGE_SIZE = 8
 
-        <div className="flex-1 overflow-y-auto p-5 space-y-5">
-          {/* Profile */}
-          <div className="flex items-center gap-4">
-            <div className="w-14 h-14 rounded-full bg-primary/10 flex items-center justify-center text-primary font-display font-700 text-xl flex-shrink-0">
-              {customer.initials}
-            </div>
-            <div>
-              <h3 className="font-display font-700 text-lg text-foreground">{customer.name}</h3>
-              <p className="text-sm text-muted-foreground">{customer.email}</p>
-              <p className="text-sm text-muted-foreground">{customer.city}</p>
-            </div>
-          </div>
+  useEffect(() => {
+    let active = true
+    setLoading(true)
+    setError(null)
+    getCustomers(page, PAGE_SIZE, search || undefined, segmentFilter === "all" ? undefined : segmentFilter).then((response) => {
+      if (!active) return
+      setCustomers(response.data)
+      setTotalResults(response.meta.total)
+      setSummary(response.summary)
+    }).catch(() => {
+      if (active) setError("La liste des clients n’a pas pu être chargée. Vérifiez votre connexion puis réessayez.")
+    }).finally(() => {
+      if (active) setLoading(false)
+    })
+    return () => { active = false }
+  }, [page, search, segmentFilter])
 
-          {/* Stats */}
-          <div className="grid grid-cols-2 gap-3">
-            <div className="bg-muted rounded-lg p-4">
-              <div className="flex items-center gap-2 mb-2">
-                <ShoppingBag size={14} className="text-primary" />
-                <span className="text-xs text-muted-foreground">Commandes</span>
-              </div>
-              <p className="font-display font-700 text-2xl text-foreground">{customer.ordersCount}</p>
-            </div>
-            <div className="bg-muted rounded-lg p-4">
-              <div className="flex items-center gap-2 mb-2">
-                <TrendingUp size={14} className="text-primary" />
-                <span className="text-xs text-muted-foreground">Total dépensé</span>
-              </div>
-              <p className="font-display font-700 text-lg text-foreground">{formatMGA(customer.totalSpent)}</p>
-            </div>
-          </div>
+  const customerInitials = (customer: Customer) => customer.avatarInitial || customer.name.split(/\s+/).map((part) => part[0]).join("").slice(0, 2).toUpperCase()
 
-          <div className="bg-muted rounded-lg p-4">
-            <p className="text-xs font-600 text-muted-foreground mb-2">DERNIÈRE COMMANDE</p>
-            <p className="text-sm text-foreground">{new Date(customer.lastOrderDate).toLocaleDateString("fr-MG", { year: "numeric", month: "long", day: "numeric" })}</p>
-          </div>
-
-          <div className="bg-muted rounded-lg p-4">
-            <p className="text-xs font-600 text-muted-foreground mb-2">PANIER MOYEN</p>
-            <p className="text-sm font-600 text-foreground">{formatMGA(Math.round(customer.totalSpent / customer.ordersCount))}</p>
-          </div>
-
-          <div className="bg-muted rounded-lg p-4">
-            <p className="text-xs font-600 text-muted-foreground mb-2">STATUT</p>
-            <Badge variant={customer.status === "active" ? "success" : "muted"}>
-              {customer.status === "active" ? "Client actif" : "Inactif"}
-            </Badge>
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-export default function Customers() {
-  const [search, setSearch] = useState("");
-  const [statusFilter, setStatusFilter] = useState("all");
-  const [page, setPage] = useState(1);
-  const [selected, setSelected] = useState<Customer | null>(null);
-
-  const PAGE_SIZE = 8;
-
-  const filtered = customers.filter((c) => {
-    const matchSearch = c.name.toLowerCase().includes(search.toLowerCase()) ||
-      c.email.toLowerCase().includes(search.toLowerCase());
-    const matchStatus = statusFilter === "all" || c.status === statusFilter;
-    return matchSearch && matchStatus;
-  });
-
-  const paginated = filtered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
-
-  const totalRevenue = customers.reduce((sum, c) => sum + c.totalSpent, 0);
-  const avgOrders = Math.round(customers.reduce((sum, c) => sum + c.ordersCount, 0) / customers.length);
+  async function openCustomer(customer: Customer) {
+    setSelectedCustomer(customer)
+    setDetailLoading(true)
+    setDetailError(null)
+    try {
+      const details = await getCustomerById(customer.id)
+      setSelectedCustomer(details)
+    } catch {
+      setDetailError("La fiche de ce client n’a pas pu être chargée.")
+    } finally {
+      setDetailLoading(false)
+    }
+  }
 
   return (
-    <div className="p-6 space-y-5 animate-fade-in">
+    <div className="p-6 md:p-8 space-y-6 animate-fade-in max-w-7xl mx-auto">
+      
       <PageHeader
-        title="Clients"
-        subtitle={`${customers.length} clients au total`}
+        title={t("customers.title")}
+        subtitle={t("customers.subtitle")}
+        badge={
+          <Badge variant="primary" dot>
+            {summary.totalCustomers} {t("customers.totalCustomers").toLowerCase()}
+          </Badge>
+        }
       />
 
-      {/* Summary cards */}
-      <div className="grid grid-cols-3 gap-3">
-        <div className="bg-card rounded-xl border border-border p-4">
-          <p className="text-xs text-muted-foreground">Total clients</p>
-          <p className="font-display font-700 text-2xl text-foreground mt-1">{customers.length}</p>
-          <p className="text-[10px] text-muted-foreground mt-0.5">{customers.filter((c) => c.status === "active").length} actifs</p>
+      {error && <div role="alert" className="rounded-xl border border-rose-300 bg-rose-50 px-4 py-3 text-sm text-rose-900 dark:border-rose-900 dark:bg-rose-950/30 dark:text-rose-100">{error}</div>}
+      {loading && <div role="status" aria-live="polite" className="rounded-2xl border border-border bg-card p-8 text-center text-sm text-muted-foreground">Chargement des clients…</div>}
+
+      
+      {!loading && !error && <><div data-tour="customers-kpis" className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        <div className="bg-card rounded-2xl border border-border/80 p-5 shadow-xs flex items-center justify-between">
+          <div>
+            <p className="text-xs text-muted-foreground font-medium">Portefeuille Clients</p>
+            <p className="font-display font-extrabold text-2xl text-foreground mt-1 tabular-nums">
+              {summary.totalCustomers}
+            </p>
+            <p className="text-[11px] text-emerald-600 dark:text-emerald-400 mt-0.5 font-medium">
+              {summary.totalCustomers ? Math.round((summary.activeCustomers / summary.totalCustomers) * 100) : 0}% clients actifs
+            </p>
+          </div>
+          <div className="w-10 h-10 rounded-xl bg-primary/10 text-primary flex items-center justify-center">
+            <Users size={18} />
+          </div>
         </div>
-        <div className="bg-card rounded-xl border border-border p-4">
-          <p className="text-xs text-muted-foreground">Revenu total clients</p>
-          <p className="font-display font-700 text-lg text-foreground mt-1">{formatMGA(totalRevenue)}</p>
-          <p className="text-[10px] text-muted-foreground mt-0.5">sur toute la période</p>
+
+        <div className="bg-card rounded-2xl border border-border/80 p-5 shadow-xs flex items-center justify-between">
+          <div>
+            <p className="text-xs text-muted-foreground font-medium">Panier Moyen Global</p>
+            <p className="font-display font-extrabold text-2xl text-foreground mt-1 tabular-nums">
+              {formatMGA(summary.avgOrderValue)}
+            </p>
+            <p className="text-[11px] text-muted-foreground mt-0.5">Par commande passée</p>
+          </div>
+          <div className="w-10 h-10 rounded-xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 flex items-center justify-center">
+            <TrendingUp size={18} />
+          </div>
         </div>
-        <div className="bg-card rounded-xl border border-border p-4">
-          <p className="text-xs text-muted-foreground">Commandes moy.</p>
-          <p className="font-display font-700 text-2xl text-foreground mt-1">{avgOrders}</p>
-          <p className="text-[10px] text-muted-foreground mt-0.5">par client</p>
+
+        <div className="bg-card rounded-2xl border border-border/80 p-5 shadow-xs flex items-center justify-between">
+          <div>
+            <p className="text-xs text-muted-foreground font-medium">Valeur Cumulée LTV</p>
+            <p className="font-display font-extrabold text-2xl text-foreground mt-1 tabular-nums">
+              {formatMGA(summary.totalSpent)}
+            </p>
+            <p className="text-[11px] text-muted-foreground mt-0.5">Volume total d'achats</p>
+          </div>
+          <div className="w-10 h-10 rounded-xl bg-purple-500/10 text-purple-600 dark:text-purple-400 flex items-center justify-center">
+            <Sparkles size={18} />
+          </div>
         </div>
       </div>
 
-      {/* Filters */}
-      <div className="flex gap-2 flex-wrap">
-        <div className="relative flex-1 min-w-48 max-w-xs">
-          <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
-          <input
-            value={search}
-            onChange={(e) => { setSearch(e.target.value); setPage(1); }}
-            placeholder="Nom, email..."
-            className="w-full pl-9 pr-3 py-2 text-sm rounded-md border border-border bg-card text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring/30"
+      
+      <div data-tour="customers-search" className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-card p-3 rounded-2xl border border-border/80 shadow-xs">
+        <SearchInput
+          value={search}
+          onChange={(v) => { setSearch(v); setPage(1); }}
+          placeholder="Rechercher par nom, email client..."
+          className="max-w-md w-full"
+        />
+
+        <div data-tour="customers-segments" className="flex items-center gap-1.5 overflow-x-auto pb-1 sm:pb-0">
+          <button
+            onClick={() => { setSegmentFilter("all"); setPage(1); }}
+            className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition-all cursor-pointer whitespace-nowrap ${
+              segmentFilter === "all"
+                ? "bg-primary text-white shadow-xs"
+                : "text-muted-foreground hover:bg-muted hover:text-foreground"
+            }`}
+          >
+            Tous les clients ({summary.totalCustomers})
+          </button>
+
+          <button
+            onClick={() => { setSegmentFilter("vip"); setPage(1); }}
+            className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition-all cursor-pointer whitespace-nowrap ${
+              segmentFilter === "vip"
+                ? "bg-purple-600 text-white shadow-xs"
+                : "text-purple-600 hover:bg-purple-500/10"
+            }`}
+          >
+            VIP & Top Acheteurs
+          </button>
+
+          <button
+            onClick={() => { setSegmentFilter("frequent"); setPage(1); }}
+            className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition-all cursor-pointer whitespace-nowrap ${
+              segmentFilter === "frequent"
+                ? "bg-primary text-white shadow-xs"
+                : "text-muted-foreground hover:bg-muted hover:text-foreground"
+            }`}
+          >
+            Clients Réguliers (5+ cdtes)
+          </button>
+
+          <button
+            onClick={() => { setSegmentFilter("new"); setPage(1); }}
+            className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition-all cursor-pointer whitespace-nowrap ${
+              segmentFilter === "new"
+                ? "bg-primary text-white shadow-xs"
+                : "text-muted-foreground hover:bg-muted hover:text-foreground"
+            }`}
+          >
+            Nouveaux Clients
+          </button>
+        </div>
+      </div>
+
+      
+      {customers.length === 0 ? (
+        <Card>
+          <EmptyState
+            icon={<Users size={22} />}
+            title="Aucun client trouvé"
+            description="Modifiez vos critères de recherche ou de segmentation."
           />
-        </div>
-        <div className="flex gap-1">
-          {[{ label: "Tous", value: "all" }, { label: "Actifs", value: "active" }, { label: "Inactifs", value: "inactive" }].map((f) => (
-            <button
-              key={f.value}
-              onClick={() => { setStatusFilter(f.value); setPage(1); }}
-              className={`px-3 py-2 text-xs font-medium rounded-md border transition-colors cursor-pointer ${statusFilter === f.value ? "bg-primary border-primary text-white" : "border-border bg-card text-muted-foreground hover:text-foreground"}`}
-            >
-              {f.label}
-            </button>
-          ))}
-        </div>
-      </div>
+        </Card>
+      ) : (
+        <div data-tour="customers-list">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            {customers.map((customer) => {
+              const isVip = customer.totalSpent > 1_000_000
 
-      {/* Table */}
-      <Card>
-        {filtered.length === 0 ? (
-          <EmptyState icon={<Users size={20} />} title="Aucun client trouvé" description="Vos clients apparaîtront ici après leurs premières commandes." />
-        ) : (
-          <>
-            <div className="overflow-x-auto">
-              <table className="w-full text-xs">
-                <thead>
-                  <tr className="border-b border-border bg-muted/30">
-                    <th className="text-left px-5 py-3 text-muted-foreground font-medium">Client</th>
-                    <th className="text-left px-3 py-3 text-muted-foreground font-medium hidden md:table-cell">Ville</th>
-                    <th className="text-right px-3 py-3 text-muted-foreground font-medium">Commandes</th>
-                    <th className="text-right px-3 py-3 text-muted-foreground font-medium">Total dépensé</th>
-                    <th className="text-left px-3 py-3 text-muted-foreground font-medium hidden lg:table-cell">Dernière commande</th>
-                    <th className="text-left px-3 py-3 text-muted-foreground font-medium">Statut</th>
-                    <th className="px-3 py-3" />
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-border">
-                  {paginated.map((c) => (
-                    <tr key={c.id} className="hover:bg-muted/30 transition-colors">
-                      <td className="px-5 py-3.5">
-                        <div className="flex items-center gap-3">
-                          <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center text-primary font-700 text-xs flex-shrink-0">
-                            {c.initials}
-                          </div>
-                          <div>
-                            <p className="font-600 text-foreground">{c.name}</p>
-                            <p className="text-muted-foreground">{c.email}</p>
-                          </div>
-                        </div>
-                      </td>
-                      <td className="px-3 py-3.5 text-muted-foreground hidden md:table-cell">{c.city}</td>
-                      <td className="px-3 py-3.5 text-right font-600 text-foreground">{c.ordersCount}</td>
-                      <td className="px-3 py-3.5 text-right font-600 text-foreground">{formatMGA(c.totalSpent)}</td>
-                      <td className="px-3 py-3.5 text-muted-foreground hidden lg:table-cell">
-                        {c.lastOrderDate ? new Date(c.lastOrderDate).toLocaleDateString("fr-MG") : "—"}
-                      </td>
-                      <td className="px-3 py-3.5">
-                        <Badge variant={c.status === "active" ? "success" : "muted"}>
-                          {c.status === "active" ? "Actif" : "Inactif"}
-                        </Badge>
-                      </td>
-                      <td className="px-3 py-3.5">
-                        <button
-                          onClick={() => setSelected(c)}
-                          className="px-2.5 py-1 text-xs font-medium rounded-md bg-muted text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors cursor-pointer"
-                        >
-                          Voir
-                        </button>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+              return (
+                <div
+                  key={customer.id}
+                  onClick={() => void openCustomer(customer)}
+                  className={`bg-card rounded-2xl border p-5 shadow-xs hover:shadow-lg transition-all duration-200 cursor-pointer flex flex-col justify-between space-y-4 ${
+                    isVip
+                      ? "border-purple-500/40 bg-gradient-to-br from-card to-purple-500/5 hover:border-purple-500/70"
+                      : "border-border/80 hover:border-primary/40"
+                  }`}
+                >
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="w-12 h-12 rounded-2xl bg-gradient-to-tr from-primary/15 to-primary/5 text-primary border border-primary/20 flex items-center justify-center font-display font-extrabold text-base shrink-0 shadow-xs">
+                      {customerInitials(customer)}
+                    </div>
+
+                    {isVip ? (
+                      <Badge variant="purple" dot>
+                        VIP
+                      </Badge>
+                    ) : (
+                      <Badge variant={customer.status === "active" ? "success" : "neutral"}>{customer.status === "active" ? "Actif" : "Inactif"}</Badge>
+                    )}
+                  </div>
+
+                  <div>
+                    <h3 className="font-display font-bold text-sm text-foreground truncate">
+                      {customer.name}
+                    </h3>
+                    <p className="text-xs text-muted-foreground truncate mt-0.5">
+                      {customer.email}
+                    </p>
+                    <p className="text-[11px] text-muted-foreground flex items-center gap-1 mt-1">
+                      <MapPin size={11} />
+                      {customer.city ?? "—"}
+                    </p>
+                  </div>
+
+                  <div className="pt-3 border-t border-border/60 flex items-center justify-between text-xs">
+                    <div>
+                      <p className="text-[10px] text-muted-foreground uppercase font-semibold">
+                        Dépenses
+                      </p>
+                      <p className="font-display font-extrabold text-sm text-foreground tabular-nums">
+                        {formatMGA(customer.totalSpent)}
+                      </p>
+                    </div>
+
+                    <div className="text-right">
+                      <p className="text-[10px] text-muted-foreground uppercase font-semibold">
+                        Commandes
+                      </p>
+                      <p className="font-bold text-foreground tabular-nums">
+                        {customer.ordersCount}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              )
+            })}
+          </div>
+
+          <div className="mt-6">
+            <Pagination
+              page={page}
+              total={totalResults}
+              pageSize={PAGE_SIZE}
+              onChange={setPage}
+            />
+          </div>
+        </div>
+      )}
+
+      
+      <SlideOverDrawer
+        isOpen={Boolean(selectedCustomer)}
+        onClose={() => setSelectedCustomer(null)}
+        title={selectedCustomer?.name ?? ""}
+        subtitle={selectedCustomer ? `Fiche Client · ${selectedCustomer.city ?? "—"}` : ""}
+        footer={
+          selectedCustomer && (
+            <div className="flex items-center justify-between gap-2.5 w-full">
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => setSelectedCustomer(null)}
+              >
+                Fermer
+              </Button>
+
+              <div className="flex items-center gap-2">
+                {selectedCustomer.phone && (
+                  <a
+                    href={`https://wa.me/${selectedCustomer.phone.replace(/\D/g, "")}?text=${encodeURIComponent(`Bonjour ${selectedCustomer.name}, je vous contacte de la part de Nova Market.`)}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold shadow-xs transition-colors"
+                  >
+                    <MessageCircle size={13} />
+                    <span>WhatsApp</span>
+                  </a>
+                )}
+                <Button
+                  size="sm"
+                  variant="primary"
+                  onClick={() => {
+                    window.location.href = `mailto:${selectedCustomer.email}`
+                  }}
+                >
+                  <Mail size={13} />
+                  Email
+                </Button>
+              </div>
             </div>
-            <Pagination page={page} total={filtered.length} pageSize={PAGE_SIZE} onChange={setPage} />
-          </>
-        )}
-      </Card>
+          )
+        }
+      >
+        {selectedCustomer && (
+          <div className="space-y-6">
+            {detailLoading && <p role="status" className="text-sm text-muted-foreground">Chargement de la fiche client…</p>}
+            {detailError && <div role="alert" className="rounded-xl border border-rose-300 bg-rose-50 px-3 py-2 text-sm text-rose-900">{detailError}</div>}
+            
+            <div className="flex items-center gap-4 p-4 rounded-2xl bg-muted/40 border border-border/80">
+              <div className="w-14 h-14 rounded-2xl bg-primary text-white font-display font-extrabold text-xl flex items-center justify-center shrink-0 shadow-sm">
+                {customerInitials(selectedCustomer)}
+              </div>
 
-      {selected && <CustomerDetail customer={selected} onClose={() => setSelected(null)} />}
+              <div className="min-w-0 flex-1">
+                <h3 className="font-display font-bold text-base text-foreground">
+                  {selectedCustomer.name}
+                </h3>
+                <p className="text-xs text-muted-foreground truncate">
+                  {selectedCustomer.email}
+                </p>
+                <div className="flex items-center gap-2 mt-1">
+                  <Badge variant={selectedCustomer.status === "active" ? "success" : "neutral"}>{selectedCustomer.status === "active" ? "Actif" : "Inactif"}</Badge>
+                  {selectedCustomer.totalSpent > 1_000_000 && (
+                    <Badge variant="purple">Client Privilège</Badge>
+                  )}
+                </div>
+              </div>
+            </div>
+
+            
+            {selectedCustomer.phone && (
+              <div className="p-3 rounded-xl bg-card border border-border flex items-center justify-between">
+                <div className="flex items-center gap-2 text-xs">
+                  <Phone size={13} className="text-muted-foreground" />
+                  <span className="font-semibold text-foreground">{selectedCustomer.phone}</span>
+                </div>
+
+                <div className="flex items-center gap-1.5">
+                  <a
+                    href={`tel:${selectedCustomer.phone.replace(/\s+/g, "")}`}
+                    className="px-2.5 py-1 rounded-lg bg-muted hover:bg-muted/80 text-foreground text-xs font-semibold flex items-center gap-1 transition-colors"
+                  >
+                    <Phone size={12} />
+                    <span>Appel</span>
+                  </a>
+                  <a
+                    href={`https://wa.me/${selectedCustomer.phone.replace(/\D/g, "")}?text=${encodeURIComponent(`Bonjour ${selectedCustomer.name}, je vous contacte de la part de Nova Market.`)}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="px-2.5 py-1 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold flex items-center gap-1 transition-colors"
+                  >
+                    <MessageCircle size={12} />
+                    <span>WhatsApp</span>
+                  </a>
+                </div>
+              </div>
+            )}
+
+            
+            <div className="grid grid-cols-2 gap-3">
+              <div className="p-4 rounded-xl bg-card border border-border">
+                <p className="text-[11px] text-muted-foreground font-medium">Total Dépensé (LTV)</p>
+                <p className="font-display font-extrabold text-lg text-foreground mt-1 tabular-nums">
+                  {formatFullMGA(selectedCustomer.totalSpent)}
+                </p>
+              </div>
+
+              <div className="p-4 rounded-xl bg-card border border-border">
+                <p className="text-[11px] text-muted-foreground font-medium">Nombre de Commandes</p>
+                <p className="font-display font-extrabold text-lg text-foreground mt-1 tabular-nums">
+                  {selectedCustomer.ordersCount} commandes
+                </p>
+              </div>
+            </div>
+
+            
+            <div className="p-4 rounded-xl bg-card border border-border space-y-3">
+              <h4 className="font-display font-bold text-xs uppercase tracking-wider text-muted-foreground">
+                Habitudes d'achat
+              </h4>
+
+              <div className="text-xs space-y-2">
+                <div className="flex justify-between py-1 border-b border-border/50">
+                  <span className="text-muted-foreground">Panier moyen estimé :</span>
+                  <span className="font-semibold text-foreground">
+                    {formatFullMGA(Math.round(selectedCustomer.totalSpent / Math.max(selectedCustomer.ordersCount, 1)))}
+                  </span>
+                </div>
+
+                <div className="flex justify-between py-1 border-b border-border/50">
+                  <span className="text-muted-foreground">Dernière commande passée :</span>
+                  <span className="font-semibold text-foreground">
+                    {selectedCustomer.lastOrderDate
+                      ? new Date(selectedCustomer.lastOrderDate).toLocaleDateString("fr-MG")
+                      : "Aucune commande renseignée"}
+                  </span>
+                </div>
+
+                <div className="flex justify-between py-1">
+                  <span className="text-muted-foreground">Zone & Quartier :</span>
+                  <span className="font-semibold text-foreground">
+                    {[selectedCustomer.district, selectedCustomer.city].filter(Boolean).join(", ")}
+                  </span>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+      </SlideOverDrawer>
+      </>}
     </div>
-  );
-}
+  )
+};
+export default Customers

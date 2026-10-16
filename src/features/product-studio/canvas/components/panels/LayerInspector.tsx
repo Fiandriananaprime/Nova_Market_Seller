@@ -1,0 +1,106 @@
+import { useDesignStore } from '@/features/product-studio/canvas/store/useDesignStore'
+import { useIsProMode } from '@/features/product-studio/canvas/hooks/useIsProMode'
+import { AlignmentPanel } from '@/features/product-studio/canvas/components/panels/AlignmentPanel'
+import { BackgroundPanel } from '@/features/product-studio/canvas/components/panels/BackgroundPanel'
+import { TextPropertiesPanel } from '@/features/product-studio/canvas/components/panels/TextPropertiesPanel'
+import { ImagePropertiesPanel } from '@/features/product-studio/canvas/components/panels/ImagePropertiesPanel'
+import { ShapePropertiesPanel } from '@/features/product-studio/canvas/components/panels/ShapePropertiesPanel'
+import { SvgPropertiesPanel } from '@/features/product-studio/canvas/components/panels/SvgPropertiesPanel'
+import { DrawPropertiesPanel } from '@/features/product-studio/canvas/components/panels/DrawPropertiesPanel'
+import { GradientPropertiesPanel } from '@/features/product-studio/canvas/components/panels/GradientPropertiesPanel'
+import { EffectsPanel } from '@/features/product-studio/canvas/components/panels/EffectsPanel'
+import { PositionSizePanel } from '@/features/product-studio/canvas/components/panels/PositionSizePanel'
+import { AutoLayoutPanel } from '@/features/product-studio/canvas/components/panels/AutoLayoutPanel'
+import { LayoutGrid } from 'lucide-react'
+import type { TextLayer, ImageLayer, ShapeLayer, SvgLayer, GradientLayer, DrawLayer, Layer } from '@/features/product-studio/canvas/types/design'
+
+   
+                                                                             
+                                                
+   
+export const LayerInspector = ({ layer }: { layer: Layer }) => {
+  const isPro = useIsProMode()
+
+                                                                                 
+                                                                              
+                                                    
+  return (
+    <>
+      <AlignmentPanel />
+      {layer.type !== 'background' && <PositionSizePanel layer={layer} />}
+      <AutoLayoutSection layer={layer} />
+      <LayerTypeInspector layer={layer} />
+      {isPro && layer.type !== 'background' && <EffectsPanel layer={layer} />}
+    </>
+  )
+};
+
+                                                                               
+                                                                              
+  
+                                                                               
+                                                                              
+                                                                           
+                                        
+const AutoLayoutSection = ({ layer }: { layer: Layer }) => {
+  const groupId = layer.groupId
+  const config = useDesignStore((s) => (groupId ? s.document.autoLayouts?.[groupId] : undefined))
+  const autoLayouts = useDesignStore((s) => s.document.autoLayouts)
+  const layers = useDesignStore((s) => s.document.layers)
+  const selectedLayerIds = useDesignStore((s) => s.selectedLayerIds)
+  const applyAutoLayout = useDesignStore((s) => s.applyAutoLayout)
+
+  const selectedLayers = layers.filter((l) => selectedLayerIds.has(l.id) && l.type !== 'background')
+  const selectedCount = selectedLayers.length
+                                                                                
+                                       
+  const unitCount = new Set(
+    selectedLayers.map((l) => (l.groupId && autoLayouts?.[l.groupId] ? `g:${l.groupId}` : `l:${l.id}`)),
+  ).size
+  const isSingleAutoLayoutUnit = !!(groupId && config) && unitCount === 1
+
+  if (isSingleAutoLayoutUnit && groupId) {
+    return (
+      <div className="pb-4 mb-4 border-b border-border">
+        <AutoLayoutPanel groupId={groupId} activeLayer={layer} />
+      </div>
+    )
+  }
+  if (selectedCount >= 2) {
+    return (
+      <div className="pb-4 mb-4 border-b border-border">
+        <button
+          className="flex w-full items-center justify-center gap-1.5 py-2 text-[12px] bg-muted text-foreground rounded-[5px] cursor-pointer transition-[transform,background-color] duration-150 hover:bg-muted/70 active:scale-[0.98]"
+          onClick={() => applyAutoLayout()}
+        >
+          <LayoutGrid className="w-3.5 h-3.5" />
+          Add auto layout
+        </button>
+      </div>
+    )
+  }
+  return null
+};
+
+const LayerTypeInspector = ({ layer }: { layer: Layer }) => {
+  const isPro = useIsProMode()
+
+  switch (layer.type) {
+    case 'background':
+      return <BackgroundPanel />
+    case 'text':
+      return <TextPropertiesPanel layer={layer as TextLayer} />
+    case 'image':
+      return <ImagePropertiesPanel layer={layer as ImageLayer} />
+    case 'shape':
+      return <ShapePropertiesPanel layer={layer as ShapeLayer} />
+    case 'gradient':
+      return isPro ? <GradientPropertiesPanel layer={layer as GradientLayer} /> : null
+    case 'svg':
+      return <SvgPropertiesPanel layer={layer as SvgLayer} />
+    case 'draw':
+      return <DrawPropertiesPanel layer={layer as DrawLayer} />
+    default:
+      return null
+  }
+};

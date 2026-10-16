@@ -1,296 +1,697 @@
-import { useState } from "react";
-import { Search, Filter, ChevronDown, Eye, MoreHorizontal, Truck, CheckCircle2, X } from "lucide-react";
-import { orders, formatMGA, formatFullMGA, type Order, type OrderStatus } from "../data/mock";
+import { useCallback, useEffect, useRef, useState } from "react"
+import { useNavigate } from "react-router"
+import { useTranslation } from "react-i18next"
 import {
-  PageHeader, Button, Input, Select, OrderStatusBadge, PaymentBadge,
-  EmptyState, Pagination, ConfirmModal, Toast, Card
-} from "../components/ui";
+  Search,
+  Truck,
+  CheckCircle2,
+  Clock,
+  Package,
+  Kanban,
+  LayoutList,
+  ChevronRight,
+  MapPin,
+  ArrowRight,
+  Phone,
+  MessageCircle,
+  Printer,
+  Navigation,
+} from "lucide-react"
+import { formatMGA, formatFullMGA } from "@/hook/format"
+import { getAllOrders, getOrderById, updateOrder } from "@/service/order"
+import type { Order as ApiOrder, OrderCounts, OrderStatus } from "@/type/order"
+import {
+  PageHeader,
+  Button,
+  SearchInput,
+  OrderStatusBadge,
+  PaymentBadge,
+  EmptyState,
+  Pagination,
+  ConfirmModal,
+  Toast,
+  Card,
+  SlideOverDrawer,
+  ViewToggle,
+  Badge,
+} from "@/components/ui"
 
-const STATUS_OPTIONS = [
-  { label: "Tous les statuts", value: "all" },
-  { label: "En attente", value: "pending" },
-  { label: "Confirmée", value: "confirmed" },
-  { label: "En traitement", value: "processing" },
-  { label: "Préparation", value: "preparing" },
-  { label: "Expédiée", value: "shipped" },
-  { label: "Livrée", value: "delivered" },
-  { label: "Annulée", value: "cancelled" },
-];
+const PIPELINE_COLUMNS: { status: OrderStatus; label: string; icon: typeof Clock }[] = [
+  { status: "pending", label: "En attente", icon: Clock },
+  { status: "confirmed", label: "Confirmée", icon: CheckCircle2 },
+  { status: "processing", label: "En traitement", icon: Package },
+  { status: "shipped", label: "Expédiée", icon: Truck },
+  { status: "delivered", label: "Livrée", icon: CheckCircle2 },
+]
 
-const TRANSITION_MAP: Record<OrderStatus, OrderStatus[]> = {
-  pending: ["confirmed", "cancelled"],
-  confirmed: ["processing", "cancelled"],
-  processing: ["preparing", "cancelled"],
-  preparing: ["shipped"],
-  shipped: ["delivered"],
-  delivered: [],
-  cancelled: [],
-};
-
-const TRANSITION_LABELS: Record<OrderStatus, string> = {
-  confirmed: "Confirmer",
-  processing: "Traitement",
-  preparing: "Préparer",
-  shipped: "Expédier",
-  delivered: "Marquer livré",
-  cancelled: "Annuler",
-  pending: "",
-};
-
-function OrderDetailPanel({ order, onClose, onStatusChange }: {
-  order: Order;
-  onClose: () => void;
-  onStatusChange: (id: string, status: OrderStatus) => void;
-}) {
-  const transitions = TRANSITION_MAP[order.status];
-
-  return (
-    <div className="fixed inset-0 z-50 flex">
-      <div className="absolute inset-0 bg-foreground/30" onClick={onClose} />
-      <div className="relative ml-auto w-full max-w-md bg-card border-l border-border flex flex-col h-full shadow-2xl animate-fade-in">
-        <div className="flex items-center justify-between px-5 py-4 border-b border-border flex-shrink-0">
-          <div>
-            <h2 className="font-display font-700 text-base text-foreground">{order.id}</h2>
-            <p className="text-xs text-muted-foreground">{new Date(order.createdAt).toLocaleString("fr-MG")}</p>
-          </div>
-          <button onClick={onClose} className="p-2 rounded-md hover:bg-muted text-muted-foreground transition-colors">
-            <X size={16} />
-          </button>
-        </div>
-
-        <div className="flex-1 overflow-y-auto p-5 space-y-5">
-          {/* Status */}
-          <div className="flex items-center gap-3">
-            <OrderStatusBadge status={order.status} />
-            <PaymentBadge status={order.paymentStatus} />
-          </div>
-
-          {/* Customer */}
-          <div className="bg-muted rounded-lg p-4">
-            <p className="text-xs font-600 text-muted-foreground mb-2">CLIENT</p>
-            <div className="flex items-center gap-3">
-              <div className="w-9 h-9 rounded-full bg-primary/10 flex items-center justify-center text-primary font-700 text-sm">
-                {order.buyerAvatar}
-              </div>
-              <div>
-                <p className="text-sm font-600 text-foreground">{order.buyerName}</p>
-                <p className="text-xs text-muted-foreground">{order.city} · {order.deliveryMethod === "express" ? "Livraison express" : order.deliveryMethod === "pickup" ? "Retrait" : "Livraison standard"}</p>
-              </div>
-            </div>
-          </div>
-
-          {/* Items */}
-          <div>
-            <p className="text-xs font-600 text-muted-foreground mb-2">ARTICLES</p>
-            <div className="space-y-2">
-              {order.items.map((item, i) => (
-                <div key={i} className="flex items-center justify-between text-sm">
-                  <div>
-                    <p className="text-foreground font-medium">{item.name}</p>
-                    <p className="text-xs text-muted-foreground">× {item.qty}</p>
-                  </div>
-                  <p className="font-600 text-foreground">{formatFullMGA(item.price * item.qty)}</p>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          {/* Payment */}
-          <div className="border-t border-border pt-4">
-            <div className="flex justify-between text-sm mb-1">
-              <span className="text-muted-foreground">Sous-total</span>
-              <span className="font-medium text-foreground">{formatFullMGA(order.total)}</span>
-            </div>
-            <div className="flex justify-between text-sm mb-1">
-              <span className="text-muted-foreground">Livraison</span>
-              <span className="text-foreground">Incluse</span>
-            </div>
-            <div className="flex justify-between text-sm font-700 text-foreground pt-2 border-t border-border mt-2">
-              <span>Total</span>
-              <span>{formatFullMGA(order.total)}</span>
-            </div>
-            <div className="mt-2 flex items-center gap-2">
-              <span className="text-xs text-muted-foreground">Paiement:</span>
-              <PaymentBadge status={order.paymentStatus} />
-              <span className="text-xs text-muted-foreground">via {order.paymentMethod}</span>
-            </div>
-          </div>
-        </div>
-
-        {/* Actions */}
-        {transitions.length > 0 && (
-          <div className="flex-shrink-0 px-5 py-4 border-t border-border flex gap-2">
-            {transitions.map((t) => (
-              <Button
-                key={t}
-                variant={t === "cancelled" ? "danger" : "primary"}
-                onClick={() => { onStatusChange(order.id, t); onClose(); }}
-                size="sm"
-                className="flex-1"
-              >
-                {t === "shipped" && <Truck size={13} />}
-                {t === "delivered" && <CheckCircle2 size={13} />}
-                {TRANSITION_LABELS[t]}
-              </Button>
-            ))}
-          </div>
-        )}
-      </div>
-    </div>
-  );
+const TRANSITION_NEXT: Record<OrderStatus, OrderStatus | null> = {
+  pending: "confirmed",
+  confirmed: "processing",
+  processing: "shipped",
+  preparing: "shipped",
+  shipped: "delivered",
+  delivered: null,
+  cancelled: null,
+  refunded: null,
 }
 
-export default function Orders() {
-  const [search, setSearch] = useState("");
-  const [statusFilter, setStatusFilter] = useState("all");
-  const [page, setPage] = useState(1);
-  const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
-  const [localOrders, setLocalOrders] = useState(orders);
-  const [toast, setToast] = useState<string | null>(null);
+const TRANSITION_ACTION_LABELS: Record<OrderStatus, string> = {
+  pending: "Confirmer la commande",
+  confirmed: "Lancer le traitement",
+  processing: "Marquer expédiée",
+  preparing: "Marquer expédiée",
+  shipped: "Marquer comme livrée",
+  delivered: "Commande terminée",
+  cancelled: "Commande annulée",
+  refunded: "Commande remboursée",
+}
 
-  const PAGE_SIZE = 8;
+type OrderRow = Omit<ApiOrder, "items"> & {
+  items: Array<ApiOrder["items"][number] & { name: string }>
+  buyerAvatar: string
+  city: string
+  street: string
+  district: string
+  instructions: string
+}
 
-  const filtered = localOrders.filter((o) => {
-    const matchSearch = o.id.toLowerCase().includes(search.toLowerCase()) ||
-      o.buyerName.toLowerCase().includes(search.toLowerCase());
-    const matchStatus = statusFilter === "all" || o.status === statusFilter;
-    return matchSearch && matchStatus;
-  });
+const toOrderRow = (order: ApiOrder):OrderRow => {
+  const address = order.address
+  return {
+    ...order,
+    items: order.items.map((item) => ({ ...item, name: item.productName })),
+    buyerAvatar: order.buyerName.split(/\s+/).map((part) => part[0]).join("").slice(0, 2).toUpperCase(),
+    city: address?.city ?? "—",
+    street: address?.street ?? "",
+    district: address?.district ?? "",
+    instructions: address?.instructions ?? "",
+  }
+};
 
-  const paginated = filtered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
+const Orders = () => {
+  const navigate = useNavigate()
+  const { t } = useTranslation()
+  const [search, setSearch] = useState("")
+  const [statusFilter, setStatusFilter] = useState<OrderStatus | "all">("all")
+  const [viewMode, setViewMode] = useState<"pipeline" | "list">("pipeline")
+  const [page, setPage] = useState(1)
+  const [selectedOrder, setSelectedOrder] = useState<OrderRow | null>(null)
+  const [localOrders, setLocalOrders] = useState<OrderRow[]>([])
+  const [listTotal, setListTotal] = useState(0)
+  const [pipelinePage, setPipelinePage] = useState(1)
+  const [pipelineTotalPages, setPipelineTotalPages] = useState(1)
+  const [loadingMorePipeline, setLoadingMorePipeline] = useState(false)
+  const [orderCounts, setOrderCounts] = useState<OrderCounts>({
+    pending: 0,
+    confirmed: 0,
+    processing: 0,
+    preparing: 0,
+    shipped: 0,
+    delivered: 0,
+    cancelled: 0,
+    refunded: 0,
+  })
+  const [loading, setLoading] = useState(true)
+  const [detailLoading, setDetailLoading] = useState(false)
+  const [updatingOrderId, setUpdatingOrderId] = useState<string | null>(null)
+  const [error, setError] = useState<string | null>(null)
+  const [toast, setToast] = useState<string | null>(null)
+  const [cancelTargetId, setCancelTargetId] = useState<string | null>(null)
+  const requestIdRef = useRef(0)
 
-  function handleStatusChange(id: string, status: OrderStatus) {
-    setLocalOrders((prev) => prev.map((o) => o.id === id ? { ...o, status } : o));
-    setToast(`Statut mis à jour → ${STATUS_OPTIONS.find((s) => s.value === status)?.label}`);
-    setTimeout(() => setToast(null), 3000);
+  const PAGE_SIZE = 8
+  const PIPELINE_PAGE_SIZE = 40
+  const totalOrderCount = Object.values(orderCounts).reduce((total, count) => total + (count ?? 0), 0)
+
+  const loadOrders = useCallback(async (requestedPage: number, append: boolean, isPipeline: boolean) => {
+    const requestId = ++requestIdRef.current
+    if (!append) setLoading(true)
+    setError(null)
+    try {
+      const response = await getAllOrders({
+        page: requestedPage,
+        limit: isPipeline ? PIPELINE_PAGE_SIZE : PAGE_SIZE,
+        status: statusFilter === "all" ? undefined : statusFilter,
+        search: search || undefined,
+      })
+      if (requestId !== requestIdRef.current) return
+      const nextOrders = response.data.map(toOrderRow)
+      setLocalOrders((current) => append ? [...current, ...nextOrders] : nextOrders)
+      setOrderCounts({ ...response.counts, preparing: response.counts.preparing ?? 0 })
+      if (isPipeline) {
+        setPipelinePage(requestedPage)
+        setPipelineTotalPages(response.meta.totalPages)
+      } else {
+        setListTotal(response.meta.total)
+      }
+    } catch {
+      if (requestId === requestIdRef.current) {
+        setError("Les commandes n’ont pas pu être chargées. Vérifiez votre connexion puis réessayez.")
+      }
+    } finally {
+      if (requestId === requestIdRef.current && !append) setLoading(false)
+    }
+  }, [search, statusFilter])
+
+  useEffect(() => {
+    void loadOrders(viewMode === "pipeline" ? 1 : page, false, viewMode === "pipeline")
+  }, [page, viewMode, loadOrders])
+
+  async function loadMorePipelineOrders() {
+    if (loadingMorePipeline || pipelinePage >= pipelineTotalPages) return
+    setLoadingMorePipeline(true)
+    await loadOrders(pipelinePage + 1, true, true)
+    setLoadingMorePipeline(false)
   }
 
-  const statusCounts = STATUS_OPTIONS.slice(1).map((s) => ({
-    ...s,
-    count: localOrders.filter((o) => o.status === s.value).length,
-  }));
+  const showNotification = (msg: string) => {
+    setToast(msg)
+    setTimeout(() => setToast(null), 3000)
+  }
+
+                 
+  const filtered = localOrders
+  const paginated = localOrders
+
+                       
+  async function handleAdvanceStatus(orderId: string) {
+    const target = localOrders.find((o) => o.id === orderId)
+    if (!target) return
+    const next = TRANSITION_NEXT[target.status]
+    if (!next) return
+
+    await changeOrderStatus(orderId, next)
+  }
+
+  async function changeOrderStatus(orderId: string, status: OrderStatus) {
+    if (updatingOrderId) return
+    setUpdatingOrderId(orderId)
+    setError(null)
+    try {
+      await updateOrder(orderId, status)
+      setLocalOrders((current) => current.map((order) => order.id === orderId ? { ...order, status } : order))
+      setSelectedOrder((current) => current?.id === orderId ? { ...current, status } : current)
+      setCancelTargetId(null)
+      showNotification(status === "cancelled" ? "Commande annulée avec succès" : `Statut mis à jour → ${status}`)
+    } catch {
+      setError("La commande n’a pas pu être mise à jour. Réessayez.")
+    } finally {
+      setUpdatingOrderId(null)
+    }
+  }
+
+  async function openOrder(order: OrderRow) {
+    setSelectedOrder(order)
+    setDetailLoading(true)
+    setError(null)
+    try {
+      const detail = await getOrderById(order.id)
+      setSelectedOrder(toOrderRow(detail))
+    } catch {
+      setError("Les détails de cette commande n’ont pas pu être chargés.")
+    } finally {
+      setDetailLoading(false)
+    }
+  }
 
   return (
-    <div className="p-6 space-y-5 animate-fade-in">
+    <div className="p-6 md:p-8 space-y-6 animate-fade-in max-w-7xl mx-auto">
+      
       <PageHeader
-        title="Commandes"
-        subtitle={`${localOrders.length} commandes au total`}
+        title={t("orders.title")}
+        subtitle={t("orders.subtitle")}
+        badge={
+          <Badge variant="primary" dot>
+            {totalOrderCount} {t("orders.all").toLowerCase()}
+          </Badge>
+        }
+        actions={
+          <div data-tour="orders-view-toggle" className="flex items-center gap-3">
+            <ViewToggle
+              value={viewMode}
+              onChange={(mode) => { setViewMode(mode); setPage(1) }}
+              options={[
+                { value: "pipeline", label: t("orders.viewPipeline"), icon: <Kanban size={14} /> },
+                { value: "list", label: t("orders.viewList"), icon: <LayoutList size={14} /> },
+              ]}
+            />
+          </div>
+        }
       />
+      {error && <div role="alert" className="rounded-xl border border-rose-300 bg-rose-50 px-4 py-3 text-sm text-rose-900 dark:border-rose-900 dark:bg-rose-950/30 dark:text-rose-100">{error}</div>}
+      {loading && <div role="status" aria-live="polite" className="rounded-2xl border border-border bg-card p-8 text-center text-sm text-muted-foreground">Chargement des commandes…</div>}
 
-      {/* Status tabs */}
-      <div className="flex gap-1.5 overflow-x-auto pb-1">
-        <button
-          onClick={() => { setStatusFilter("all"); setPage(1); }}
-          className={`flex-shrink-0 flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium transition-colors cursor-pointer ${statusFilter === "all" ? "bg-primary text-white" : "bg-card border border-border text-muted-foreground hover:text-foreground"}`}
-        >
-          Toutes
-          <span className={`text-[10px] px-1.5 py-0.5 rounded-full ${statusFilter === "all" ? "bg-white/20 text-white" : "bg-muted"}`}>
-            {localOrders.length}
-          </span>
-        </button>
-        {statusCounts.filter((s) => s.count > 0).map((s) => (
+      
+      <div data-tour="orders-search-filter" className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-card p-3 rounded-2xl border border-border/80 shadow-xs">
+        
+        <SearchInput
+          value={search}
+          onChange={(v) => { setSearch(v); setPage(1); }}
+          placeholder={t("orders.searchPlaceholder")}
+          className="max-w-md w-full"
+        />
+
+        
+        <div data-tour="orders-status-tabs" className="flex items-center gap-1.5 overflow-x-auto pb-1 sm:pb-0">
           <button
-            key={s.value}
-            onClick={() => { setStatusFilter(s.value); setPage(1); }}
-            className={`flex-shrink-0 flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium transition-colors cursor-pointer ${statusFilter === s.value ? "bg-primary text-white" : "bg-card border border-border text-muted-foreground hover:text-foreground"}`}
+            onClick={() => { setStatusFilter("all"); setPage(1); }}
+            className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition-all cursor-pointer whitespace-nowrap ${
+              statusFilter === "all"
+                ? "bg-primary text-white shadow-xs"
+                : "text-muted-foreground hover:bg-muted hover:text-foreground"
+            }`}
           >
-            {s.label}
-            <span className={`text-[10px] px-1.5 py-0.5 rounded-full ${statusFilter === s.value ? "bg-white/20 text-white" : "bg-muted"}`}>
-              {s.count}
-            </span>
+            {t("orders.all")} ({totalOrderCount})
           </button>
-        ))}
-      </div>
 
-      {/* Filters */}
-      <div className="flex gap-2">
-        <div className="relative flex-1 max-w-xs">
-          <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
-          <input
-            value={search}
-            onChange={(e) => { setSearch(e.target.value); setPage(1); }}
-            placeholder="Rechercher une commande, un client..."
-            className="w-full pl-9 pr-3 py-2 text-sm rounded-md border border-border bg-card text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring/30"
-          />
+          {PIPELINE_COLUMNS.map((col) => {
+            const count = orderCounts[col.status]
+            return (
+              <button
+                key={col.status}
+                onClick={() => { setStatusFilter(col.status); setPage(1); }}
+                className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition-all cursor-pointer whitespace-nowrap ${
+                  statusFilter === col.status
+                    ? "bg-primary text-white shadow-xs"
+                    : "text-muted-foreground hover:bg-muted hover:text-foreground"
+                }`}
+              >
+                {col.label} ({count})
+              </button>
+            )
+          })}
         </div>
       </div>
 
-      {/* Table */}
-      <Card>
-        {filtered.length === 0 ? (
-          <EmptyState
-            icon={<Search size={20} />}
-            title="Aucune commande trouvée"
-            description="Modifiez vos filtres ou votre recherche pour trouver des commandes."
-          />
-        ) : (
+      
+      {!loading && <div data-tour="orders-content">
+        
+        {viewMode === "pipeline" ? (
           <>
-            <div className="overflow-x-auto">
-              <table className="w-full text-xs">
-                <thead>
-                  <tr className="border-b border-border bg-muted/30">
-                    <th className="text-left px-5 py-3 text-muted-foreground font-medium">Commande</th>
-                    <th className="text-left px-3 py-3 text-muted-foreground font-medium">Client</th>
-                    <th className="text-left px-3 py-3 text-muted-foreground font-medium hidden md:table-cell">Articles</th>
-                    <th className="text-left px-3 py-3 text-muted-foreground font-medium">Total</th>
-                    <th className="text-left px-3 py-3 text-muted-foreground font-medium">Statut</th>
-                    <th className="text-left px-3 py-3 text-muted-foreground font-medium hidden sm:table-cell">Paiement</th>
-                    <th className="text-left px-3 py-3 text-muted-foreground font-medium hidden lg:table-cell">Date</th>
-                    <th className="px-3 py-3" />
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-border">
-                  {paginated.map((o) => (
-                    <tr key={o.id} className="hover:bg-muted/30 transition-colors">
-                      <td className="px-5 py-3.5">
-                        <p className="font-700 text-foreground">{o.id}</p>
-                        <p className="text-muted-foreground mt-0.5">{o.deliveryMethod === "express" ? "Express" : "Standard"}</p>
-                      </td>
-                      <td className="px-3 py-3.5">
-                        <div className="flex items-center gap-2">
-                          <div className="w-6 h-6 rounded-full bg-primary/10 text-primary flex items-center justify-center text-[10px] font-700 flex-shrink-0">
-                            {o.buyerAvatar}
-                          </div>
-                          <div>
-                            <p className="font-medium text-foreground">{o.buyerName}</p>
-                            <p className="text-muted-foreground">{o.city}</p>
-                          </div>
-                        </div>
-                      </td>
-                      <td className="px-3 py-3.5 text-muted-foreground hidden md:table-cell">
-                        {o.items.length} article{o.items.length > 1 ? "s" : ""}
-                      </td>
-                      <td className="px-3 py-3.5 font-700 text-foreground">{formatMGA(o.total)}</td>
-                      <td className="px-3 py-3.5"><OrderStatusBadge status={o.status} /></td>
-                      <td className="px-3 py-3.5 hidden sm:table-cell"><PaymentBadge status={o.paymentStatus} /></td>
-                      <td className="px-3 py-3.5 text-muted-foreground hidden lg:table-cell">
-                        {new Date(o.createdAt).toLocaleDateString("fr-MG")}
-                      </td>
-                      <td className="px-3 py-3.5">
-                        <Button size="sm" variant="ghost" onClick={() => setSelectedOrder(o)}>
-                          <Eye size={13} />
-                          <span className="hidden sm:inline">Détails</span>
-                        </Button>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-            <Pagination page={page} total={filtered.length} pageSize={PAGE_SIZE} onChange={setPage} />
-          </>
-        )}
-      </Card>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4 overflow-x-auto pb-4">
+          {PIPELINE_COLUMNS.map((col) => {
+            const colOrders = filtered.filter((o) => o.status === col.status)
+            const colTotal = colOrders.reduce((sum, o) => sum + o.total, 0)
+            const Icon = col.icon
 
-      {selectedOrder && (
-        <OrderDetailPanel
-          order={selectedOrder}
-          onClose={() => setSelectedOrder(null)}
-          onStatusChange={handleStatusChange}
+            return (
+              <div
+                key={col.status}
+                className="flex flex-col rounded-2xl bg-muted/40 border border-border/70 p-3 min-w-[240px]"
+              >
+                
+                <div className="flex items-center justify-between pb-3 mb-3 border-b border-border/60">
+                  <div className="flex items-center gap-2 min-w-0">
+                    <div className="w-6 h-6 rounded-lg bg-card border border-border flex items-center justify-center text-primary shrink-0">
+                      <Icon size={13} />
+                    </div>
+                    <span className="font-display font-bold text-xs text-foreground truncate">
+                      {col.label}
+                    </span>
+                  </div>
+
+                  <span className="w-5 h-5 rounded-full bg-card border border-border text-[11px] font-bold flex items-center justify-center text-muted-foreground shrink-0">
+                    {colOrders.length}
+                  </span>
+                </div>
+
+                
+                <p className="text-[10px] text-muted-foreground font-medium mb-3 px-1">
+                  Volume: <span className="font-bold text-foreground">{formatMGA(colTotal)}</span>
+                </p>
+
+                
+                <div className="space-y-3 flex-1 overflow-y-auto max-h-[680px] pr-0.5">
+                  {colOrders.length === 0 ? (
+                    <div className="h-28 rounded-xl border border-dashed border-border/80 flex items-center justify-center text-center p-3">
+                      <p className="text-[11px] text-muted-foreground">
+                        Aucune commande
+                      </p>
+                    </div>
+                  ) : (
+                    colOrders.map((order) => {
+                      const nextStatus = TRANSITION_NEXT[order.status]
+                      return (
+                        <div
+                          key={order.id}
+                          onClick={() => void openOrder(order)}
+                          className="group bg-card rounded-xl border border-border/80 p-3.5 shadow-xs hover:border-primary/50 hover:shadow-md transition-all cursor-pointer space-y-2.5"
+                        >
+                          <div className="flex items-start justify-between gap-2">
+                            <span className="font-display font-bold text-xs text-foreground group-hover:text-primary transition-colors">
+                              {order.id}
+                            </span>
+                            <PaymentBadge status={order.paymentStatus} />
+                          </div>
+
+                          <div>
+                            <p className="text-xs font-semibold text-foreground truncate">
+                              {order.buyerName}
+                            </p>
+                            <p className="text-[11px] text-muted-foreground truncate">
+                              {order.items.map((it) => `${it.qty}x ${it.name}`).join(", ")}
+                            </p>
+                          </div>
+
+                          <div className="flex items-center justify-between pt-1 border-t border-border/50 text-[11px]">
+                            <span className="font-bold text-foreground tabular-nums">
+                              {formatMGA(order.total)}
+                            </span>
+                            <span className="text-muted-foreground">
+                              {order.city}
+                            </span>
+                          </div>
+
+                          {nextStatus && (
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation()
+                                void handleAdvanceStatus(order.id)
+                              }}
+                              disabled={updatingOrderId === order.id}
+                              className="w-full mt-1.5 py-1.5 px-2 rounded-lg bg-primary/10 hover:bg-primary text-primary hover:text-white text-[11px] font-semibold transition-all flex items-center justify-center gap-1.5 cursor-pointer"
+                            >
+                              <span>{TRANSITION_ACTION_LABELS[order.status]}</span>
+                              <ArrowRight size={12} />
+                            </button>
+                          )}
+                        </div>
+                      )
+                    })
+                  )}
+                </div>
+              </div>
+            )
+          })}
+        </div>
+          {pipelinePage < pipelineTotalPages && (
+            <div className="flex justify-center">
+              <Button
+                variant="outline"
+                size="md"
+                loading={loadingMorePipeline}
+                disabled={loadingMorePipeline}
+                onClick={() => void loadMorePipelineOrders()}
+              >
+                Charger plus de commandes
+              </Button>
+            </div>
+          )}
+          </>
+      ) : (
+        /* VIEW 2: Refined Data List */
+        <Card>
+          {filtered.length === 0 ? (
+            <EmptyState
+              icon={<Search size={22} />}
+              title={t("orders.noOrdersFound")}
+              description="Aucune commande ne correspond aux filtres appliqués."
+            />
+          ) : (
+            <>
+              <div className="divide-y divide-border/60">
+                {paginated.map((order) => (
+                  <div
+                    key={order.id}
+                    onClick={() => void openOrder(order)}
+                    className="p-4 sm:px-6 flex flex-col md:flex-row md:items-center justify-between gap-4 hover:bg-muted/40 transition-colors cursor-pointer group"
+                  >
+                    <div className="flex items-center gap-4 min-w-0">
+                      <div className="w-10 h-10 rounded-xl bg-primary/10 text-primary border border-primary/20 flex items-center justify-center font-display font-bold text-xs shrink-0">
+                        {order.buyerAvatar}
+                      </div>
+
+                      <div className="min-w-0">
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <p className="font-display font-bold text-sm text-foreground group-hover:text-primary transition-colors">
+                            {order.id}
+                          </p>
+                          <OrderStatusBadge status={order.status} />
+                          <PaymentBadge status={order.paymentStatus} />
+                        </div>
+
+                        <p className="text-xs text-muted-foreground mt-0.5 truncate">
+                          Client: <span className="font-medium text-foreground">{order.buyerName}</span> · {order.city} · {order.items.length} produit(s)
+                        </p>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center justify-between md:justify-end gap-5 shrink-0">
+                      <div className="text-left md:text-right">
+                        <p className="font-display font-bold text-sm text-foreground tabular-nums">
+                          {formatMGA(order.total)}
+                        </p>
+                        <p className="text-[11px] text-muted-foreground">
+                          {new Date(order.createdAt).toLocaleDateString("fr-MG")}
+                        </p>
+                      </div>
+
+                      <div className="flex items-center gap-2">
+                        {TRANSITION_NEXT[order.status] && (
+                          <Button
+                            size="sm"
+                            variant="primary"
+                            disabled={updatingOrderId === order.id}
+                            onClick={() => void handleAdvanceStatus(order.id)}
+                          >
+                            Étape suivante
+                          </Button>
+                        )}
+                        <ChevronRight size={16} className="text-muted-foreground group-hover:text-foreground transition-transform group-hover:translate-x-0.5" />
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              <Pagination
+                page={page}
+                total={listTotal}
+                pageSize={PAGE_SIZE}
+                onChange={setPage}
+              />
+            </>
+          )}
+        </Card>
+      )}
+      </div>}
+
+      
+      <SlideOverDrawer
+        isOpen={Boolean(selectedOrder)}
+        onClose={() => setSelectedOrder(null)}
+        title={selectedOrder ? `Commande ${selectedOrder.id}` : ""}
+        subtitle={
+          selectedOrder
+            ? `Passée le ${new Date(selectedOrder.createdAt).toLocaleString("fr-MG")}`
+            : ""
+        }
+        footer={
+          selectedOrder && (
+            <div className="flex items-center justify-between w-full gap-2">
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => {
+                  window.print()
+                }}
+                className="hover:border-primary"
+              >
+                <Printer size={13} />
+                <span>Bordereau</span>
+              </Button>
+
+              <div className="flex items-center gap-2">
+                {selectedOrder.status !== "cancelled" && selectedOrder.status !== "delivered" && selectedOrder.status !== "refunded" && (
+                  <Button
+                    size="sm"
+                    variant="danger"
+                    disabled={updatingOrderId === selectedOrder.id}
+                    onClick={() => setCancelTargetId(selectedOrder.id)}
+                  >
+                    Annuler
+                  </Button>
+                )}
+
+                {TRANSITION_NEXT[selectedOrder.status] && (
+                  <Button
+                    size="sm"
+                    variant="primary"
+                    disabled={updatingOrderId === selectedOrder.id}
+                    onClick={() => handleAdvanceStatus(selectedOrder.id)}
+                  >
+                    {TRANSITION_ACTION_LABELS[selectedOrder.status]}
+                  </Button>
+                )}
+              </div>
+            </div>
+          )
+        }
+      >
+        {selectedOrder && (
+          <div className="space-y-6">
+            {detailLoading && <p role="status" className="text-sm text-muted-foreground">Chargement des détails…</p>}
+            
+            <div className="p-4 rounded-xl bg-muted/60 border border-border/80 space-y-3">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-xs text-muted-foreground mb-1">Statut opérationnel</p>
+                  <OrderStatusBadge status={selectedOrder.status} />
+                </div>
+                <div className="text-right">
+                  <p className="text-xs text-muted-foreground mb-1">Règlement</p>
+                  <PaymentBadge status={selectedOrder.paymentStatus} />
+                </div>
+              </div>
+
+              {selectedOrder.tracking && (
+                <div className="pt-2 border-t border-border/50 flex items-center justify-between text-xs">
+                  <div className="flex items-center gap-1.5 text-muted-foreground">
+                    <Navigation size={13} className="text-primary" />
+                    <span>Suivi : <span className="font-bold text-foreground">{selectedOrder.tracking}</span></span>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => navigate("/deliveries")}
+                    className="text-primary hover:underline font-semibold text-[11px] flex items-center gap-1 cursor-pointer"
+                  >
+                    <span>Voir sur la carte</span>
+                    <ChevronRight size={12} />
+                  </button>
+                </div>
+              )}
+            </div>
+
+            
+            <div className="space-y-3">
+              <h3 className="font-display font-bold text-xs uppercase tracking-wider text-muted-foreground">
+                Informations Acheteur & Livraison
+              </h3>
+              <div className="p-4 rounded-xl border border-border bg-card space-y-3">
+                <div className="flex items-start justify-between gap-3">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-xl bg-primary/10 text-primary font-bold flex items-center justify-center text-sm">
+                      {selectedOrder.buyerAvatar}
+                    </div>
+                    <div>
+                      <p className="text-sm font-bold text-foreground">
+                        {selectedOrder.buyerName}
+                      </p>
+                      <p className="text-xs text-muted-foreground">
+                        {selectedOrder.buyerEmail || "—"}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+                
+                {selectedOrder.buyerPhone && (
+                  <div className="p-2.5 rounded-xl bg-muted/50 border border-border/60 flex items-center justify-between gap-2">
+                    <div className="flex items-center gap-2 text-xs">
+                      <Phone size={13} className="text-muted-foreground" />
+                      <span className="font-semibold text-foreground">{selectedOrder.buyerPhone}</span>
+                    </div>
+
+                    <div className="flex items-center gap-1.5">
+                      <a
+                        href={`tel:${selectedOrder.buyerPhone.replace(/\s+/g, "")}`}
+                        className="px-2.5 py-1 rounded-lg bg-card hover:bg-muted border border-border text-foreground text-xs font-semibold flex items-center gap-1 transition-colors"
+                        title="Appeler le client"
+                      >
+                        <Phone size={12} />
+                        <span>Appel</span>
+                      </a>
+                      <a
+                        href={`https://wa.me/${selectedOrder.buyerPhone.replace(/\D/g, "")}?text=${encodeURIComponent(`Bonjour ${selectedOrder.buyerName}, je vous contacte concernant votre commande ${selectedOrder.id} sur Nova Market.`)}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="px-2.5 py-1 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold flex items-center gap-1 shadow-xs transition-colors"
+                        title="Contacter sur WhatsApp"
+                      >
+                        <MessageCircle size={12} />
+                        <span>WhatsApp</span>
+                      </a>
+                    </div>
+                  </div>
+                )}
+
+                
+                <div className="text-xs space-y-1.5 pt-1">
+                  <div className="flex items-start gap-1.5 text-muted-foreground">
+                    <MapPin size={13} className="mt-0.5 text-primary shrink-0" />
+                    <div>
+                      <p className="font-semibold text-foreground">
+                        {[selectedOrder.street, selectedOrder.district].filter(Boolean).join(", ") || "—"}
+                      </p>
+                      <p className="text-muted-foreground">{selectedOrder.city}, Madagascar</p>
+                    </div>
+                  </div>
+
+                  {selectedOrder.instructions && (
+                    <div className="mt-2 p-2 rounded-lg bg-amber-500/10 border border-amber-500/20 text-amber-800 dark:text-amber-300 text-[11px] leading-relaxed">
+                      <span className="font-bold">Instructions coursier : </span>
+                      {selectedOrder.instructions}
+                    </div>
+                  )}
+                </div>
+
+                <div className="pt-2 border-t border-border/60 text-xs text-muted-foreground flex justify-between">
+                  <span>Méthode de livraison:</span>
+                  <span className="font-semibold text-foreground uppercase">
+                    {selectedOrder.deliveryMethod}
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            
+            <div className="space-y-3">
+              <h3 className="font-display font-bold text-xs uppercase tracking-wider text-muted-foreground">
+                Articles Commandés ({selectedOrder.items.length})
+              </h3>
+              <div className="rounded-xl border border-border bg-card divide-y divide-border/60 overflow-hidden">
+                {selectedOrder.items.map((item, idx) => (
+                  <div key={idx} className="p-3.5 flex items-center justify-between gap-3 text-xs">
+                    <div>
+                      <p className="font-semibold text-foreground">{item.name}</p>
+                      <p className="text-muted-foreground mt-0.5">
+                        Quantité : {item.qty} × {formatFullMGA(item.price)}
+                      </p>
+                    </div>
+                    <p className="font-bold text-foreground tabular-nums">
+                      {formatFullMGA(item.price * item.qty)}
+                    </p>
+                  </div>
+                ))}
+
+                <div className="p-4 bg-muted/30 flex items-center justify-between text-sm font-bold">
+                  <span>Total commande</span>
+                  <span className="text-base text-primary tabular-nums">
+                    {formatFullMGA(selectedOrder.total)}
+                  </span>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+      </SlideOverDrawer>
+
+      
+      {cancelTargetId && (
+        <ConfirmModal
+          title="Annuler cette commande ?"
+          message="Êtes-vous sûr de vouloir annuler cette commande ? Le client sera immédiatement notifié et les stocks seront réintégrés."
+          danger
+          confirmLabel={updatingOrderId === cancelTargetId ? "Annulation…" : "Oui, annuler"}
+          onConfirm={() => void changeOrderStatus(cancelTargetId, "cancelled")}
+          onCancel={() => setCancelTargetId(null)}
         />
       )}
 
-      {toast && <Toast message={toast} type="success" onDismiss={() => setToast(null)} />}
+      
+      {toast && <Toast message={toast} onDismiss={() => setToast(null)} />}
     </div>
-  );
-}
+  )
+};
+export default Orders
